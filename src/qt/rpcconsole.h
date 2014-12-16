@@ -10,7 +10,7 @@
 
 #include "net.h"
 
-#include <QDialog>
+#include <QWidget>
 
 class ClientModel;
 
@@ -23,7 +23,7 @@ class QItemSelection;
 QT_END_NAMESPACE
 
 /** Local Bitcoin RPC console. */
-class RPCConsole: public QDialog
+class RPCConsole: public QWidget
 {
     Q_OBJECT
 
@@ -43,6 +43,7 @@ public:
 
 protected:
     virtual bool eventFilter(QObject* obj, QEvent *event);
+    void keyPressEvent(QKeyEvent *);
 
 private slots:
     void on_lineEdit_returnPressed();
@@ -67,8 +68,7 @@ public slots:
     void walletZaptxes2();
     void walletUpgrade();
     void walletReindex();
-    
-    void reject();
+
     void message(int category, const QString &message, bool html = false);
     /** Set number of connections shown in the UI */
     void setNumConnections(int count);
