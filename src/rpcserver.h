@@ -246,8 +246,8 @@ extern json_spirit::Value update(const json_spirit::Array& params, bool fHelp);
 
 // in rest.cpp
 extern bool HTTPReq_REST(AcceptedConnection *conn,
-                  std::string& strURI,
-                  std::map<std::string, std::string>& mapHeaders,
+                  const std::string& strURI,
+                  const std::map<std::string, std::string>& mapHeaders,
                   bool fRun);
 
 #endif // BITCOIN_RPCSERVER_H
