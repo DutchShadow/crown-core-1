@@ -1436,7 +1436,7 @@ bool GetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlock
                     file >> header;
                     fseek(file.Get(), postx.nTxOffset, SEEK_CUR);
                     file >> txOut;
-                } catch (std::exception &e) {
+                } catch (const std::exception& e) {
                     return error("%s : Deserialize or I/O error - %s", __func__, e.what());
                 }
                 hashBlock = header.GetHash();
@@ -1572,7 +1572,7 @@ static bool ReadBlockOrHeader(T& block, const CDiskBlockPos& pos)
     try {
         filein >> block;
     }
-    catch (std::exception &e) {
+    catch (const std::exception& e) {
         return error("%s : Deserialize or I/O error - %s", __func__, e.what());
     }
 
@@ -3271,7 +3271,7 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
                 return state.Abort("Failed to write block");
         if (!ReceivedBlockTransactions(block, state, pindex, blockPos))
             return error("AcceptBlock() : ReceivedBlockTransactions failed");
-    } catch(std::runtime_error &e) {
+    } catch (const std::runtime_error& e) {
         return state.Abort(std::string("System error: ") + e.what());
     }
 
@@ -3682,7 +3682,7 @@ bool InitBlockIndex() {
                 return error("LoadBlockIndex() : genesis block cannot be activated");
             // Force a chainstate write so that when we VerifyDB in a moment, it doesn't check stale data
             return FlushStateToDisk(state, FLUSH_STATE_ALWAYS);
-        } catch(std::runtime_error &e) {
+        } catch (const std::runtime_error& e) {
             return error("LoadBlockIndex() : failed to initialize block database: %s", e.what());
         }
     }
@@ -3722,7 +3722,7 @@ bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
                 blkdat >> nSize;
                 if (nSize < 80 || nSize > MAX_BLOCK_SIZE)
                     continue;
-            } catch (const std::exception &) {
+            } catch (const std::exception&) {
                 // no valid block header found; don't complain
                 break;
             }
@@ -3782,11 +3782,11 @@ bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
                         mapBlocksUnknownParent.erase(it);
                     }
                 }
-            } catch (std::exception &e) {
+            } catch (const std::exception& e) {
                 LogPrintf("%s : Deserialize or I/O error - %s", __func__, e.what());
             }
         }
-    } catch(std::runtime_error &e) {
+    } catch (const std::runtime_error& e) {
         AbortNode(std::string("System error: ") + e.what());
     }
     if (nLoaded > 0)
@@ -5146,7 +5146,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
                     ss << ": hash " << hash.ToString();
                 }
                 LogPrint("net", "Reject %s\n", SanitizeString(ss.str()));
-            } catch (std::ios_base::failure& e) {
+            } catch (const std::ios_base::failure&) {
                 // Avoid feedback loops by preventing reject messages from triggering a new reject message.
                 LogPrint("net", "Unparseable reject message received\n");
             }
@@ -5251,7 +5251,7 @@ bool ProcessMessages(CNode* pfrom)
             fRet = ProcessMessage(pfrom, strCommand, vRecv, msg.nTime);
             boost::this_thread::interruption_point();
         }
-        catch (std::ios_base::failure& e)
+        catch (const std::ios_base::failure& e)
         {
             pfrom->PushMessage("reject", strCommand, REJECT_MALFORMED, string("error parsing message"));
             if (strstr(e.what(), "end of data"))
@@ -5269,10 +5269,10 @@ bool ProcessMessages(CNode* pfrom)
                 PrintExceptionContinue(&e, "ProcessMessages()");
             }
         }
-        catch (boost::thread_interrupted) {
+        catch (const boost::thread_interrupted&) {
             throw;
         }
-        catch (std::exception& e) {
+        catch (const std::exception& e) {
             PrintExceptionContinue(&e, "ProcessMessages()");
         } catch (...) {
             PrintExceptionContinue(NULL, "ProcessMessages()");
@@ -5588,7 +5588,7 @@ bool CBlockUndo::ReadFromDisk(const CDiskBlockPos &pos, const uint256 &hashBlock
         filein >> *this;
         filein >> hashChecksum;
     }
-    catch (std::exception &e) {
+    catch (const std::exception& e) {
         return error("%s : Deserialize or I/O error - %s", __func__, e.what());
     }
 
