@@ -1,4 +1,4 @@
-TESTS += test/test_crown test/bitcoin-util-test.py
+TESTS += test/test_crown
 bin_PROGRAMS += test/test_crown
 TEST_SRCDIR = test
 TEST_BINARY=test/test_crown$(EXEEXT)
@@ -110,6 +110,8 @@ crown_test_clean : FORCE
 	rm -f $(CLEAN_BITCOIN_TEST) $(test_test_crown_OBJECTS) $(TEST_BINARY)
 
 check-local:
+	@echo "Running test/bitcoin-util-test.py..."
+	$(AM_V_at)srcdir=$(srcdir) PYTHONPATH=$(builddir)/test $(srcdir)/test/bitcoin-util-test.py
 	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C secp256k1 check
 
 %.json.h: %.json
