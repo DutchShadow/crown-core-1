@@ -270,7 +270,7 @@ void CSystemnodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
         // we might have to ask for a systemnode entry once
         AskForSN(pfrom, snp.vin);
 
-    } 
+    }
     else if (strCommand == "sndseg") { //Get Systemnode list or specific entry
         CTxIn vin;
         vRecv >> vin;
@@ -428,7 +428,7 @@ CSystemnode *CSystemnodeMan::Find(const CService& addr)
     return NULL;
 }
 
-// 
+//
 // Deterministically select the oldest/best systemnode to pay on the network
 //
 CSystemnode* CSystemnodeMan::GetNextSystemnodeInQueueForPayment(int nBlockHeight, bool fFilterSigTime, int& nCount)
@@ -449,7 +449,7 @@ CSystemnode* CSystemnodeMan::GetNextSystemnodeInQueueForPayment(int nBlockHeight
         if(!sn.IsEnabled()) continue;
 
         // //check protocol version
-        if(sn.protocolVersion < MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION) continue;
+        if(sn.protocolVersion < systemnodePayments.GetMinSystemnodePaymentsProto()) continue;
 
         //it's in the list (up to 8 entries ahead of current block to allow propagation) -- so let's skip it
         if(systemnodePayments.IsScheduled(sn, nBlockHeight)) continue;
@@ -476,7 +476,7 @@ CSystemnode* CSystemnodeMan::GetNextSystemnodeInQueueForPayment(int nBlockHeight
     //  -- 1/100 payments should be a double payment on mainnet - (1/(3000/10))*2
     //  -- (chance per block * chances before IsScheduled will fire)
     int nTenthNetwork = CountEnabled()/10;
-    int nCountTenth = 0; 
+    int nCountTenth = 0;
     arith_uint256 nHigh = 0;
     BOOST_FOREACH (PAIRTYPE(int64_t, CTxIn)& s, vecSystemnodeLastPaid) {
         CSystemnode* pmn = Find(s.second);
@@ -575,7 +575,7 @@ void CSystemnodeMan::Remove(CTxIn vin)
 int CSystemnodeMan::CountEnabled(int protocolVersion)
 {
     int i = 0;
-    protocolVersion = protocolVersion == -1 ? MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION : protocolVersion;
+    protocolVersion = protocolVersion == -1 ? systemnodePayments.GetMinSystemnodePaymentsProto() : protocolVersion;
 
     BOOST_FOREACH(CSystemnode& sn, vSystemnodes) {
         sn.Check();
@@ -602,7 +602,7 @@ void CSystemnodeMan::DsegUpdate(CNode* pnode)
             }
         }
     }
-    
+
     pnode->PushMessage("sndseg", CTxIn());
     int64_t askAgain = GetTime() + SYSTEMNODES_DSEG_SECONDS;
     mWeAskedForSystemnodeList[pnode->addr] = askAgain;
@@ -710,11 +710,11 @@ void CSystemnodeMan::CheckAndRemove(bool forceExpiredRemoval)
         if((*it).activeState == CSystemnode::SYSTEMNODE_REMOVE ||
                 (*it).activeState == CSystemnode::SYSTEMNODE_VIN_SPENT ||
                 (forceExpiredRemoval && (*it).activeState == CSystemnode::SYSTEMNODE_EXPIRED) ||
-                (*it).protocolVersion < MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION) {
+                (*it).protocolVersion < systemnodePayments.GetMinSystemnodePaymentsProto()) {
             LogPrint("systemnode", "CSystemnodeMan: Removing inactive Systemnode %s - %i now\n", (*it).addr.ToString(), size() - 1);
 
             //erase all of the broadcasts we've seen from this vin
-            // -- if we missed a few pings and the node was removed, this will allow is to get it back without them 
+            // -- if we missed a few pings and the node was removed, this will allow is to get it back without them
             //    sending a brand new snb
             map<uint256, CSystemnodeBroadcast>::iterator it3 = mapSeenSystemnodeBroadcast.begin();
             while(it3 != mapSeenSystemnodeBroadcast.end()){

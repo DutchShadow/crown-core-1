@@ -56,7 +56,7 @@ bool CSystemnodeSync::IsBlockchainSynced()
 }
 
 void CSystemnodeSync::Reset()
-{   
+{
     lastSystemnodeList = 0;
     lastSystemnodeWinner = 0;
     lastBudgetItem = 0;
@@ -163,7 +163,7 @@ void CSystemnodeSync::ProcessMessage(CNode* pfrom, std::string& strCommand, CDat
                 countSystemnodeWinner++;
                 break;
         }
-        
+
         LogPrintf("CSystemnodeSync:ProcessMessage - snssc - got inventory count %d %d\n", nItemID, nCount);
     }
 }
@@ -188,7 +188,7 @@ void CSystemnodeSync::Process()
     if(tick++ % SYSTEMNODE_SYNC_TIMEOUT != 0) return;
 
     if(IsSynced()) {
-        /* 
+        /*
             Resync if we lose all systemnodes from sleep/wake or failure to sync originally
         */
         if(snodeman.CountEnabled() == 0) {
@@ -221,7 +221,7 @@ void CSystemnodeSync::Process()
             if(RequestedSystemnodeAttempt <= 2) {
                 pnode->PushMessage("getsporks"); //get current network sporks
             } else if(RequestedSystemnodeAttempt < 4) {
-                snodeman.DsegUpdate(pnode); 
+                snodeman.DsegUpdate(pnode);
             } else if(RequestedSystemnodeAttempt < 6) {
                 int nMnCount = snodeman.CountEnabled();
                 pnode->PushMessage("snget", nMnCount); //sync payees
@@ -242,11 +242,11 @@ void CSystemnodeSync::Process()
             pnode->PushMessage("getsporks"); //get current network sporks
             if(RequestedSystemnodeAttempt >= 2) GetNextAsset();
             RequestedSystemnodeAttempt++;
-            
+
             return;
         }
 
-        if (pnode->nVersion >= MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION) {
+        if (pnode->nVersion >= systemnodePayments.GetMinSystemnodePaymentsProto()) {
 
             if(RequestedSystemnodeAssets == SYSTEMNODE_SYNC_LIST) {
                 if(fDebug) LogPrintf("CSystemnodeSync::Process() - lastSystemnodeList %lld (GetTime() - SYSTEMNODE_SYNC_TIMEOUT) %lld\n", lastSystemnodeList, GetTime() - SYSTEMNODE_SYNC_TIMEOUT);

@@ -235,6 +235,13 @@ void DumpSystemnodePayments()
     LogPrintf("Budget dump finished  %dms\n", GetTimeMillis() - nStart);
 }
 
+int CSystemnodePayments::GetMinSystemnodePaymentsProto() const
+{
+    return IsSporkActive(SPORK_15_SYSTEMNODE_PAY_UPDATED_NODES)
+            ? MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION_2
+            : MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION_1;
+}
+
 void CSystemnodePayments::ProcessMessageSystemnodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
 {
     if(!systemnodeSync.IsBlockchainSynced()) return;
@@ -495,7 +502,7 @@ bool CSystemnodePaymentWinner::IsValid(CNode* pnode, std::string& strError)
     int n = snodeman.GetSystemnodeRank(vinSystemnode, nBlockHeight-100, MIN_MNW_PEER_PROTO_VERSION);
 
     if(n > MNPAYMENTS_SIGNATURES_TOTAL)
-    {    
+    {
         //It's common to have systemnodes mistakenly think they are in the top 10
         // We don't want to print all of these messages, or punish them unless they're way off
         if(n > MNPAYMENTS_SIGNATURES_TOTAL*2)
@@ -594,7 +601,7 @@ bool CSystemnodePayments::AddWinningSystemnode(CSystemnodePaymentWinner& winnerI
 
     {
         LOCK2(cs_mapSystemnodePayeeVotes, cs_mapSystemnodeBlocks);
-    
+
         if(mapSystemnodePayeeVotes.count(winnerIn.GetHash())){
            return false;
         }
@@ -669,7 +676,7 @@ void CSystemnodePayments::Sync(CNode* node, int nCountNeeded)
     node->PushMessage("snssc", SYSTEMNODE_SYNC_SNW, nInvCount);
 }
 
-// Is this systemnode scheduled to get paid soon? 
+// Is this systemnode scheduled to get paid soon?
 // -- Only look ahead up to 8 blocks to allow for propagation of the latest 2 winners
 bool CSystemnodePayments::IsScheduled(CSystemnode& sn, int nNotBlockHeight)
 {

@@ -83,7 +83,7 @@ bool CSystemnodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled, bool fChec
 
     // see if we have this Systemnode
     CSystemnode* psn = snodeman.Find(vin);
-    if(psn != NULL && psn->protocolVersion >= MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION)
+    if(psn != NULL && psn->protocolVersion >= systemnodePayments.GetMinSystemnodePaymentsProto())
     {
         if (fRequireEnabled && !psn->IsEnabled()) return false;
 
@@ -248,7 +248,7 @@ uint256 CSystemnode::CalculateScore(int mod, int64_t nBlockHeight)
 //
 bool CSystemnode::UpdateFromNewBroadcast(CSystemnodeBroadcast& snb)
 {
-    if(snb.sigTime > sigTime) {    
+    if(snb.sigTime > sigTime) {
         pubkey2 = snb.pubkey2;
         sigTime = snb.sigTime;
         sig = snb.sig;
@@ -337,7 +337,7 @@ int64_t CSystemnode::GetLastPaid() {
     uint256 hash =  ss.GetHash();
 
     // use a deterministic offset to break a tie -- 2.5 minutes
-    int64_t nOffset = UintToArith256(hash).GetCompact(false) % 150; 
+    int64_t nOffset = UintToArith256(hash).GetCompact(false) % 150;
 
     if (chainActive.Tip() == NULL) return false;
 
@@ -353,7 +353,7 @@ int64_t CSystemnode::GetLastPaid() {
 
         if(systemnodePayments.mapSystemnodeBlocks.count(BlockReading->nHeight)){
             /*
-                Search for this payee, with at least 2 votes. This will aid in consensus allowing the network 
+                Search for this payee, with at least 2 votes. This will aid in consensus allowing the network
                 to converge on the same payees quickly, then keep the same schedule.
             */
             if(systemnodePayments.mapSystemnodeBlocks[BlockReading->nHeight].HasPayeeWithVotes(snpayee, 2)){
@@ -383,7 +383,7 @@ bool CSystemnodeBroadcast::CheckAndUpdate(int& nDos)
         return false;
     }
 
-    if(protocolVersion < MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION) {
+    if(protocolVersion < systemnodePayments.GetMinSystemnodePaymentsProto()) {
         LogPrintf("snb - ignoring outdated systemnode %s protocol version %d\n", vin.ToString(), protocolVersion);
         return false;
     }
