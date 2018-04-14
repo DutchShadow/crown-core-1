@@ -32,6 +32,8 @@ Note: v0.10 and v0.12 in this article mean the versions of Bitcoin Core, not Cro
 Publish
 =======
 
+Make sure you're on Ubuntu 14.04. Ubuntu 16.04's g++ compiler isn't compatible.
+
 First, build "depends":
 
 ```bash
