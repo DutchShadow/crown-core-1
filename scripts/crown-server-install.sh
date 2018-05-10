@@ -11,6 +11,7 @@ LATEST_RELEASE="v0.12.4.1"
 
 systemnode=false
 masternode=false
+testnet=false
 help=false
 install=false
 unknown=()
@@ -46,6 +47,10 @@ handle_arguments()
                 ;;
             -s|--systemnode)
                 systemnode=true
+                shift
+                ;;
+            -t|--testnet)
+                testnet=true
                 shift
                 ;;
             -p|--privkey)
@@ -161,15 +166,18 @@ configure_conf() {
     echo "rpcallowip=127.0.0.1" >> .crown/crown.conf 
     echo "rpcuser=crowncoinrpc">> .crown/crown.conf 
     echo "rpcpassword="$PW >> .crown/crown.conf 
-    echo "listen=1" >> .crown/crown.conf 
-    echo "server=1" >>.crown/crown.conf 
-    echo "externalip="$IP >>.crown/crown.conf 
+    echo "listen=1" >> .crown/crown.conf
+    echo "server=1" >> .crown/crown.conf
+    if [ "$testnet" = true ] ; then
+        echo "testnet=1" >> .crown/crown.conf
+    fi
+    echo "externalip="$IP >> .crown/crown.conf
     if [ "$systemnode" = true ] ; then
-        echo "systemnode=1" >>.crown/crown.conf
-        echo "systemnodeprivkey="$privkey >>.crown/crown.conf
+        echo "systemnode=1" >> .crown/crown.conf
+        echo "systemnodeprivkey="$privkey >> .crown/crown.conf
     elif [ "$masternode" = true ] ; then
-        echo "masternode=1" >>.crown/crown.conf
-        echo "masternodeprivkey="$privkey >>.crown/crown.conf
+        echo "masternode=1" >> .crown/crown.conf
+        echo "masternodeprivkey="$privkey >> .crown/crown.conf
     fi
     cat .crown/crown.conf
 }
