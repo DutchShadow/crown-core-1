@@ -8,6 +8,7 @@
 # Setup crown server or update existing one
 
 LATEST_RELEASE="v0.12.4.1"
+TESTNET_PACKAGE="http://128.199.100.139/artifacts.zip"
 
 systemnode=false
 masternode=false
@@ -142,8 +143,12 @@ download_package() {
         dir=$HOME/crown-temp
         mkdir -p $dir
     fi
-    # Change this later to take latest release version.
-    wget "https://github.com/Crowndev/crowncoin/releases/download/$LATEST_RELEASE/Crown-Linux64.zip" -O $dir/crown.zip
+    if [ "$testnet" = true ] ; then
+        wget $TESTNET_PACKAGE -O $dir/crown.zip
+    else
+        # Change this later to take latest release version.
+        wget "https://github.com/Crowndev/crowncoin/releases/download/$LATEST_RELEASE/Crown-Linux64.zip" -O $dir/crown.zip
+    fi
 }
 
 install_package() {
