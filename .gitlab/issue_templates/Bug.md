@@ -1,27 +1,16 @@
 ### Summary
-(Summarize the symptoms of the bug you encountered.)
 
-### Steps to reproduce
-(How one can reproduce the issue, step by step.)
+### Repro steps (in detail)
 
 ### Expected behavior
-(What is supposed to happen.)
 
-### Problematic behavior
-(What actually happens.)
+### Actual behavior
 
-### Crown-core environment info
-(The OS version, like Ubuntu 16.04.)
+### Crown-core environment info (Ubuntu 16.04, etc)
 
-### Crown-core application info
-(The wallet version, like v0.12.4.1; link to the pipeline/build if possible.)
+### Crown-core application info (wallet version, like v0.12.4.1; add a link to the pipeline/build if possible)
 
-### Relevant logs and/or screenshots
-(Paste any relevant logs - please use code blocks (```) to format console output,
-logs, and code; it's very hard to read otherwise.)
-
-### Possible fixes
-(Any comments on what you think might be responsible for the problem, if you have particular insight.)
+Please add any relevant logs and/or screenshots
 
 /label ~"Type: Bug"
 /cc @finjosh
