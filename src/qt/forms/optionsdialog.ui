@@ -395,11 +395,8 @@
          <item>
           <widget class="QValueComboBox" name="lang">
            <property name="toolTip">
-<<<<<<< HEAD
-            <string>The user interface language can be set here. This setting will take effect after restarting Crown.</string>
-=======
+            <string>The user interface language can be set here. This setting will take effect after restarting Crown Core.</string>
             <string>The user interface language can be set here. This setting will take effect after restarting Bitcoin Core.</string>
->>>>>>> c63b47d... Merge pull request #5341
            </property>
           </widget>
          </item>
