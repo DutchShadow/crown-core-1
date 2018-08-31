@@ -504,6 +504,9 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, un
                 break;
 
                 case OP_DROP:
+                case OP_REG_NEW:
+                case OP_REG_UPDATE:
+                case OP_UNREG:
                 {
                     // (x -- )
                     if (stack.size() < 1)

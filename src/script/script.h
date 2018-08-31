@@ -164,6 +164,10 @@ enum opcodetype
     OP_NOP9 = 0xb8,
     OP_NOP10 = 0xb9,
 
+    // registration
+    OP_REG_NEW = 0xc1,
+    OP_REG_UPDATE = 0xc2,
+    OP_UNREG = 0xc3,
 
     // template matching params
     OP_SMALLDATA = 0xf9,

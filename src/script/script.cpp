@@ -150,6 +150,11 @@ const char* GetOpName(opcodetype opcode)
     case OP_NOP9                   : return "OP_NOP9";
     case OP_NOP10                  : return "OP_NOP10";
 
+    // registration
+    case OP_REG_NEW                : return "OP_REG_NEW";
+    case OP_REG_UPDATE             : return "OP_REG_UPDATE";
+    case OP_UNREG                  : return "OP_UNREG";
+
     case OP_INVALIDOPCODE          : return "OP_INVALIDOPCODE";
 
     // Note:
