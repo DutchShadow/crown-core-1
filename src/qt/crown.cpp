@@ -1,7 +1,7 @@
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2014 The Bitcoin Core developers
 // Copyright (c) 2014-2015 The Dash developers
-// Copyright (c) 2014-2018 The Crown developers
-// Distributed under the MIT/X11 software license, see the accompanying
+// Copyright (c) 2014-2018 Crown Core developers
+// Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
@@ -193,7 +193,7 @@ private:
     bool execute_restart;
 
     /// Pass fatal exception message to UI thread
-    void handleRunawayException(std::exception *e);
+    void handleRunawayException(const std::exception *e);
 };
 
 /** Main Crown application object */
@@ -261,7 +261,7 @@ BitcoinCore::BitcoinCore():
 {
 }
 
-void BitcoinCore::handleRunawayException(std::exception *e)
+void BitcoinCore::handleRunawayException(const std::exception *e)
 {
     PrintExceptionContinue(e, "Runaway exception");
     emit runawayException(QString::fromStdString(strMiscWarning));
@@ -283,7 +283,7 @@ void BitcoinCore::initialize()
             StartDummyRPCThread();
         }
         emit initializeResult(rv);
-    } catch (std::exception& e) {
+    } catch (const std::exception& e) {
         handleRunawayException(&e);
     } catch (...) {
         handleRunawayException(NULL);
@@ -324,7 +324,7 @@ void BitcoinCore::shutdown()
         Shutdown();
         qDebug() << __func__ << ": Shutdown finished";
         emit shutdownResult(1);
-    } catch (std::exception& e) {
+    } catch (const std::exception& e) {
         handleRunawayException(&e);
     } catch (...) {
         handleRunawayException(NULL);
@@ -604,7 +604,7 @@ int main(int argc, char *argv[])
     }
     try {
         ReadConfigFile(mapArgs, mapMultiArgs);
-    } catch(std::exception &e) {
+    } catch(const std::exception& e) {
         QMessageBox::critical(0, QObject::tr("Crown Core"),
                               QObject::tr("Error: Cannot parse configuration file: %1. Only use key=value syntax.").arg(e.what()));
         return false;
@@ -695,7 +695,7 @@ int main(int argc, char *argv[])
         app.exec();
         app.requestShutdown();
         app.exec();
-    } catch (std::exception& e) {
+    } catch (const std::exception& e) {
         PrintExceptionContinue(&e, "Runaway exception");
         app.handleRunawayException(QString::fromStdString(strMiscWarning));
     } catch (...) {

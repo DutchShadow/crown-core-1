@@ -1,6 +1,6 @@
 #!/bin/bash
-# Copyright (c) 2018 The Crown developers
-# Distributed under the MIT/X11 software license, see the accompanying
+# Copyright (c) 2018 Crown Core developers
+# Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 # Usage: ./crown-server-install.sh [OPTION]...

@@ -1,5 +1,5 @@
 // Copyright (c) 2013-2014 The Bitcoin Core developers
-// Distributed under the MIT/X11 software license, see the accompanying
+// Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "rpcserver.h"
@@ -59,8 +59,8 @@ BOOST_AUTO_TEST_CASE(rpc_addmultisig)
     string short2(address1Hex + 1, address1Hex + sizeof(address1Hex)); // first byte missing
     BOOST_CHECK_THROW(addmultisig(createArgs(2, short2.c_str()), false), runtime_error);
 }
-/*
-BOOST_AUTO_TEST_CASE(rpc_wallet, * boost::unit_test::disabled())
+
+BOOST_AUTO_TEST_CASE(rpc_wallet)
 {
     // Test RPC calls for various wallet statistics
     Value r;
@@ -83,9 +83,9 @@ BOOST_AUTO_TEST_CASE(rpc_wallet, * boost::unit_test::disabled())
     CPubKey setaccountDemoPubkey = pwalletMain->GenerateNewKey();
     CBitcoinAddress setaccountDemoAddress = CBitcoinAddress(CTxDestination(setaccountDemoPubkey.GetID()));
 
-    // *********************************
-    // * 			setaccount
-    // *********************************
+    /*********************************
+     * 			setaccount
+     *********************************/
     BOOST_CHECK_NO_THROW(CallRPC("setaccount " + setaccountDemoAddress.ToString() + " nullaccount"));
     //* 1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XZ is not owned by the test wallet.
     BOOST_CHECK_THROW(CallRPC("setaccount XnhQgp2Y11hPGWaCB7rdGF5xLxjf2kBZCb nullaccount"), runtime_error);
@@ -93,9 +93,16 @@ BOOST_AUTO_TEST_CASE(rpc_wallet, * boost::unit_test::disabled())
     //* 1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4X (33 chars) is an illegal address (should be 34 chars)
     BOOST_CHECK_THROW(CallRPC("setaccount XnhQgp2Y11hPGWaCB7rdGF5xLxjf2kBZC nullaccount"), runtime_error);
 
-    // *********************************
-    // * 			listunspent
-    // *********************************
+
+    /*********************************
+     *                  getbalance
+     *********************************/
+    BOOST_CHECK_NO_THROW(CallRPC("getbalance"));
+    BOOST_CHECK_NO_THROW(CallRPC("getbalance " + demoAddress.ToString()));
+
+    /*********************************
+     * 			listunspent
+     *********************************/
     BOOST_CHECK_NO_THROW(CallRPC("listunspent"));
     BOOST_CHECK_THROW(CallRPC("listunspent string"), runtime_error);
     BOOST_CHECK_THROW(CallRPC("listunspent 0 string"), runtime_error);
@@ -106,7 +113,7 @@ BOOST_AUTO_TEST_CASE(rpc_wallet, * boost::unit_test::disabled())
 
     /*********************************
      * 		listreceivedbyaddress
-     *********************************
+     *********************************/
     BOOST_CHECK_NO_THROW(CallRPC("listreceivedbyaddress"));
     BOOST_CHECK_NO_THROW(CallRPC("listreceivedbyaddress 0"));
     BOOST_CHECK_THROW(CallRPC("listreceivedbyaddress not_int"), runtime_error);
@@ -114,9 +121,9 @@ BOOST_AUTO_TEST_CASE(rpc_wallet, * boost::unit_test::disabled())
     BOOST_CHECK_NO_THROW(CallRPC("listreceivedbyaddress 0 true"));
     BOOST_CHECK_THROW(CallRPC("listreceivedbyaddress 0 true extra"), runtime_error);
 
-    // *********************************
-    // * 		listreceivedbyaccount
-    // *********************************
+    /*********************************
+     * 		listreceivedbyaccount
+     *********************************/
     BOOST_CHECK_NO_THROW(CallRPC("listreceivedbyaccount"));
     BOOST_CHECK_NO_THROW(CallRPC("listreceivedbyaccount 0"));
     BOOST_CHECK_THROW(CallRPC("listreceivedbyaccount not_int"), runtime_error);
@@ -124,9 +131,38 @@ BOOST_AUTO_TEST_CASE(rpc_wallet, * boost::unit_test::disabled())
     BOOST_CHECK_NO_THROW(CallRPC("listreceivedbyaccount 0 true"));
     BOOST_CHECK_THROW(CallRPC("listreceivedbyaccount 0 true extra"), runtime_error);
 
-    // *********************************
-    // * 		getrawchangeaddress
-    // *********************************
+    /*********************************
+     *          listsinceblock
+     *********************************/
+    BOOST_CHECK_NO_THROW(CallRPC("listsinceblock"));
+
+    /*********************************
+     *          listtransactions
+     *********************************/
+    BOOST_CHECK_NO_THROW(CallRPC("listtransactions"));
+    BOOST_CHECK_NO_THROW(CallRPC("listtransactions " + demoAddress.ToString()));
+    BOOST_CHECK_NO_THROW(CallRPC("listtransactions " + demoAddress.ToString() + " 20"));
+    BOOST_CHECK_NO_THROW(CallRPC("listtransactions " + demoAddress.ToString() + " 20 0"));
+    BOOST_CHECK_THROW(CallRPC("listtransactions " + demoAddress.ToString() + " not_int"), runtime_error);
+
+    /*********************************
+     *          listlockunspent
+     *********************************/
+    BOOST_CHECK_NO_THROW(CallRPC("listlockunspent"));
+
+    /*********************************
+     *          listaccounts
+     *********************************/
+    BOOST_CHECK_NO_THROW(CallRPC("listaccounts"));
+
+    /*********************************
+     *          listaddressgroupings
+     *********************************/
+    BOOST_CHECK_NO_THROW(CallRPC("listaddressgroupings"));
+
+    /*********************************
+     * 		getrawchangeaddress
+     *********************************/
     BOOST_CHECK_NO_THROW(CallRPC("getrawchangeaddress"));
 
     // *********************************
@@ -171,13 +207,12 @@ BOOST_AUTO_TEST_CASE(rpc_wallet, * boost::unit_test::disabled())
 
     /*********************************
      * 		getaddressesbyaccount
-     *********************************
+     *********************************/
     BOOST_CHECK_THROW(CallRPC("getaddressesbyaccount"), runtime_error);
     BOOST_CHECK_NO_THROW(retValue = CallRPC("getaddressesbyaccount " + strAccount));
     Array arr = retValue.get_array();
     BOOST_CHECK(arr.size() > 0);
     BOOST_CHECK(CBitcoinAddress(arr[0].get_str()).Get() == demoAddress.Get());
 }
-*/
 
 BOOST_AUTO_TEST_SUITE_END()
