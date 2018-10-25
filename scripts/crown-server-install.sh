@@ -190,7 +190,11 @@ configure_conf() {
 configure_firewall() {
     sudo ufw allow ssh/tcp
     sudo ufw limit ssh/tcp
-    sudo ufw allow 9340/tcp
+    if [ "$testnet" = true ] ; then
+        sudo ufw allow 19340/tcp
+    else
+        sudo ufw allow 9340/tcp
+    fi
     sudo ufw logging on
     sudo ufw --force enable
 }
