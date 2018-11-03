@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -122,7 +123,7 @@ CMasternode::CMasternode(const CMasternodeBroadcast& mnb)
 //
 // When a new masternode broadcast is sent, update our information
 //
-bool CMasternode::UpdateFromNewBroadcast(CMasternodeBroadcast& mnb)
+bool CMasternode::UpdateFromNewBroadcast(const CMasternodeBroadcast& mnb)
 {
     if(mnb.sigTime > sigTime) {    
         pubkey2 = mnb.pubkey2;
@@ -146,30 +147,27 @@ bool CMasternode::UpdateFromNewBroadcast(CMasternodeBroadcast& mnb)
 // the proof of work for that block. The further away they are the better, the furthest will win the election
 // and get paid this block
 //
-uint256 CMasternode::CalculateScore(int mod, int64_t nBlockHeight)
+arith_uint256 CMasternode::CalculateScore(int64_t nBlockHeight) const
 {
-    if(chainActive.Tip() == NULL) return uint256();
+    if(chainActive.Tip() == NULL)
+        return arith_uint256();
+
+    // Find the block hash where tx got MASTERNODE_MIN_CONFIRMATIONS
+    CBlockIndex *pblockIndex = chainActive[GetInputHeight(vin) + MASTERNODE_MIN_CONFIRMATIONS - 1];
+    if (!pblockIndex)
+        return arith_uint256();
+    uint256 collateralMinConfBlockHash = pblockIndex->GetBlockHash();
 
     uint256 hash = uint256();
-    uint256 aux = ArithToUint256(UintToArith256(vin.prevout.hash) + vin.prevout.n);
 
     if(!GetBlockHash(hash, nBlockHeight)) {
         LogPrintf("CalculateScore ERROR - nHeight %d - Returned 0\n", nBlockHeight);
-        return uint256();
+        return arith_uint256();
     }
 
     CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
-    ss << hash;
-    arith_uint256 hash2 = UintToArith256(ss.GetHash());
-
-    CHashWriter ss2(SER_GETHASH, PROTOCOL_VERSION);
-    ss2 << hash;
-    ss2 << aux;
-    arith_uint256 hash3 = UintToArith256(ss2.GetHash());
-
-    arith_uint256 r = (hash3 > hash2 ? hash3 - hash2 : hash2 - hash3);
-
-    return ArithToUint256(r);
+    ss << vin.prevout << collateralMinConfBlockHash << hash;
+    return UintToArith256(ss.GetHash());
 }
 
 void CMasternode::Check(bool forceCheck)
@@ -216,14 +214,15 @@ void CMasternode::Check(bool forceCheck)
     activeState = MASTERNODE_ENABLED; // OK
 }
 
-bool CMasternode::IsValidNetAddr()
+bool CMasternode::IsValidNetAddr() const
 {
     // TODO: regtest is fine with any addresses for now,
     // should probably be a bit smarter if one day we start to implement tests for this
     return (addr.IsIPv4() && addr.IsRoutable());
 }
 
-int64_t CMasternode::SecondsSincePayment() {
+int64_t CMasternode::SecondsSincePayment() const
+{
     CScript pubkeyScript;
     pubkeyScript = GetScriptForDestination(pubkey.GetID());
 
@@ -240,7 +239,8 @@ int64_t CMasternode::SecondsSincePayment() {
     return month + UintToArith256(hash).GetCompact(false);
 }
 
-int64_t CMasternode::GetLastPaid() {
+int64_t CMasternode::GetLastPaid() const
+{
     CBlockIndex* pindexPrev = chainActive.Tip();
     if(pindexPrev == NULL) return false;
 
@@ -371,6 +371,15 @@ bool CMasternodeBroadcast::Create(std::string strService, std::string strKeyMast
         return false;
     }
 
+    int age = GetInputAge(txin);
+    if (age < MASTERNODE_MIN_CONFIRMATIONS)
+    {
+        strErrorMessage = strprintf("Input must have at least %d confirmations. Now it has %d",
+                                     MASTERNODE_MIN_CONFIRMATIONS, age);
+        LogPrintf("CSystemnodeBroadcast::Create -- %s\n", strErrorMessage);
+        return false;
+    }
+
     CService service = CService(strService);
     if(Params().NetworkID() == CBaseChainParams::MAIN) {
         if(service.GetPort() != 9340) {
@@ -419,7 +428,7 @@ bool CMasternodeBroadcast::Create(CTxIn txin, CService service, CKey keyCollater
     return true;
 }
 
-bool CMasternodeBroadcast::CheckAndUpdate(int& nDos)
+bool CMasternodeBroadcast::CheckAndUpdate(int& nDos) const
 {
     nDos = 0;
 
@@ -551,7 +560,7 @@ bool CMasternodeBroadcast::CheckAndUpdate(int& nDos)
     return true;
 }
 
-bool CMasternodeBroadcast::CheckInputsAndAdd(int& nDoS)
+bool CMasternodeBroadcast::CheckInputsAndAdd(int& nDoS) const
 {
     // we are a masternode with the same vin (i.e. already activated) and this mnb is ours (matches our Masternode privkey)
     // so nothing to do here for us
@@ -639,13 +648,13 @@ bool CMasternodeBroadcast::CheckInputsAndAdd(int& nDoS)
     return true;
 }
 
-void CMasternodeBroadcast::Relay()
+void CMasternodeBroadcast::Relay() const
 {
     CInv inv(MSG_MASTERNODE_ANNOUNCE, GetHash());
     RelayInv(inv);
 }
 
-bool CMasternodeBroadcast::Sign(CKey& keyCollateralAddress)
+bool CMasternodeBroadcast::Sign(const CKey& keyCollateralAddress)
 {
     std::string errorMessage;
 
@@ -664,7 +673,7 @@ bool CMasternodeBroadcast::Sign(CKey& keyCollateralAddress)
     return true;
 }
 
-bool CMasternodeBroadcast::VerifySignature()
+bool CMasternodeBroadcast::VerifySignature() const
 {
     std::string errorMessage;
 
@@ -689,7 +698,7 @@ CMasternodePing::CMasternodePing()
     vchSig = std::vector<unsigned char>();
 }
 
-CMasternodePing::CMasternodePing(CTxIn& newVin)
+CMasternodePing::CMasternodePing(const CTxIn& newVin)
 {
     vin = newVin;
     blockHash = chainActive[chainActive.Height() - 12]->GetBlockHash();
@@ -698,7 +707,7 @@ CMasternodePing::CMasternodePing(CTxIn& newVin)
 }
 
 
-bool CMasternodePing::Sign(CKey& keyMasternode, CPubKey& pubKeyMasternode)
+bool CMasternodePing::Sign(const CKey& keyMasternode, const CPubKey& pubKeyMasternode)
 {
     std::string errorMessage;
     std::string strMasterNodeSignMessage;
@@ -719,7 +728,8 @@ bool CMasternodePing::Sign(CKey& keyMasternode, CPubKey& pubKeyMasternode)
     return true;
 }
 
-bool CMasternodePing::VerifySignature(CPubKey& pubKeyMasternode, int &nDos) {
+bool CMasternodePing::VerifySignature(const CPubKey& pubKeyMasternode, int &nDos) const
+{
     std::string strMessage = vin.ToString() + blockHash.ToString() + boost::lexical_cast<std::string>(sigTime);
     std::string errorMessage = "";
 
@@ -732,7 +742,7 @@ bool CMasternodePing::VerifySignature(CPubKey& pubKeyMasternode, int &nDos) {
     return true;
 }
 
-bool CMasternodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled, bool fCheckSigTimeOnly)
+bool CMasternodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled, bool fCheckSigTimeOnly) const
 {
     if (sigTime > GetAdjustedTime() + 60 * 60) {
         LogPrintf("CMasternodePing::CheckAndUpdate - Signature rejected, too far into the future %s\n", vin.ToString());
@@ -813,7 +823,7 @@ bool CMasternodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled, bool fChec
     return false;
 }
 
-void CMasternodePing::Relay()
+void CMasternodePing::Relay() const
 {
     CInv inv(MSG_MASTERNODE_PING, GetHash());
     RelayInv(inv);

@@ -1,6 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin developers
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -24,7 +25,7 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
-
+#include <openssl/sha.h>
 
 #ifndef WIN32
 // for posix_fallocate
@@ -198,19 +199,41 @@ static boost::once_flag debugPrintInitFlag = BOOST_ONCE_INIT;
  * in a thread-safe manner the first time called:
  */
 static FILE* fileout = NULL;
+static FILE* ixFileout = NULL;
 static boost::mutex* mutexDebugLog = NULL;
 
-static void DebugPrintInit()
-{
-    assert(fileout == NULL);
-    assert(mutexDebugLog == NULL);
+namespace {
+    FILE* OpenFile(const std::string& fileName)
+    {
+        FILE* fout = NULL;
+        boost::filesystem::path pathDebug = GetDataDir() / fileName;
+        fout = fopen(pathDebug.string().c_str(), "a");
+        if (fout) setbuf(fout, NULL); // unbuffered
+        return fout;
+    }
 
-    boost::filesystem::path pathDebug = GetDataDir() / "debug.log";
-    fileout = fopen(pathDebug.string().c_str(), "a");
-    if (fileout) setbuf(fileout, NULL); // unbuffered
+    void DebugPrintInit()
+    {
+        assert(fileout == NULL);
+        assert(ixFileout == NULL);
+        assert(mutexDebugLog == NULL);
 
-    mutexDebugLog = new boost::mutex();
-}
+        fileout = OpenFile("debug.log");
+        ixFileout = OpenFile("instantsend.log");
+
+        mutexDebugLog = new boost::mutex();
+    }
+
+    const std::string SelectFileName(bool ix)
+    {
+        return ix ? "instantsend.log" : "debug.log";
+    }
+
+    FILE* SelectFile(bool ix)
+    {
+        return ix ? ixFileout : fileout;
+    }
+} // anon namespace
 
 bool LogAcceptCategory(const char* category)
 {
@@ -249,7 +272,7 @@ bool LogAcceptCategory(const char* category)
     return true;
 }
 
-int LogPrintStr(const std::string &str)
+int LogPrintStr(const std::string &str, bool ix)
 {
     int ret = 0; // Returns total number of characters written
     if (fPrintToConsole)
@@ -260,10 +283,13 @@ int LogPrintStr(const std::string &str)
     }
     else if (fPrintToDebugLog && AreBaseParamsConfigured())
     {
+        FILE* fout = SelectFile(ix);
+        const std::string fileName = SelectFileName(ix);
+
         static bool fStartedNewLine = true;
         boost::call_once(&DebugPrintInit, debugPrintInitFlag);
 
-        if (fileout == NULL)
+        if (fout == NULL)
             return ret;
 
         boost::mutex::scoped_lock scoped_lock(*mutexDebugLog);
@@ -271,20 +297,20 @@ int LogPrintStr(const std::string &str)
         // reopen the log file, if requested
         if (fReopenDebugLog) {
             fReopenDebugLog = false;
-            boost::filesystem::path pathDebug = GetDataDir() / "debug.log";
-            if (freopen(pathDebug.string().c_str(),"a",fileout) != NULL)
-                setbuf(fileout, NULL); // unbuffered
+            boost::filesystem::path pathDebug = GetDataDir() / fileName;
+            if (freopen(pathDebug.string().c_str(), "a", fout) != NULL)
+                setbuf(fout, NULL); // unbuffered
         }
 
         // Debug print useful for profiling
         if (fLogTimestamps && fStartedNewLine)
-            ret += fprintf(fileout, "%s ", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", GetTime()).c_str());
+            ret += fprintf(fout, "%s ", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", GetTime()).c_str());
         if (!str.empty() && str[str.size()-1] == '\n')
             fStartedNewLine = true;
         else
             fStartedNewLine = false;
 
-        ret = fwrite(str.data(), 1, str.size(), fileout);
+        ret = fwrite(str.data(), 1, str.size(), fout);
     }
 
     return ret;
@@ -801,4 +827,44 @@ void SetThreadPriority(int nPriority)
     setpriority(PRIO_PROCESS, 0, nPriority);
 #endif // PRIO_THREAD
 #endif // WIN32
+}
+
+std::string Sha256Sum(const std::string& filename)
+{
+    std::string result;
+    std::ifstream f;
+    f.open(filename.c_str(), std::ios_base::binary | std::ios_base::in | std::ios::ate);
+    if (!f) {
+        throw std::runtime_error("Sha256Sum() - Error: Bad file descriptor.");
+    }
+    std::ifstream::pos_type file_size = f.tellg();
+    SHA256_CTX ctx;
+    if (!SHA256_Init(&ctx)) {
+        throw std::runtime_error("Sha256Sum() - Error: SHA256 initialization failed.");
+    }
+    size_t size_left = file_size;
+    f.seekg(0, std::ios::beg);
+    while (size_left)
+    {
+        boost::scoped_array<char> buf(new char[4096]);
+        std::ifstream::pos_type read_size = size_left > sizeof(buf.get()) ? sizeof(buf.get()) : size_left;
+        f.read(buf.get(), read_size);
+        if (!f || !f.good()) {
+            throw std::runtime_error("Sha256Sum() - Error: Couldn't read file.");
+        }
+        if (!SHA256_Update(&ctx, buf.get(), read_size)) {
+            throw std::runtime_error("Sha256Sum() - Error: SHA256_Update failed.");
+        }
+        size_left -= read_size;
+    }
+    f.close();
+
+    unsigned char results[SHA256_DIGEST_LENGTH];
+    if (!SHA256_Final(results, &ctx)) {
+        throw std::runtime_error("Sha256Sum() - Error: SHA256_Final failed.");
+    }
+    for (int n = 0; n < SHA256_DIGEST_LENGTH; n++) {
+        result.append(strprintf("%02x", results[n]));
+    }
+    return result;
 }

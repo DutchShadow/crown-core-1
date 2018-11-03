@@ -1,5 +1,6 @@
 // Copyright (c) 2011-2014 The Bitcoin developers
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -187,8 +188,8 @@ void OverviewPage::setBalance(const CAmount& balance, const CAmount& unconfirmed
 
     static int cachedTxLocks = 0;
 
-    if(cachedTxLocks != nCompleteTXLocks){
-        cachedTxLocks = nCompleteTXLocks;
+    if(cachedTxLocks != GetInstantSend().GetCompleteLocksCount()){
+        cachedTxLocks = GetInstantSend().GetCompleteLocksCount();
         ui->listTransactions->update();
     }
 }

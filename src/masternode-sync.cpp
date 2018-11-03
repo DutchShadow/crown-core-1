@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -109,7 +110,7 @@ void CMasternodeSync::AddedMasternodeWinner(uint256 hash)
 void CMasternodeSync::AddedBudgetItem(uint256 hash)
 {
     if(budget.mapSeenMasternodeBudgetProposals.count(hash) || budget.mapSeenMasternodeBudgetVotes.count(hash) ||
-            budget.mapSeenFinalizedBudgets.count(hash) || budget.mapSeenFinalizedBudgetVotes.count(hash)) {
+            budget.mapSeenBudgetDrafts.count(hash) || budget.mapSeenBudgetDraftVotes.count(hash)) {
         if(mapSeenSyncBudget[hash] < MASTERNODE_SYNC_THRESHOLD) {
             lastBudgetItem = GetTime();
             mapSeenSyncBudget[hash]++;

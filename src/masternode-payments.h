@@ -1,8 +1,8 @@
-
-
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef MASTERNODE_PAYMENTS_H
 #define MASTERNODE_PAYMENTS_H
 
@@ -32,31 +32,6 @@ bool IsBlockPayeeValid(const CTransaction& txNew, int nBlockHeight);
 std::string GetRequiredPaymentsString(int nBlockHeight);
 bool IsBlockValueValid(const CBlock& block, int64_t nExpectedValue);
 void FillBlockPayee(CMutableTransaction& txNew, int64_t nFees);
-
-void DumpMasternodePayments();
-
-/** Save Masternode Payment Data (mnpayments.dat)
- */
-class CMasternodePaymentDB
-{
-private:
-    boost::filesystem::path pathDB;
-    std::string strMagicMessage;
-public:
-    enum ReadResult {
-        Ok,
-        FileError,
-        HashReadError,
-        IncorrectHash,
-        IncorrectMagicMessage,
-        IncorrectMagicNumber,
-        IncorrectFormat
-    };
-
-    CMasternodePaymentDB();
-    bool Write(const CMasternodePayments &objToSave);
-    ReadResult Read(CMasternodePayments& objToLoad, bool fDryRun = false);
-};
 
 class CMasternodePayee
 {
@@ -244,7 +219,7 @@ public:
     bool ProcessBlock(int nBlockHeight);
 
     void Sync(CNode* node, int nCountNeeded);
-    void CleanPaymentList();
+    void CheckAndRemove();
     int LastPayment(CMasternode& mn);
 
     bool GetBlockPayee(int nBlockHeight, CScript& payee);

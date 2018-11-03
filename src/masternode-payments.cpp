@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -20,167 +21,6 @@ CMasternodePayments masternodePayments;
 CCriticalSection cs_vecPayments;
 CCriticalSection cs_mapMasternodeBlocks;
 CCriticalSection cs_mapMasternodePayeeVotes;
-
-//
-// CMasternodePaymentDB
-//
-
-CMasternodePaymentDB::CMasternodePaymentDB()
-{
-    pathDB = GetDataDir() / "mnpayments.dat";
-    strMagicMessage = "MasternodePayments";
-}
-
-bool CMasternodePaymentDB::Write(const CMasternodePayments& objToSave)
-{
-    int64_t nStart = GetTimeMillis();
-
-    // serialize, checksum data up to that point, then append checksum
-    CDataStream ssObj(SER_DISK, CLIENT_VERSION);
-    ssObj << strMagicMessage; // masternode cache file specific magic message
-    ssObj << FLATDATA(Params().MessageStart()); // network specific magic number
-    ssObj << objToSave;
-    uint256 hash = Hash(ssObj.begin(), ssObj.end());
-    ssObj << hash;
-
-    // open output file, and associate with CAutoFile
-    FILE *file = fopen(pathDB.string().c_str(), "wb");
-    CAutoFile fileout(file, SER_DISK, CLIENT_VERSION);
-    if (fileout.IsNull())
-        return error("%s : Failed to open file %s", __func__, pathDB.string());
-
-    // Write and commit header, data
-    try {
-        fileout << ssObj;
-    }
-    catch (std::exception &e) {
-        return error("%s : Serialize or I/O error - %s", __func__, e.what());
-    }
-    fileout.fclose();
-
-    LogPrintf("Written info to mnpayments.dat  %dms\n", GetTimeMillis() - nStart);
-
-    return true;
-}
-
-CMasternodePaymentDB::ReadResult CMasternodePaymentDB::Read(CMasternodePayments& objToLoad, bool fDryRun)
-{
-
-    int64_t nStart = GetTimeMillis();
-    // open input file, and associate with CAutoFile
-    FILE *file = fopen(pathDB.string().c_str(), "rb");
-    CAutoFile filein(file, SER_DISK, CLIENT_VERSION);
-    if (filein.IsNull())
-    {
-        error("%s : Failed to open file %s", __func__, pathDB.string());
-        return FileError;
-    }
-
-    // use file size to size memory buffer
-    int fileSize = boost::filesystem::file_size(pathDB);
-    int dataSize = fileSize - sizeof(uint256);
-    // Don't try to resize to a negative number if file is small
-    if (dataSize < 0)
-        dataSize = 0;
-    vector<unsigned char> vchData;
-    vchData.resize(dataSize);
-    uint256 hashIn;
-
-    // read data and checksum from file
-    try {
-        filein.read((char *)&vchData[0], dataSize);
-        filein >> hashIn;
-    }
-    catch (std::exception &e) {
-        error("%s : Deserialize or I/O error - %s", __func__, e.what());
-        return HashReadError;
-    }
-    filein.fclose();
-
-    CDataStream ssObj(vchData, SER_DISK, CLIENT_VERSION);
-
-    // verify stored checksum matches input data
-    uint256 hashTmp = Hash(ssObj.begin(), ssObj.end());
-    if (hashIn != hashTmp)
-    {
-        error("%s : Checksum mismatch, data corrupted", __func__);
-        return IncorrectHash;
-    }
-
-
-    unsigned char pchMsgTmp[4];
-    std::string strMagicMessageTmp;
-    try {
-        // de-serialize file header (masternode cache file specific magic message) and ..
-        ssObj >> strMagicMessageTmp;
-
-        // ... verify the message matches predefined one
-        if (strMagicMessage != strMagicMessageTmp)
-        {
-            error("%s : Invalid masternode payement cache magic message", __func__);
-            return IncorrectMagicMessage;
-        }
-
-
-        // de-serialize file header (network specific magic number) and ..
-        ssObj >> FLATDATA(pchMsgTmp);
-
-        // ... verify the network matches ours
-        if (memcmp(pchMsgTmp, Params().MessageStart(), sizeof(pchMsgTmp)))
-        {
-            error("%s : Invalid network magic number", __func__);
-            return IncorrectMagicNumber;
-        }
-
-        // de-serialize data into CMasternodePayments object
-        ssObj >> objToLoad;
-    }
-    catch (std::exception &e) {
-        objToLoad.Clear();
-        error("%s : Deserialize or I/O error - %s", __func__, e.what());
-        return IncorrectFormat;
-    }
-
-    LogPrintf("Loaded info from mnpayments.dat  %dms\n", GetTimeMillis() - nStart);
-    LogPrintf("  %s\n", objToLoad.ToString());
-    if(!fDryRun) {
-        LogPrintf("Masternode payments manager - cleaning....\n");
-        objToLoad.CleanPaymentList();
-        LogPrintf("Masternode payments manager - result:\n");
-        LogPrintf("  %s\n", objToLoad.ToString());
-    }
-
-    return Ok;
-}
-
-void DumpMasternodePayments()
-{
-    int64_t nStart = GetTimeMillis();
-
-    CMasternodePaymentDB paymentdb;
-    CMasternodePayments tempPayments;
-
-    LogPrintf("Verifying mnpayments.dat format...\n");
-    CMasternodePaymentDB::ReadResult readResult = paymentdb.Read(tempPayments, true);
-    // there was an error and it was not an error on file opening => do not proceed
-    if (readResult == CMasternodePaymentDB::FileError)
-        LogPrintf("Missing budgets file - mnpayments.dat, will try to recreate\n");
-    else if (readResult != CMasternodePaymentDB::Ok)
-    {
-        LogPrintf("Error reading mnpayments.dat: ");
-        if(readResult == CMasternodePaymentDB::IncorrectFormat)
-            LogPrintf("magic is ok but data has invalid format, will try to recreate\n");
-        else
-        {
-            LogPrintf("file format is unknown or invalid, please fix it manually\n");
-            return;
-        }
-    }
-    LogPrintf("Writting info to mnpayments.dat...\n");
-    paymentdb.Write(masternodePayments);
-
-    LogPrintf("Budget dump finished  %dms\n", GetTimeMillis() - nStart);
-}
 
 bool IsBlockValueValid(const CBlock& block, int64_t nExpectedValue){
     CBlockIndex* pindexPrev = chainActive.Tip();
@@ -320,7 +160,7 @@ void CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFe
         }
     }
 
-    CAmount blockValue = GetBlockValue(pindexPrev->nBits, pindexPrev->nHeight, nFees);
+    CAmount blockValue = GetBlockValue(pindexPrev->nHeight, nFees);
     CAmount masternodePayment = GetMasternodePayment(pindexPrev->nHeight+1, blockValue);
 
     txNew.vout[0].nValue = blockValue;
@@ -342,9 +182,9 @@ void CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFe
 }
 
 int CMasternodePayments::GetMinMasternodePaymentsProto() {
-    return IsSporkActive(SPORK_10_MASTERNODE_PAY_UPDATED_NODES)
-            ? MIN_MASTERNODE_PAYMENT_PROTO_VERSION_2
-            : MIN_MASTERNODE_PAYMENT_PROTO_VERSION_1;
+    return IsSporkActive(SPORK_10_MASTERNODE_DONT_PAY_OLD_NODES)
+            ? MIN_MASTERNODE_PAYMENT_PROTO_VERSION_CURR
+            : MIN_MASTERNODE_PAYMENT_PROTO_VERSION_PREV;
 }
 
 void CMasternodePayments::ProcessMessageMasternodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
@@ -612,7 +452,7 @@ bool CMasternodePayments::IsTransactionValid(const CTransaction& txNew, int nBlo
     return true;
 }
 
-void CMasternodePayments::CleanPaymentList()
+void CMasternodePayments::CheckAndRemove()
 {
     LOCK2(cs_mapMasternodePayeeVotes, cs_mapMasternodeBlocks);
 

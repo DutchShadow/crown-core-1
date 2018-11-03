@@ -12,6 +12,13 @@
 #include "wallet.h"
 #include "init.h"
 #include "guiutil.h"
+#include "datetablewidgetitem.h"
+#include "privatekeywidget.h"
+#include "createmasternodedialog.h"
+#include "addresstablemodel.h"
+#include "transactiontablemodel.h"
+#include "optionsmodel.h"
+#include "startmissingdialog.h"
 
 #include <QTimer>
 #include <QMessageBox>
@@ -53,23 +60,26 @@ MasternodeList::MasternodeList(QWidget *parent) :
     ui->tableWidgetMyMasternodes->setContextMenuPolicy(Qt::CustomContextMenu);
 
     QAction *startAliasAction = new QAction(tr("Start alias"), this);
+    QAction *editAction = new QAction(tr("Edit"), this);
     contextMenu = new QMenu();
     contextMenu->addAction(startAliasAction);
+    contextMenu->addAction(editAction);
     connect(ui->tableWidgetMyMasternodes, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(showContextMenu(const QPoint&)));
     connect(startAliasAction, SIGNAL(triggered()), this, SLOT(on_startButton_clicked()));
+    connect(editAction, SIGNAL(triggered()), this, SLOT(on_editButton_clicked()));
 
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeList()));
     connect(timer, SIGNAL(timeout()), this, SLOT(updateVoteList()));
     connect(timer, SIGNAL(timeout()), this, SLOT(updateMyNodeList()));
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateNextSuperblock()));
     timer->start(1000);
 
     updateNodeList();
     updateVoteList();
+    updateNextSuperblock();
 
-    CBlockIndex* pindexPrev = chainActive.Tip();
-    int nNext = pindexPrev->nHeight - pindexPrev->nHeight % GetBudgetPaymentCycleBlocks() + GetBudgetPaymentCycleBlocks();
-    ui->superblockLabel->setText(QString::number(nNext));
+    sendDialog = new SendCollateralDialog(SendCollateralDialog::MASTERNODE, this);
 }
 
 MasternodeList::~MasternodeList()
@@ -79,17 +89,23 @@ MasternodeList::~MasternodeList()
 
 void MasternodeList::setClientModel(ClientModel *model)
 {
-    this->clientModel = model;
-    if(model)
+    if (this->clientModel == NULL)
     {
-        // try to update list when masternode count changes
-        connect(clientModel, SIGNAL(strMasternodesChanged(QString)), this, SLOT(updateNodeList()));
+        this->clientModel = model;
+        if(model)
+        {
+            // try to update list when masternode count changes
+            connect(clientModel, SIGNAL(strMasternodesChanged(QString)), this, SLOT(updateNodeList()));
+        }
     }
 }
 
 void MasternodeList::setWalletModel(WalletModel *model)
 {
-    this->walletModel = model;
+    if (this->walletModel == NULL)
+    {
+        this->walletModel = model;
+    }
 }
 
 void MasternodeList::showContextMenu(const QPoint &point)
@@ -103,7 +119,7 @@ void MasternodeList::StartAlias(std::string strAlias)
     std::string statusObj;
     statusObj += "<center>Alias: " + strAlias;
 
-    BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
+    BOOST_FOREACH(CNodeEntry mne, masternodeConfig.getEntries()) {
         if(mne.getAlias() == strAlias) {
             std::string errorMessage;
             CMasternodeBroadcast mnb;
@@ -135,7 +151,7 @@ void MasternodeList::StartAll(std::string strCommand)
     int fail = 0;
     std::string statusObj;
 
-    BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
+    BOOST_FOREACH(CNodeEntry mne, masternodeConfig.getEntries()) {
         std::string errorMessage;
         CMasternodeBroadcast mnb;
 
@@ -168,6 +184,20 @@ void MasternodeList::StartAll(std::string strCommand)
     msg.exec();
 }
 
+void MasternodeList::selectAliasRow(const QString& alias)
+{
+    for(int i=0; i < ui->tableWidgetMyMasternodes->rowCount(); ++i)
+    {
+        if(ui->tableWidgetMyMasternodes->item(i, 0)->text() == alias)
+        {
+            ui->tableWidgetMyMasternodes->selectRow(i);
+            ui->tableWidgetMyMasternodes->setFocus();
+            ui->tabWidget->setCurrentIndex(0);
+            return;
+        }
+    }
+}
+
 void MasternodeList::updateMyMasternodeInfo(QString alias, QString addr, QString privkey, QString txHash, QString txIndex, CMasternode *pmn)
 {
     LOCK(cs_mnlistupdate);
@@ -191,19 +221,22 @@ void MasternodeList::updateMyMasternodeInfo(QString alias, QString addr, QString
 
     QTableWidgetItem *aliasItem = new QTableWidgetItem(alias);
     QTableWidgetItem *addrItem = new QTableWidgetItem(addr);
+    PrivateKeyWidget *privateKeyWidget = new PrivateKeyWidget(privkey);
     QTableWidgetItem *protocolItem = new QTableWidgetItem(QString::number(pmn ? pmn->protocolVersion : -1));
     QTableWidgetItem *statusItem = new QTableWidgetItem(QString::fromStdString(pmn ? pmn->Status() : "MISSING"));
-    QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(QString::fromStdString(DurationToDHMS(pmn ? (pmn->lastPing.sigTime - pmn->sigTime) : 0)));
+    DateTableWidgetItem *activeSecondsItem = new DateTableWidgetItem(pmn ? (pmn->lastPing.sigTime - pmn->sigTime) : 0);
     QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat("%Y-%m-%d %H:%M", pmn ? pmn->lastPing.sigTime : 0)));
     QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(pmn ? CBitcoinAddress(pmn->pubkey.GetID()).ToString() : ""));
 
     ui->tableWidgetMyMasternodes->setItem(nodeRow, 0, aliasItem);
     ui->tableWidgetMyMasternodes->setItem(nodeRow, 1, addrItem);
-    ui->tableWidgetMyMasternodes->setItem(nodeRow, 2, protocolItem);
-    ui->tableWidgetMyMasternodes->setItem(nodeRow, 3, statusItem);
-    ui->tableWidgetMyMasternodes->setItem(nodeRow, 4, activeSecondsItem);
-    ui->tableWidgetMyMasternodes->setItem(nodeRow, 5, lastSeenItem);
-    ui->tableWidgetMyMasternodes->setItem(nodeRow, 6, pubkeyItem);
+    ui->tableWidgetMyMasternodes->setCellWidget(nodeRow, 2, privateKeyWidget);
+    ui->tableWidgetMyMasternodes->setColumnWidth(2, 150);
+    ui->tableWidgetMyMasternodes->setItem(nodeRow, 3, protocolItem);
+    ui->tableWidgetMyMasternodes->setItem(nodeRow, 4, statusItem);
+    ui->tableWidgetMyMasternodes->setItem(nodeRow, 5, activeSecondsItem);
+    ui->tableWidgetMyMasternodes->setItem(nodeRow, 6, lastSeenItem);
+    ui->tableWidgetMyMasternodes->setItem(nodeRow, 7, pubkeyItem);
 }
 
 void MasternodeList::updateMyNodeList(bool reset) {
@@ -218,7 +251,7 @@ void MasternodeList::updateMyNodeList(bool reset) {
     lastMyListUpdate = GetTime();
 
     ui->tableWidgetMasternodes->setSortingEnabled(false);
-    BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
+    BOOST_FOREACH(CNodeEntry mne, masternodeConfig.getEntries()) {
         CTxIn vin = CTxIn(uint256S(mne.getTxHash()), uint32_t(atoi(mne.getOutputIndex().c_str())));
         CMasternode *pmn = mnodeman.Find(vin);
 
@@ -265,7 +298,7 @@ void MasternodeList::updateNodeList()
         QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn.addr.ToString()));
         QTableWidgetItem *protocolItem = new QTableWidgetItem(QString::number(mn.protocolVersion));
         QTableWidgetItem *statusItem = new QTableWidgetItem(QString::fromStdString(mn.Status()));
-        QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(QString::fromStdString(DurationToDHMS(mn.lastPing.sigTime - mn.sigTime)));
+        DateTableWidgetItem *activeSecondsItem = new DateTableWidgetItem(mn.lastPing.sigTime - mn.sigTime);
         QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat("%Y-%m-%d %H:%M", mn.lastPing.sigTime)));
         QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(CBitcoinAddress(mn.pubkey.GetID()).ToString()));
 
@@ -292,6 +325,18 @@ void MasternodeList::updateNodeList()
     ui->countLabel->setText(QString::number(ui->tableWidgetMasternodes->rowCount()));
     ui->tableWidgetMasternodes->setSortingEnabled(true);
 
+}
+
+void MasternodeList::updateNextSuperblock()
+{
+    Q_ASSERT(chainActive.Tip() != NULL);
+
+    CBlockIndex* pindexPrev = chainActive.Tip();
+    if (pindexPrev)
+    {
+        const int nextBlock = GetNextSuperblock(pindexPrev->nHeight);
+        ui->superblockLabel->setText(QString::number(nextBlock));
+    }
 }
 
 void MasternodeList::on_filterLineEdit_textChanged(const QString &filterString) {
@@ -340,11 +385,58 @@ void MasternodeList::on_startButton_clicked()
     StartAlias(strAlias);
 }
 
+void MasternodeList::on_editButton_clicked()
+{
+    CreateMasternodeDialog dialog(this);
+    dialog.setWindowModality(Qt::ApplicationModal);
+    dialog.setEditMode();
+    dialog.setWindowTitle("Edit Masternode");
+    
+    QItemSelectionModel* selectionModel = ui->tableWidgetMyMasternodes->selectionModel();
+    QModelIndexList selected = selectionModel->selectedRows();
+    if(selected.count() == 0)
+        return;
+
+    QModelIndex index = selected.at(0);
+    int r = index.row();
+    QString strAlias = ui->tableWidgetMyMasternodes->item(r, 0)->text();
+    QString strIP = ui->tableWidgetMyMasternodes->item(r, 1)->text();
+    strIP.replace(QRegExp(":+\\d*"), "");
+
+    dialog.setAlias(strAlias);
+    dialog.setIP(strIP);
+    if (dialog.exec())
+    {
+        // OK pressed
+        std::string port = "9340";
+        if (Params().NetworkID() == CBaseChainParams::TESTNET) {
+            port = "19340";
+        }
+        BOOST_FOREACH(CNodeEntry &mne, masternodeConfig.getEntries()) {
+            if (mne.getAlias() == strAlias.toStdString())
+            {
+                mne.setAlias(dialog.getAlias().toStdString());
+                mne.setIp(dialog.getIP().toStdString() + ":" + port);
+                masternodeConfig.write();
+                ui->tableWidgetMyMasternodes->removeRow(r);
+                updateMyNodeList(true);
+            }
+        }
+
+    }
+    else
+    {
+        // Cancel pressed
+    }
+}
+
 void MasternodeList::on_startAllButton_clicked()
 {
     // Display message box
     QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm all masternodes start"),
-        tr("Are you sure you want to start ALL masternodes?"),
+        tr("Are you sure you want to start ALL masternodes?") + 
+            QString("<br>") + tr("<b>") + tr("Warning!") + 
+            tr("</b>") + tr(" This action will reset all active masternodes."),
         QMessageBox::Yes | QMessageBox::Cancel,
         QMessageBox::Cancel);
 
@@ -379,32 +471,34 @@ void MasternodeList::on_startMissingButton_clicked()
         return;
     }
 
+    StartMissingDialog dg(this);
+    dg.setWindowTitle("Confirm missing masternodes start");
+    dg.setText("Are you sure you want to start MISSING masternodes?");
+    dg.setCheckboxText("Start all nodes");
+    dg.setWarningText(QString("<b>") + tr("WARNING!") + QString("</b>") +
+            " If checked all ACTIVE masternodes will be reset.");
+    bool startAll = false;
+
     // Display message box
-    QMessageBox::StandardButton retval = QMessageBox::question(this,
-        tr("Confirm missing masternodes start"),
-        tr("Are you sure you want to start MISSING masternodes?"),
-        QMessageBox::Yes | QMessageBox::Cancel,
-        QMessageBox::Cancel);
+    if (dg.exec()) {
+        if (dg.checkboxChecked()) {
+            startAll = true;
+        }
 
-    if(retval != QMessageBox::Yes)
-    {
-        return;
-    }
-
-    WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
-    if(encStatus == walletModel->Locked)
-    {
-        WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
-        if(!ctx.isValid())
+        WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
+        if(encStatus == walletModel->Locked)
         {
-            // Unlock wallet was cancelled
+            WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
+            if(!ctx.isValid())
+            {
+                // Unlock wallet was cancelled
+                return;
+            }
+            startAll ? StartAll() : StartAll("start-missing");
             return;
         }
-        StartAll("start-missing");
-        return;
+        startAll ? StartAll() : StartAll("start-missing");
     }
-
-    StartAll("start-missing");
 }
 
 void MasternodeList::on_tableWidgetMyMasternodes_itemSelectionChanged()
@@ -427,6 +521,7 @@ void MasternodeList::on_UpdateVotesButton_clicked()
 
 void MasternodeList::updateVoteList(bool reset)
 {
+    Q_ASSERT(chainActive.Tip() != NULL);
 
     static int64_t lastVoteListUpdate = 0;
 
@@ -443,80 +538,84 @@ void MasternodeList::updateVoteList(bool reset)
     ui->tableWidgetVoting->clearContents();
     ui->tableWidgetVoting->setRowCount(0);
 
-        int64_t nTotalAllotted = 0;
-        CBlockIndex* pindexPrev = chainActive.Tip();
-        if(pindexPrev == NULL) return;
-        int nBlockStart = pindexPrev->nHeight - pindexPrev->nHeight % GetBudgetPaymentCycleBlocks() + GetBudgetPaymentCycleBlocks();
-        int nBlockEnd  =  nBlockStart + GetBudgetPaymentCycleBlocks() - 1;
+    int64_t nTotalAllotted = 0;
+    CBlockIndex* pindexPrev = chainActive.Tip();
+    if(pindexPrev == NULL)
+        return;
 
-        std::vector<CBudgetProposal*> winningProps = budget.GetAllProposals();
-        BOOST_FOREACH(CBudgetProposal* pbudgetProposal, winningProps)
+    int blockStart = GetNextSuperblock(pindexPrev->nHeight);
+    int blockEnd = blockStart + GetBudgetPaymentCycleBlocks() - 1;
+
+    std::vector<CBudgetProposal*> winningProps = budget.GetAllProposals();
+    BOOST_FOREACH(CBudgetProposal* pbudgetProposal, winningProps)
+    {
+
+        CTxDestination address1;
+        ExtractDestination(pbudgetProposal->GetPayee(), address1);
+        CBitcoinAddress address2(address1);
+
+        if((int64_t)pbudgetProposal->GetRemainingPaymentCount() <= 0) continue;
+
+        if (pbudgetProposal->fValid &&
+            pbudgetProposal->nBlockStart <= blockStart &&
+            pbudgetProposal->nBlockEnd >= blockEnd)
         {
 
-            CTxDestination address1;
-            ExtractDestination(pbudgetProposal->GetPayee(), address1);
-            CBitcoinAddress address2(address1);
+            // populate list
+            QTableWidgetItem *nameItem = new QTableWidgetItem(QString::fromStdString(pbudgetProposal->GetName()));
+            QLabel *urlItem = new QLabel("<a href=\"" + QString::fromStdString(pbudgetProposal->GetURL()) + "\">" +
+                                         QString::fromStdString(pbudgetProposal->GetURL()) + "</a>");
+            urlItem->setOpenExternalLinks(true);
+            urlItem->setStyleSheet("background-color: transparent;");
+            QTableWidgetItem *hashItem = new QTableWidgetItem(QString::fromStdString(pbudgetProposal->GetHash().ToString()));
+            GUIUtil::QTableWidgetNumberItem *blockStartItem = new GUIUtil::QTableWidgetNumberItem((int64_t)pbudgetProposal->GetBlockStart());
+            GUIUtil::QTableWidgetNumberItem *blockEndItem = new GUIUtil::QTableWidgetNumberItem((int64_t)pbudgetProposal->GetBlockEnd());
+            GUIUtil::QTableWidgetNumberItem *paymentsItem = new GUIUtil::QTableWidgetNumberItem((int64_t)pbudgetProposal->GetTotalPaymentCount());
+            GUIUtil::QTableWidgetNumberItem *remainingPaymentsItem = new GUIUtil::QTableWidgetNumberItem((int64_t)pbudgetProposal->GetRemainingPaymentCount());
+            GUIUtil::QTableWidgetNumberItem *yesVotesItem = new GUIUtil::QTableWidgetNumberItem((int64_t)pbudgetProposal->GetYeas());
+            GUIUtil::QTableWidgetNumberItem *noVotesItem = new GUIUtil::QTableWidgetNumberItem((int64_t)pbudgetProposal->GetNays());
+            GUIUtil::QTableWidgetNumberItem *abstainVotesItem = new GUIUtil::QTableWidgetNumberItem((int64_t)pbudgetProposal->GetAbstains());
+            QTableWidgetItem *AddressItem = new QTableWidgetItem(QString::fromStdString(address2.ToString()));
+            GUIUtil::QTableWidgetNumberItem *totalPaymentItem = new GUIUtil::QTableWidgetNumberItem((pbudgetProposal->GetAmount()*pbudgetProposal->GetTotalPaymentCount())/100000000);
+            GUIUtil::QTableWidgetNumberItem *monthlyPaymentItem = new GUIUtil::QTableWidgetNumberItem(pbudgetProposal->GetAmount()/100000000);
 
-            if((int64_t)pbudgetProposal->GetRemainingPaymentCount() <= 0) continue;
+            ui->tableWidgetVoting->insertRow(0);
+            ui->tableWidgetVoting->setItem(0, 0, nameItem);
+            ui->tableWidgetVoting->setCellWidget(0, 1, urlItem);
+            ui->tableWidgetVoting->setItem(0, 2, hashItem);
+            ui->tableWidgetVoting->setItem(0, 3, blockStartItem);
+            ui->tableWidgetVoting->setItem(0, 4, blockEndItem);
+            ui->tableWidgetVoting->setItem(0, 5, paymentsItem);
+            ui->tableWidgetVoting->setItem(0, 6, remainingPaymentsItem);
+            ui->tableWidgetVoting->setItem(0, 7, yesVotesItem);
+            ui->tableWidgetVoting->setItem(0, 8, noVotesItem);
+            ui->tableWidgetVoting->setItem(0, 9, abstainVotesItem);
+            ui->tableWidgetVoting->setItem(0, 10, AddressItem);
+            ui->tableWidgetVoting->setItem(0, 11, totalPaymentItem);
+            ui->tableWidgetVoting->setItem(0, 12, monthlyPaymentItem);
 
-            if (pbudgetProposal->fValid &&
-                pbudgetProposal->nBlockStart <= nBlockStart &&
-                pbudgetProposal->nBlockEnd >= nBlockEnd)
-            {
-
-                // populate list
-                QTableWidgetItem *nameItem = new QTableWidgetItem(QString::fromStdString(pbudgetProposal->GetName()));
-                QTableWidgetItem *urlItem = new QTableWidgetItem(QString::fromStdString(pbudgetProposal->GetURL()));
-                QTableWidgetItem *hashItem = new QTableWidgetItem(QString::fromStdString(pbudgetProposal->GetHash().ToString()));
-                QTableWidgetItem *blockStartItem = new QTableWidgetItem(QString::number((int64_t)pbudgetProposal->GetBlockStart()));
-                QTableWidgetItem *blockEndItem = new QTableWidgetItem(QString::number((int64_t)pbudgetProposal->GetBlockEnd()));
-                QTableWidgetItem *paymentsItem = new QTableWidgetItem(QString::number((int64_t)pbudgetProposal->GetTotalPaymentCount()));
-                QTableWidgetItem *remainingPaymentsItem = new QTableWidgetItem(QString::number((int64_t)pbudgetProposal->GetRemainingPaymentCount()));
-                QTableWidgetItem *yesVotesItem = new QTableWidgetItem(QString::number((int64_t)pbudgetProposal->GetYeas()));
-                QTableWidgetItem *noVotesItem = new QTableWidgetItem(QString::number((int64_t)pbudgetProposal->GetNays()));
-                QTableWidgetItem *abstainVotesItem = new QTableWidgetItem(QString::number((int64_t)pbudgetProposal->GetAbstains()));
-                QTableWidgetItem *AddressItem = new QTableWidgetItem(QString::fromStdString(address2.ToString()));
-                QTableWidgetItem *totalPaymentItem = new QTableWidgetItem(QString::number((pbudgetProposal->GetAmount()*pbudgetProposal->GetTotalPaymentCount())/100000000 ));
-                QTableWidgetItem *monthlyPaymentItem = new QTableWidgetItem(QString::number(pbudgetProposal->GetAmount()/100000000));
-
-                ui->tableWidgetVoting->insertRow(0);
-                ui->tableWidgetVoting->setItem(0, 0, nameItem);
-                ui->tableWidgetVoting->setItem(0, 1, urlItem);
-                ui->tableWidgetVoting->setItem(0, 2, hashItem);
-                ui->tableWidgetVoting->setItem(0, 3, blockStartItem);
-                ui->tableWidgetVoting->setItem(0, 4, blockEndItem);
-                ui->tableWidgetVoting->setItem(0, 5, paymentsItem);
-                ui->tableWidgetVoting->setItem(0, 6, remainingPaymentsItem);
-                ui->tableWidgetVoting->setItem(0, 7, yesVotesItem);
-                ui->tableWidgetVoting->setItem(0, 8, noVotesItem);
-                ui->tableWidgetVoting->setItem(0, 9, abstainVotesItem);
-                ui->tableWidgetVoting->setItem(0, 10, AddressItem);
-                ui->tableWidgetVoting->setItem(0, 11, totalPaymentItem);
-                ui->tableWidgetVoting->setItem(0, 12, monthlyPaymentItem);
-
-                std::string projected;            
-                if ((int64_t)pbudgetProposal->GetYeas() - (int64_t)pbudgetProposal->GetNays() > (ui->tableWidgetMasternodes->rowCount()/10)){
-                    nTotalAllotted += pbudgetProposal->GetAmount()/100000000;
-                    projected = "Yes";
-                } else {
-                    projected = "No";
-                }
-                QTableWidgetItem *projectedItem = new QTableWidgetItem(QString::fromStdString(projected));
-                ui->tableWidgetVoting->setItem(0, 13, projectedItem);
+            std::string projected;
+            if ((int64_t)pbudgetProposal->GetYeas() - (int64_t)pbudgetProposal->GetNays() > (ui->tableWidgetMasternodes->rowCount()/10)){
+                nTotalAllotted += pbudgetProposal->GetAmount()/100000000;
+                projected = "Yes";
+            } else {
+                projected = "No";
             }
+            QTableWidgetItem *projectedItem = new QTableWidgetItem(QString::fromStdString(projected));
+            ui->tableWidgetVoting->setItem(0, 13, projectedItem);
         }
+    }
 
     ui->totalAllottedLabel->setText(QString::number(nTotalAllotted));
     ui->tableWidgetVoting->setSortingEnabled(true);
 
     // reset "timer"
     ui->voteSecondsLabel->setText("0");
-
 }
 
 void MasternodeList::VoteMany(std::string strCommand)
 {
-    std::vector<CMasternodeConfig::CMasternodeEntry> mnEntries;
+    std::vector<CNodeEntry> mnEntries;
     mnEntries = masternodeConfig.getEntries();
 
     int nVote = VOTE_ABSTAIN;
@@ -535,11 +634,26 @@ void MasternodeList::VoteMany(std::string strCommand)
     uint256 hash;
     hash.SetHex(strHash);
 
+    const int blockStart = ui->tableWidgetVoting->item(r, 3)->text().toInt();
+    const int blockEnd = ui->tableWidgetVoting->item(r, 4)->text().toInt();
+    if (!budget.CanSubmitVotes(blockStart, blockEnd))
+    {
+        QMessageBox::critical(
+            this,
+            tr("Voting Details"),
+            tr(
+                "Sorry, your vote has not been added to the proposal. "
+                "The proposal voting is currently disabled as we're too close to the proposal payment."
+            )
+        );
+        return;
+    }
+
     int success = 0;
     int failed = 0;
     std::string statusObj;
 
-    BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
+    BOOST_FOREACH(CNodeEntry mne, masternodeConfig.getEntries()) {
         std::string errorMessage;
         std::vector<unsigned char> vchMasterNodeSignature;
         std::string strMasterNodeSignMessage;
@@ -571,13 +685,13 @@ void MasternodeList::VoteMany(std::string strCommand)
         }
 
         std::string strError = "";
-        if(budget.UpdateProposal(vote, NULL, strError)) {
+        if(budget.SubmitProposalVote(vote, strError)) {
             budget.mapSeenMasternodeBudgetVotes.insert(make_pair(vote.GetHash(), vote));
             vote.Relay();
             success++;
         } else {
             failed++;
-            statusObj += "\nFailed to update proposal. Error: " + strError;
+            statusObj += "\nFailed to vote with " + mne.getAlias() + ". Error: " + strError;
         }
     }
     std::string returnObj;
@@ -587,6 +701,7 @@ void MasternodeList::VoteMany(std::string strCommand)
 
     QMessageBox msg;
     msg.setText(QString::fromStdString(returnObj));
+    msg.setWindowTitle(tr("Voting Details"));
     msg.exec();
     updateVoteList(true);
 }
@@ -684,5 +799,60 @@ void MasternodeList::on_tableWidgetVoting_itemSelectionChanged()
     {
         ui->voteManyYesButton->setEnabled(true);
         ui->voteManyNoButton->setEnabled(true);
+    }
+}
+
+void MasternodeList::on_CreateNewMasternode_clicked()
+{
+    CreateMasternodeDialog dialog(this);
+    dialog.setWindowModality(Qt::ApplicationModal);
+    dialog.setWindowTitle("Create a New Masternode");
+    QString formattedAmount = BitcoinUnits::formatWithUnit(walletModel->getOptionsModel()->getDisplayUnit(), 
+                                                           MASTERNODE_COLLATERAL * COIN);
+    dialog.setNoteLabel("*This action will send " + formattedAmount + " to yourself");
+    if (dialog.exec())
+    {
+        // OK Pressed
+        QString label = dialog.getLabel();
+        QString address = walletModel->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "");
+        SendCoinsRecipient recipient(address, label, MASTERNODE_COLLATERAL * COIN, "");
+        QList<SendCoinsRecipient> recipients;
+        recipients.append(recipient);
+
+        // Get outputs before and after transaction
+        std::vector<COutput> vPossibleCoinsBefore;
+        pwalletMain->AvailableCoins(vPossibleCoinsBefore, true, NULL, ONLY_10000);
+
+        sendDialog->setModel(walletModel);
+        sendDialog->send(recipients);
+
+        std::vector<COutput> vPossibleCoinsAfter;
+        pwalletMain->AvailableCoins(vPossibleCoinsAfter, true, NULL, ONLY_10000);
+
+        BOOST_FOREACH(COutput& out, vPossibleCoinsAfter) {
+            std::vector<COutput>::iterator it = std::find(vPossibleCoinsBefore.begin(), vPossibleCoinsBefore.end(), out);
+            if (it == vPossibleCoinsBefore.end()) {
+                // Not found so this is a new element
+
+                COutPoint outpoint = COutPoint(out.tx->GetHash(), boost::lexical_cast<unsigned int>(out.i));
+                pwalletMain->LockCoin(outpoint);
+
+                // Generate a key
+                CKey secret;
+                secret.MakeNewKey(false);
+                std::string privateKey = CBitcoinSecret(secret).ToString();
+                std::string port = "9340";
+                if (Params().NetworkID() == CBaseChainParams::TESTNET) {
+                    port = "19340";
+                }
+
+                masternodeConfig.add(dialog.getAlias().toStdString(), dialog.getIP().toStdString() + ":" + port, 
+                        privateKey, out.tx->GetHash().ToString(), strprintf("%d", out.i));
+                masternodeConfig.write();
+                updateMyNodeList(true);
+            }
+        }
+    } else {
+        // Cancel Pressed
     }
 }

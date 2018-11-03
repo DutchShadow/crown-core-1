@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,29 +23,6 @@ class CMasternodeMan;
 
 extern CMasternodeMan mnodeman;
 void DumpMasternodes();
-
-/** Access to the MN database (mncache.dat)
- */
-class CMasternodeDB
-{
-private:
-    boost::filesystem::path pathMN;
-    std::string strMagicMessage;
-public:
-    enum ReadResult {
-        Ok,
-        FileError,
-        HashReadError,
-        IncorrectHash,
-        IncorrectMagicMessage,
-        IncorrectMagicNumber,
-        IncorrectFormat
-    };
-
-    CMasternodeDB();
-    bool Write(const CMasternodeMan &mnodemanToSave);
-    ReadResult Read(CMasternodeMan& mnodemanToLoad, bool fDryRun = false);
-};
 
 class CMasternodeMan
 {
@@ -92,10 +70,10 @@ public:
     CMasternodeMan(CMasternodeMan& other);
 
     /// Add an entry
-    bool Add(CMasternode &mn);
+    bool Add(const CMasternode &mn);
 
     /// Ask (source) node for mnb
-    void AskForMN(CNode *pnode, CTxIn &vin);
+    void AskForMN(CNode *pnode, const CTxIn &vin);
 
     /// Check all Masternodes
     void Check();

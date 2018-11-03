@@ -129,6 +129,7 @@ BITCOIN_CORE_H = \
   rpcclient.h \
   rpcprotocol.h \
   rpcserver.h \
+  rpcupdate.h \
   script/interpreter.h \
   script/script_error.h \
   script/script.h \
@@ -149,6 +150,7 @@ BITCOIN_CORE_H = \
   masternode-sync.h \
   masternodeman.h \
   masternodeconfig.h \
+  nodeconfig.h \
   systemnode.h \
   systemnode-payments.h \
   systemnode-sync.h \
@@ -177,7 +179,10 @@ BITCOIN_CORE_H = \
   zmq/zmqpublishnotifier.h \
   compat/byteswap.h \
   compat/endian.h \
-  compat/sanity.h
+  compat/sanity.h \
+  updater.h \
+  dbdetails.h \
+  dbmanager.h
 
 JSON_H = \
   json/json_spirit.h \
@@ -221,6 +226,7 @@ libbitcoin_server_a_SOURCES = \
   rpcmining.cpp \
   rpcmisc.cpp \
   rpcnet.cpp \
+  rpcupdate.cpp \
   rpcrawtransaction.cpp \
   rpcserver.cpp \
   script/sigcache.cpp \
@@ -228,6 +234,7 @@ libbitcoin_server_a_SOURCES = \
   txdb.cpp \
   txmempool.cpp \
   validationinterface.cpp \
+  dbdetails.cpp \
   $(JSON_H) \
   $(BITCOIN_CORE_H)
 
@@ -257,6 +264,7 @@ libbitcoin_wallet_a_SOURCES = \
   masternode-payments.cpp \
   masternode-sync.cpp \
   masternodeconfig.cpp \
+  nodeconfig.cpp \
   masternodeman.cpp \
   systemnode-sync.cpp \
   systemnode.cpp \
@@ -268,6 +276,7 @@ libbitcoin_wallet_a_SOURCES = \
   wallet.cpp \
   wallet_ismine.cpp \
   walletdb.cpp \
+  updater.cpp \
   $(BITCOIN_CORE_H)
 
 # crypto primitives library
@@ -385,7 +394,7 @@ if TARGET_WINDOWS
 crownd_SOURCES += crownd-res.rc
 endif
 
-crownd_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS)
+crownd_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CURL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS)
 crownd_CPPFLAGS = $(BITCOIN_INCLUDES)
 crownd_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
@@ -395,6 +404,7 @@ crown_cli_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(BOOST_LIBS) \
   $(SSL_LIBS) \
+  $(CURL_LIBS) \
   $(CRYPTO_LIBS)
 if ENABLE_WALLET
 wallet_utility_LDADD = libbitcoin_wallet.a $(LIBBITCOIN_COMMON) $(LIBBITCOIN_CRYPTO) $(LIBSECP256K1) $(LIBBITCOIN_UTIL) $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS)

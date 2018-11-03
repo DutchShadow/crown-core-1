@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -43,171 +44,11 @@ struct CompareScoreMN
     }
 };
 
-//
-// CMasternodeDB
-//
-
-CMasternodeDB::CMasternodeDB()
-{
-    pathMN = GetDataDir() / "mncache.dat";
-    strMagicMessage = "MasternodeCache";
-}
-
-bool CMasternodeDB::Write(const CMasternodeMan& mnodemanToSave)
-{
-    int64_t nStart = GetTimeMillis();
-
-    // serialize, checksum data up to that point, then append checksum
-    CDataStream ssMasternodes(SER_DISK, CLIENT_VERSION);
-    ssMasternodes << strMagicMessage; // masternode cache file specific magic message
-    ssMasternodes << FLATDATA(Params().MessageStart()); // network specific magic number
-    ssMasternodes << mnodemanToSave;
-    uint256 hash = Hash(ssMasternodes.begin(), ssMasternodes.end());
-    ssMasternodes << hash;
-
-    // open output file, and associate with CAutoFile
-    FILE *file = fopen(pathMN.string().c_str(), "wb");
-    CAutoFile fileout(file, SER_DISK, CLIENT_VERSION);
-    if (fileout.IsNull())
-        return error("%s : Failed to open file %s", __func__, pathMN.string());
-
-    // Write and commit header, data
-    try {
-        fileout << ssMasternodes;
-    }
-    catch (std::exception &e) {
-        return error("%s : Serialize or I/O error - %s", __func__, e.what());
-    }
-//    FileCommit(fileout);
-    fileout.fclose();
-
-    LogPrintf("Written info to mncache.dat  %dms\n", GetTimeMillis() - nStart);
-    LogPrintf("  %s\n", mnodemanToSave.ToString());
-
-    return true;
-}
-
-CMasternodeDB::ReadResult CMasternodeDB::Read(CMasternodeMan& mnodemanToLoad, bool fDryRun)
-{
-    int64_t nStart = GetTimeMillis();
-    // open input file, and associate with CAutoFile
-    FILE *file = fopen(pathMN.string().c_str(), "rb");
-    CAutoFile filein(file, SER_DISK, CLIENT_VERSION);
-    if (filein.IsNull())
-    {
-        error("%s : Failed to open file %s", __func__, pathMN.string());
-        return FileError;
-    }
-
-    // use file size to size memory buffer
-    int fileSize = boost::filesystem::file_size(pathMN);
-    int dataSize = fileSize - sizeof(uint256);
-    // Don't try to resize to a negative number if file is small
-    if (dataSize < 0)
-        dataSize = 0;
-    vector<unsigned char> vchData;
-    vchData.resize(dataSize);
-    uint256 hashIn;
-
-    // read data and checksum from file
-    try {
-        filein.read((char *)&vchData[0], dataSize);
-        filein >> hashIn;
-    }
-    catch (std::exception &e) {
-        error("%s : Deserialize or I/O error - %s", __func__, e.what());
-        return HashReadError;
-    }
-    filein.fclose();
-
-    CDataStream ssMasternodes(vchData, SER_DISK, CLIENT_VERSION);
-
-    // verify stored checksum matches input data
-    uint256 hashTmp = Hash(ssMasternodes.begin(), ssMasternodes.end());
-    if (hashIn != hashTmp)
-    {
-        error("%s : Checksum mismatch, data corrupted", __func__);
-        return IncorrectHash;
-    }
-
-    unsigned char pchMsgTmp[4];
-    std::string strMagicMessageTmp;
-    try {
-        // de-serialize file header (masternode cache file specific magic message) and ..
-
-        ssMasternodes >> strMagicMessageTmp;
-
-        // ... verify the message matches predefined one
-        if (strMagicMessage != strMagicMessageTmp)
-        {
-            error("%s : Invalid masternode cache magic message", __func__);
-            return IncorrectMagicMessage;
-        }
-
-        // de-serialize file header (network specific magic number) and ..
-        ssMasternodes >> FLATDATA(pchMsgTmp);
-
-        // ... verify the network matches ours
-        if (memcmp(pchMsgTmp, Params().MessageStart(), sizeof(pchMsgTmp)))
-        {
-            error("%s : Invalid network magic number", __func__);
-            return IncorrectMagicNumber;
-        }
-        // de-serialize data into CMasternodeMan object
-        ssMasternodes >> mnodemanToLoad;
-    }
-    catch (std::exception &e) {
-        mnodemanToLoad.Clear();
-        error("%s : Deserialize or I/O error - %s", __func__, e.what());
-        return IncorrectFormat;
-    }
-
-    LogPrintf("Loaded info from mncache.dat  %dms\n", GetTimeMillis() - nStart);
-    LogPrintf("  %s\n", mnodemanToLoad.ToString());
-    if(!fDryRun) {
-        LogPrintf("Masternode manager - cleaning....\n");
-        mnodemanToLoad.CheckAndRemove(true);
-        LogPrintf("Masternode manager - result:\n");
-        LogPrintf("  %s\n", mnodemanToLoad.ToString());
-    }
-
-    return Ok;
-}
-
-void DumpMasternodes()
-{
-    int64_t nStart = GetTimeMillis();
-
-    CMasternodeDB mndb;
-    CMasternodeMan tempMnodeman;
-
-    LogPrintf("Verifying mncache.dat format...\n");
-    CMasternodeDB::ReadResult readResult = mndb.Read(tempMnodeman, true);
-    // there was an error and it was not an error on file opening => do not proceed
-    if (readResult == CMasternodeDB::FileError)
-        LogPrintf("Missing masternode cache file - mncache.dat, will try to recreate\n");
-    else if (readResult != CMasternodeDB::Ok)
-    {
-        LogPrintf("Error reading mncache.dat: ");
-        if(readResult == CMasternodeDB::IncorrectFormat)
-            LogPrintf("magic is ok but data has invalid format, will try to recreate\n");
-        else
-        {
-            LogPrintf("file format is unknown or invalid, please fix it manually\n");
-            return;
-        }
-    }
-    LogPrintf("Writting info to mncache.dat...\n");
-    mndb.Write(mnodeman);
-
-    LogPrintf("Masternode dump finished  %dms\n", GetTimeMillis() - nStart);
-}
-
 CMasternodeMan::CMasternodeMan() {
     nDsqCount = 0;
 }
 
-bool CMasternodeMan::Add(CMasternode &mn)
+bool CMasternodeMan::Add(const CMasternode &mn)
 {
     LOCK(cs);
 
@@ -225,7 +66,7 @@ bool CMasternodeMan::Add(CMasternode &mn)
     return false;
 }
 
-void CMasternodeMan::AskForMN(CNode* pnode, CTxIn &vin)
+void CMasternodeMan::AskForMN(CNode* pnode, const CTxIn &vin)
 {
     std::map<COutPoint, int64_t>::iterator i = mWeAskedForMasternodeListEntry.find(vin.prevout);
     if (i != mWeAskedForMasternodeListEntry.end())
@@ -474,8 +315,9 @@ CMasternode* CMasternodeMan::GetNextMasternodeInQueueForPayment(int nBlockHeight
         //it's in the list (up to 8 entries ahead of current block to allow propagation) -- so let's skip it
         if(masternodePayments.IsScheduled(mn, nBlockHeight)) continue;
 
-        //it's too new, wait for a cycle
-        if(fFilterSigTime && mn.sigTime + (nMnCount*2.6*60) > GetAdjustedTime()) continue;
+        // For security reasons and for network stability there is a delay to get the first reward.
+        // The time is calculated as a product of 60 block and node count.
+        if(fFilterSigTime && mn.sigTime + (nMnCount * 1 * 60) > GetAdjustedTime()) continue;
 
         //make sure it has as many confirmations as there are masternodes
         if(mn.GetMasternodeInputAge() < nMnCount) continue;
@@ -502,7 +344,7 @@ CMasternode* CMasternodeMan::GetNextMasternodeInQueueForPayment(int nBlockHeight
         CMasternode* pmn = Find(s.second);
         if(!pmn) break;
 
-        arith_uint256 n = UintToArith256(pmn->CalculateScore(1, nBlockHeight-100));
+        arith_uint256 n = pmn->CalculateScore(nBlockHeight - 100);
         if(n > nHigh){
             nHigh = n;
             pBestMasternode = pmn;
@@ -556,8 +398,8 @@ CMasternode* CMasternodeMan::GetCurrentMasterNode(int mod, int64_t nBlockHeight,
         if(mn.protocolVersion < minProtocol || !mn.IsEnabled()) continue;
 
         // calculate the score for each Masternode
-        uint256 n = mn.CalculateScore(mod, nBlockHeight);
-        int64_t n2 = UintToArith256(n).GetCompact(false);
+        arith_uint256 n = mn.CalculateScore(nBlockHeight);
+        int64_t n2 = n.GetCompact(false);
 
         // determine the winner
         if(n2 > score){
@@ -584,8 +426,8 @@ int CMasternodeMan::GetMasternodeRank(const CTxIn& vin, int64_t nBlockHeight, in
             mn.Check();
             if(!mn.IsEnabled()) continue;
         }
-        uint256 n = mn.CalculateScore(1, nBlockHeight);
-        int64_t n2 = UintToArith256(n).GetCompact(false);
+        arith_uint256 n = mn.CalculateScore(nBlockHeight);
+        int64_t n2 = n.GetCompact(false);
 
         vecMasternodeScores.push_back(make_pair(n2, mn.vin));
     }
@@ -622,8 +464,8 @@ std::vector<pair<int, CMasternode> > CMasternodeMan::GetMasternodeRanks(int64_t 
             continue;
         }
 
-        uint256 n = mn.CalculateScore(1, nBlockHeight);
-        int64_t n2 = UintToArith256(n).GetCompact(false);
+        arith_uint256 n = mn.CalculateScore(nBlockHeight);
+        int64_t n2 = n.GetCompact(false);
 
         vecMasternodeScores.push_back(make_pair(n2, mn));
     }
@@ -652,8 +494,8 @@ CMasternode* CMasternodeMan::GetMasternodeByRank(int nRank, int64_t nBlockHeight
             if(!mn.IsEnabled()) continue;
         }
 
-        uint256 n = mn.CalculateScore(1, nBlockHeight);
-        int64_t n2 = UintToArith256(n).GetCompact(false);
+        arith_uint256 n = mn.CalculateScore(nBlockHeight);
+        int64_t n2 = n.GetCompact(false);
 
         vecMasternodeScores.push_back(make_pair(n2, mn.vin));
     }

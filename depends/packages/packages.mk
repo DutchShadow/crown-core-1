@@ -1,4 +1,4 @@
-packages:=boost openssl
+packages:=boost openssl curl
 linux_packages:=zeromq
 native_packages := native_ccache native_comparisontool
 

@@ -1,6 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin developers
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2009-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -62,7 +63,6 @@ bool AppInit(int argc, char* argv[])
     boost::thread* detectShutdownThread = NULL;
 
     bool fRet = false;
-
     //
     // Parameters
     //
@@ -185,6 +185,22 @@ bool AppInit(int argc, char* argv[])
         detectShutdownThread->join();
         delete detectShutdownThread;
         detectShutdownThread = NULL;
+    }
+    if (RestartRequested())
+    {
+        // If restart requested cleanup resources and run application again.
+        // The old one will be exited below.
+        PrepareShutdown();
+        CExplicitNetCleanup::callCleanup();
+
+        if (argc > 0)
+        {
+            runCommand(std::string(argv[0]) + " &");
+        }
+        else
+        {
+            fprintf(stderr, "Error: Application name couldn't be detected.");
+        }
     }
     Shutdown();
 

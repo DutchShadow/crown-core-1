@@ -1,5 +1,6 @@
 // Copyright (c) 2011-2014 The Bitcoin developers
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -907,6 +908,30 @@ QString formatServicesStr(quint64 mask)
 QString formatPingTime(double dPingTime)
 {
     return dPingTime == 0 ? QObject::tr("N/A") : QString(QObject::tr("%1 ms")).arg(QString::number((int)(dPingTime * 1000), 10));
+}
+
+/**
+ * Class constructor.
+ * @param[int64_t] numValue   The Number to convert to a QString for display
+ */
+QTableWidgetNumberItem::QTableWidgetNumberItem(const int64_t numValue) : QTableWidgetItem(), m_value(numValue)
+{
+    this->setText(QString::number(numValue));
+}
+
+/**
+ * Comparator overload to ensure that the QStrings internally set as numbers are compared as numbers and not strings.
+ * @param[QTableWidgetItem] item      Right hand side of the less than operator
+ */
+bool QTableWidgetNumberItem::operator<(QTableWidgetItem const& item) const
+{
+    QTableWidgetNumberItem const* rhs = dynamic_cast<QTableWidgetNumberItem const*>(&item);
+
+    if (!rhs) {
+        return QTableWidgetItem::operator<(item);
+    }
+
+    return m_value < rhs->m_value;
 }
 
 } // namespace GUIUtil

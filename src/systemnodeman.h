@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,30 +21,6 @@ using namespace std;
 class CSystemnodeMan;
 
 extern CSystemnodeMan snodeman;
-void DumpSystemnodes();
-
-/** Access to the SN database (sncache.dat)
- */
-class CSystemnodeDB
-{
-private:
-    boost::filesystem::path pathSN;
-    std::string strMagicMessage;
-public:
-    enum ReadResult {
-        Ok,
-        FileError,
-        HashReadError,
-        IncorrectHash,
-        IncorrectMagicMessage,
-        IncorrectMagicNumber,
-        IncorrectFormat
-    };
-
-    CSystemnodeDB();
-    bool Write(const CSystemnodeMan &snodemanToSave);
-    ReadResult Read(CSystemnodeMan& snodemanToLoad, bool fDryRun = false);
-};
 
 class CSystemnodeMan
 {

@@ -36,6 +36,7 @@ RAW_TEST_FILES = test/data/alertTests.raw
 GENERATED_TEST_FILES = $(JSON_TEST_FILES:.json=.json.h) $(RAW_TEST_FILES:.raw=.raw.h)
 
 BITCOIN_TESTS =\
+  test/governance-test.cpp \
   test/arith_uint256_tests.cpp \
   test/bignum.h \
   test/alert_tests.cpp \
@@ -75,7 +76,9 @@ BITCOIN_TESTS =\
   test/timedata_tests.cpp \
   test/transaction_tests.cpp \
   test/univalue_tests.cpp \
-  test/util_tests.cpp
+  test/util_tests.cpp \
+  test/score_tests.cpp \
+  test/db_tests.cpp
 
 if ENABLE_WALLET
 BITCOIN_TESTS += \
@@ -92,7 +95,7 @@ if ENABLE_WALLET
 test_test_crown_LDADD += $(LIBBITCOIN_WALLET)
 endif
 
-test_test_crown_LDADD += $(LIBBITCOIN_CONSENSUS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS)
+test_test_crown_LDADD += $(LIBBITCOIN_CONSENSUS) $(BDB_LIBS) $(SSL_LIBS) $(CURL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS)
 test_test_crown_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) -static
 
 if ENABLE_ZMQ

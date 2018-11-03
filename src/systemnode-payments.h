@@ -1,6 +1,7 @@
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef SYSTEMNODE_PAYMENTS_H
 #define SYSTEMNODE_PAYMENTS_H
 
@@ -25,33 +26,9 @@ extern CSystemnodePayments systemnodePayments;
 #define SNPAYMENTS_SIGNATURES_TOTAL              10
 
 void SNFillBlockPayee(CMutableTransaction& txNew, int64_t nFees);
-
 bool SNIsBlockPayeeValid(const CTransaction& txNew, int nBlockHeight);
+std::string SNGetRequiredPaymentsString(int nBlockHeight);
 
-void DumpSystemnodePayments();
-
-/** Save Systemnode Payment Data (snpayments.dat)
- */
-class CSystemnodePaymentDB
-{
-private:
-    boost::filesystem::path pathDB;
-    std::string strMagicMessage;
-public:
-    enum ReadResult {
-        Ok,
-        FileError,
-        HashReadError,
-        IncorrectHash,
-        IncorrectMagicMessage,
-        IncorrectMagicNumber,
-        IncorrectFormat
-    };
-
-    CSystemnodePaymentDB();
-    bool Write(const CSystemnodePayments &objToSave);
-    ReadResult Read(CSystemnodePayments& objToLoad, bool fDryRun = false);
-};
 
 class CSystemnodePayee
 {
@@ -135,6 +112,7 @@ public:
     }
 
     bool IsTransactionValid(const CTransaction& txNew);
+    std::string GetRequiredPaymentsString();
 
     ADD_SERIALIZE_METHODS;
 
@@ -238,11 +216,12 @@ public:
     int GetMinSystemnodePaymentsProto() const;
     void ProcessMessageSystemnodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
     void Sync(CNode* node, int nCountNeeded);
-    void CleanPaymentList();
+    void CheckAndRemove();
     bool IsTransactionValid(const CTransaction& txNew, int nBlockHeight);
     bool GetBlockPayee(int nBlockHeight, CScript& payee);
     bool IsScheduled(CSystemnode& sn, int nNotBlockHeight);
     bool CanVote(COutPoint outSystemnode, int nBlockHeight);
+    std::string GetRequiredPaymentsString(int nBlockHeight);
     void FillBlockPayee(CMutableTransaction& txNew, int64_t nFees);
     std::string ToString() const;
 

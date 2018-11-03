@@ -1,5 +1,6 @@
 // Copyright (c) 2011-2014 The Bitcoin developers
-// Copyright (c) 2014-2015 The Crown developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2014-2018 The Crown developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -70,6 +71,14 @@ void OptionsModel::Init()
     if (!settings.contains("fCoinControlFeatures"))
         settings.setValue("fCoinControlFeatures", false);
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
+
+    if (!settings.contains("fEnableSystemnodes"))
+        settings.setValue("fEnableSystemnodes", true);
+    fEnableSystemnodes = settings.value("fEnableSystemnodes", true).toBool();
+
+    if (!settings.contains("fEnableMasternodes"))
+        settings.setValue("fEnableMasternodes", true);
+    fEnableMasternodes = settings.value("fEnableMasternodes", true).toBool();
 
     // These are shared with the core or have a command-line parameter
     // and we want command-line parameters to overwrite the GUI settings.
@@ -201,6 +210,10 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("language");
         case CoinControlFeatures:
             return fCoinControlFeatures;
+        case EnableSystemnodes:
+            return fEnableSystemnodes;
+        case EnableMasternodes:
+            return fEnableMasternodes;
         case DatabaseCache:
             return settings.value("nDatabaseCache");
         case ThreadsScriptVerif:
@@ -310,6 +323,16 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             fCoinControlFeatures = value.toBool();
             settings.setValue("fCoinControlFeatures", fCoinControlFeatures);
             emit coinControlFeaturesChanged(fCoinControlFeatures);
+            break;
+        case EnableSystemnodes:
+            fEnableSystemnodes = value.toBool();
+            settings.setValue("fEnableSystemnodes", fEnableSystemnodes);
+            emit enableSystemnodesChanged(fEnableSystemnodes);
+            break;
+        case EnableMasternodes:
+            fEnableMasternodes = value.toBool();
+            settings.setValue("fEnableMasternodes", fEnableMasternodes);
+            emit enableMasternodesChanged(fEnableMasternodes);
             break;
         case DatabaseCache:
             if (settings.value("nDatabaseCache") != value) {
