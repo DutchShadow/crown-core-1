@@ -81,13 +81,6 @@ int CSystemnodePayments::GetMinSystemnodePaymentsProto() const
             : MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION_PREV;
 }
 
-int CSystemnodePayments::GetMinSystemnodePaymentsProto() const
-{
-    return IsSporkActive(SPORK_15_SYSTEMNODE_PAY_UPDATED_NODES)
-            ? MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION_2
-            : MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION_1;
-}
-
 void CSystemnodePayments::ProcessMessageSystemnodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
 {
     if(!systemnodeSync.IsBlockchainSynced()) return;
