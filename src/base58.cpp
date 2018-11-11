@@ -302,6 +302,7 @@ bool CBitcoinAddress::GetIndexKey(uint160& hashBytes, int& type) const
     }
 
     return false;
+}
 
 bool CBitcoinAddress::IsDeprecated(const std::string& address)
 {
