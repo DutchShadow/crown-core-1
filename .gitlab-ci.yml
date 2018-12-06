@@ -112,7 +112,7 @@ cache:
     - master
     - tags
 
--.job_template: &dmg_release_definition
+.job_template: &dmg_release_definition
 -  artifacts:
 -    name: "$OUTDIR-dmg"
 -    paths:
@@ -121,7 +121,7 @@ cache:
 -    - master
 -    - tags
 -
--.job_template: &dmg_snapshot_definition
+.job_template: &dmg_snapshot_definition
 -  artifacts:
 -    name: "$OUTDIR-dmg"
 -    paths:
