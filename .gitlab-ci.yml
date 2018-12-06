@@ -30,6 +30,7 @@ cache:
     - cd crown-$HOST
     - ./configure --cache-file=../config.cache $CROWN_CONFIG_ALL $CROWN_CONFIG
     - make $MAKEJOBS $GOAL || ( echo "Build failure. Verbose build follows." && make $GOAL V=1 ; false )
+    - if [ -n "$DMG" ]; then cp Crown-Qt.dmg ../../Crown-Qt.dmg; fi
 
 .job_template: &win64_definition
   variables:
@@ -81,6 +82,16 @@ cache:
     OUTDIR: "Crown-${RELEASE_VERSION}-Osx"
     PACKAGES: "cmake gcc-multilib g++-multilib libcap-dev libbz2-dev"
 
+.job_template: &osx_dmg_definition
+  variables:
+    CROWN_CONFIG: ""
+    HOST: "x86_64-apple-darwin14"
+    OSX_SDK: "10.8"
+    DMG: "True"
+    GOAL: "install deploy"
+    OUTDIR: "Crown-${RELEASE_VERSION}-Osx"
+    PACKAGES: "cmake gcc-multilib g++-multilib libcap-dev libbz2-dev"
+
 # Artifact settings for releases and snapshots
 .job_template: &release_definition
   artifacts:
@@ -100,6 +111,25 @@ cache:
   except:
     - master
     - tags
+
+-.job_template: &dmg_release_definition
+-  artifacts:
+-    name: "$OUTDIR-dmg"
+-    paths:
+-    - Crown-Qt.dmg
+-  only:
+-    - master
+-    - tags
+-
+-.job_template: &dmg_snapshot_definition
+-  artifacts:
+-    name: "$OUTDIR-dmg"
+-    paths:
+-    - Crown-Qt.dmg
+-    expire_in: 2 weeks
+-  except:
+-    - master
+-    - tags
 
 # Job definitions for releases
 Win64:
@@ -132,6 +162,11 @@ Osx:
   <<: *job_definition 
   <<: *release_definition
 
+Osx-dmg:
+  <<: *osx_dmg_definition
+  <<: *job_definition 
+  <<: *dmg_release_definition
+
 # Job definitions for temporary builds (snapshots)
 Win64-snapshot:
   <<: *win64_definition 
@@ -162,6 +197,11 @@ Osx-snapshot:
   <<: *osx_definition
   <<: *job_definition 
   <<: *snapshot_definition 
+
+Osx-dmg-snapshot:
+  <<: *osx_dmg_definition
+  <<: *job_definition 
+  <<: *dmg_snapshot_definition 
 
 # Trigger the docker build and delivery
 trigger_docker_build:
