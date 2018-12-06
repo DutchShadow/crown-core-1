@@ -113,23 +113,23 @@ cache:
     - tags
 
 .job_template: &dmg_release_definition
--  artifacts:
--    name: "$OUTDIR-dmg"
--    paths:
--    - Crown-Qt.dmg
--  only:
--    - master
--    - tags
--
+  artifacts:
+    name: "$OUTDIR-dmg"
+    paths:
+    - Crown-Qt.dmg
+  only:
+    - master
+    - tags
+
 .job_template: &dmg_snapshot_definition
--  artifacts:
--    name: "$OUTDIR-dmg"
--    paths:
--    - Crown-Qt.dmg
--    expire_in: 2 weeks
--  except:
--    - master
--    - tags
+  artifacts:
+    name: "$OUTDIR-dmg"
+    paths:
+    - Crown-Qt.dmg
+    expire_in: 2 weeks
+  except:
+    - master
+    - tags
 
 # Job definitions for releases
 Win64:
