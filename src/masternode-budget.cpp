@@ -196,8 +196,6 @@ void CBudgetManager::CheckOrphanVotes()
 
 void CBudgetManager::SubmitBudgetDraft()
 {
-    LOCK(cs);
-
     static int nSubmittedHeight = 0; // height at which final budget was submitted last time
     int nCurrentHeight;
 
@@ -345,8 +343,6 @@ void CBudgetManager::SubmitBudgetDraft()
 
 bool CBudgetManager::AddBudgetDraft(const BudgetDraft &budgetDraft, bool checkCollateral)
 {
-    LOCK(cs);
-
     std::string strError = "";
     if(!budgetDraft.IsValid(strError, checkCollateral))
         return false;
@@ -379,8 +375,6 @@ bool CBudgetManager::AddProposal(const CBudgetProposal& budgetProposal, bool che
 
 void CBudgetManager::CheckAndRemove()
 {
-    LOCK(cs);
-
     LogPrintf("CBudgetManager::CheckAndRemove\n");
 
     std::string strError = "";
@@ -845,8 +839,6 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand,
     // lite mode is not supported
     if(fLiteMode) return;
     if(!masternodeSync.IsBlockchainSynced()) return;
-
-    LOCK(cs);
 
     if (strCommand == "mnvs") { //Masternode vote sync
         uint256 nProp;
@@ -2004,7 +1996,7 @@ bool BudgetDraft::IsValid(std::string& strError, bool fCheckCollateral) const
     if(m_blockStart == 0) {strError = "Invalid BlockStart == 0"; return false;}
 
     //can only pay out 10% of the possible coins (min value of coins)
-    if(GetTotalPayout() > budget.GetTotalBudget(m_blockStart)) {strError = "Invalid Payout (more than max)"; return false;}
+    if(GetTotalPayout() > CBudgetManager::GetTotalBudget(m_blockStart)) {strError = "Invalid Payout (more than max)"; return false;}
 
     std::string strError2 = "";
     if(fCheckCollateral && !m_feeTransactionHash.IsNull()){
