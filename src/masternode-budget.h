@@ -116,8 +116,6 @@ public:
 
     bool HasItem(uint256 hash) const
     {
-        LOCK(cs);
-
         return
             mapSeenMasternodeBudgetProposals.count(hash) ||
             mapSeenMasternodeBudgetVotes.count(hash) ||
