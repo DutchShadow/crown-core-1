@@ -147,8 +147,15 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     if (retarget == DIFF_BTC)
     {
         unsigned int nProofOfWorkLimit = Params().ProofOfWorkLimit().GetCompact();
-        if (pindexLast->nHeight >= 140394 && Params().NetworkID() == CBaseChainParams::TESTNET)
-            return nProofOfWorkLimit;
+        if (Params().NetworkID() == CBaseChainParams::TESTNET)
+        {
+            if (pindexLast->nHeight >= 140394)
+            {
+                return nProofOfWorkLimit;
+            }
+            // Before 140394 block difficulty was the same as mainnet
+            nProofOfWorkLimit = Params(CBaseChainParams::MAIN).ProofOfWorkLimit().GetCompact();
+        }
 
         // Genesis block
         if (pindexLast == NULL)
