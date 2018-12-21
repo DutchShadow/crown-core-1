@@ -196,8 +196,6 @@ void CBudgetManager::CheckOrphanVotes()
 
 void CBudgetManager::SubmitBudgetDraft()
 {
-    LOCK(cs);
-
     static int nSubmittedHeight = 0; // height at which final budget was submitted last time
     int nCurrentHeight;
 
@@ -345,8 +343,6 @@ void CBudgetManager::SubmitBudgetDraft()
 
 bool CBudgetManager::AddBudgetDraft(const BudgetDraft &budgetDraft, bool checkCollateral)
 {
-    LOCK(cs);
-
     std::string strError = "";
     if(!budgetDraft.IsValid(strError, checkCollateral))
         return false;
@@ -379,8 +375,6 @@ bool CBudgetManager::AddProposal(const CBudgetProposal& budgetProposal, bool che
 
 void CBudgetManager::CheckAndRemove()
 {
-    LOCK(cs);
-
     LogPrintf("CBudgetManager::CheckAndRemove\n");
 
     std::string strError = "";
@@ -845,8 +839,6 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand,
     // lite mode is not supported
     if(fLiteMode) return;
     if(!masternodeSync.IsBlockchainSynced()) return;
-
-    LOCK(cs);
 
     if (strCommand == "mnvs") { //Masternode vote sync
         uint256 nProp;
