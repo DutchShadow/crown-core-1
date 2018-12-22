@@ -466,8 +466,6 @@ void CBudgetManager::FillBlockPayee(CMutableTransaction& txNew, CAmount nFees) c
 
 BudgetDraft* CBudgetManager::FindBudgetDraft(uint256 nHash)
 {
-    LOCK(cs);
-
     std::map<uint256, BudgetDraft>::iterator found = mapBudgetDrafts.find(nHash);
     if (found != mapBudgetDrafts.end())
         return NULL;
@@ -477,8 +475,6 @@ BudgetDraft* CBudgetManager::FindBudgetDraft(uint256 nHash)
 
 CBudgetProposal* CBudgetManager::FindProposal(const std::string &strProposalName)
 {
-    LOCK(cs);
-
     //find the prop with the highest yes count
 
     int nYesCount = -99999;
@@ -511,8 +507,6 @@ CBudgetProposal *CBudgetManager::FindProposal(uint256 nHash)
 
 bool CBudgetManager::IsBudgetPaymentBlock(int nBlockHeight) const
 {
-    LOCK(cs);
-
     const BudgetDraft* bestBudget = GetMostVotedBudget(nBlockHeight);
     if (bestBudget == NULL)
         return false;
@@ -1204,8 +1198,6 @@ const CBudgetVote* CBudgetManager::GetSeenVote(uint256 hash) const
 
 bool CBudgetManager::SubmitProposalVote(const CBudgetVote& vote, std::string& strError)
 {
-    LOCK(cs);
-
     DebugLogBudget(vote, CAddress(), "VR");
     map<uint256, CBudgetProposal>::iterator found = mapProposals.find(vote.nProposalHash);
     if (found == mapProposals.end())
@@ -1565,7 +1557,6 @@ int CBudgetProposal::GetBlockEndCycle() const
 
 int CBudgetProposal::GetTotalPaymentCount() const
 {
-    LOCK(cs);
     return (GetBlockEndCycle() - GetBlockStartCycle()) / GetBudgetPaymentCycleBlocks();
 }
 
@@ -1732,8 +1723,6 @@ BudgetDraft::BudgetDraft(const BudgetDraft& other)
 
 void BudgetDraft::DiscontinueOlderVotes(const BudgetDraftVote& newerVote)
 {
-    LOCK(m_cs);
-
     std::map<uint256, BudgetDraftVote>::iterator found = m_votes.find(newerVote.vin.prevout.GetHash());
     if (found == m_votes.end())
         return;
@@ -1889,7 +1878,6 @@ bool BudgetDraft::AutoCheck()
 // If masternode voted for a proposal, but is now invalid -- remove the vote
 void BudgetDraft::CleanAndRemove(bool fSignatureCheck)
 {
-    LOCK(m_cs);
     std::map<uint256, BudgetDraftVote>::iterator it = m_votes.begin();
 
     while(it != m_votes.end()) {
@@ -1901,8 +1889,6 @@ void BudgetDraft::CleanAndRemove(bool fSignatureCheck)
 
 CAmount BudgetDraft::GetTotalPayout() const
 {
-    LOCK(m_cs);
-
     CAmount ret = 0;
 
     for(unsigned int i = 0; i < m_payments.size(); i++){
@@ -1986,8 +1972,6 @@ uint256 BudgetDraft::GetHash() const
 
 bool BudgetDraft::IsValid(std::string& strError, bool fCheckCollateral) const
 {
-    LOCK(m_cs);
-
     assert(boost::is_sorted(m_payments, ComparePayments));
     //must be the correct block for payment to happen (once a month)
     if(m_blockStart % GetBudgetPaymentCycleBlocks() != 0) {strError = "Invalid BlockStart"; return false;}
@@ -2041,8 +2025,6 @@ bool BudgetDraft::IsValid(bool fCheckCollateral) const
 
 bool BudgetDraft::IsSubmittedManually() const
 {
-    LOCK(m_cs);
-
     return m_feeTransactionHash != uint256();
 }
 
@@ -2065,8 +2047,6 @@ void BudgetDraft::ResetAutoChecked()
 
 bool BudgetDraft::IsTransactionValid(const CTransaction& txNew, int nBlockHeight) const
 {
-    LOCK(m_cs);
-
     assert(boost::is_sorted(m_payments, ComparePayments));
 
     if(nBlockHeight != GetBlockStart()) {
@@ -2094,7 +2074,6 @@ bool BudgetDraft::IsTransactionValid(const CTransaction& txNew, int nBlockHeight
 
 const std::vector<CTxBudgetPayment>& BudgetDraft::GetBudgetPayments() const
 {
-    LOCK(m_cs);
     assert(boost::is_sorted(m_payments, ComparePayments));
 
     return m_payments;
@@ -2130,8 +2109,6 @@ void BudgetDraft::SubmitVote()
 
 void BudgetDraft::MarkSynced()
 {
-    LOCK(m_cs);
-
     if (!fValid)
         return;
 
@@ -2144,8 +2121,6 @@ void BudgetDraft::MarkSynced()
 
 int BudgetDraft::Sync(CNode* pfrom, bool fPartial) const
 {
-    LOCK(m_cs);
-
     if (!fValid)
         return 0;
 
@@ -2171,8 +2146,6 @@ int BudgetDraft::Sync(CNode* pfrom, bool fPartial) const
 
 void BudgetDraft::ResetSync()
 {
-    LOCK(m_cs);
-
     if (!fValid)
         return;
 
@@ -2348,8 +2321,6 @@ bool BudgetDraftVote::SignatureValid(bool fSignatureCheck)
 
 std::string CBudgetManager::ToString() const
 {
-    LOCK(cs);
-
     std::ostringstream info;
 
     info << "Proposals: " << (int)mapProposals.size() <<
@@ -2361,5 +2332,3 @@ std::string CBudgetManager::ToString() const
 
     return info.str();
 }
-
-
