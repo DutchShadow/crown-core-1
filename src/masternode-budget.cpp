@@ -810,7 +810,10 @@ void CBudgetManager::NewBlock()
 
         const CMasternode* producer = mnodeman.Find(it5->MasternodeSubmittedId());
         if (producer == NULL)
+        {
+            ++it5;
             continue;
+        }
 
         if(!it5->IsValid(strError)) {
             LogPrintf("fbs (immature) - invalid finalized budget - %s\n", strError);
