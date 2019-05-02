@@ -52,18 +52,18 @@ std::vector<pair<int, CSystemnode> > CSystemnodeMan::GetSystemnodeRanks(int64_t 
     if(!GetBlockHash(hash, nBlockHeight)) return vecSystemnodeRanks;
 
     // scan for winner
-    BOOST_FOREACH(CSystemnode& mn, vSystemnodes) {
+    for (auto& sn : vSystemnodes)
+    {
+        sn.Check();
 
-        mn.Check();
-
-        if(mn.protocolVersion < minProtocol) continue;
-        if(!mn.IsEnabled()) {
+        if(sn.protocolVersion < minProtocol) continue;
+        if(!sn.IsEnabled()) {
             continue;
         }
 
-        int64_t n2 = mn.CalculateScore(nBlockHeight).GetCompact(false);
+        int64_t n2 = sn.CalculateScore(nBlockHeight).GetCompact(false);
 
-        vecSystemnodeScores.push_back(make_pair(n2, mn));
+        vecSystemnodeScores.push_back(make_pair(n2, sn));
     }
 
     sort(vecSystemnodeScores.rbegin(), vecSystemnodeScores.rend(), CompareScoreSN());
@@ -96,7 +96,10 @@ void CSystemnodeMan::ProcessSystemnodeConnections()
 void CSystemnodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
 {
     if(fLiteMode) return; //disable all Systemnode related functionality
-    if(!systemnodeSync.IsBlockchainSynced()) return;
+    if (!GetBoolArg("-jumpstart", false))
+    {
+        if(!systemnodeSync.IsBlockchainSynced()) return;
+    }
 
     LOCK(cs_process_message);
 
@@ -611,7 +614,7 @@ void CSystemnodeMan::CheckAndRemove(bool forceExpiredRemoval)
     }
 
     // remove expired mapSeenSystemnodeBroadcast
-    map<uint256, CSystemnodeBroadcast>::iterator it3 = mapSeenSystemnodeBroadcast.begin();
+    auto it3 = mapSeenSystemnodeBroadcast.begin();
     while(it3 != mapSeenSystemnodeBroadcast.end()){
         if((*it3).second.lastPing.sigTime < GetTime() - SYSTEMNODE_REMOVAL_SECONDS*2){
             LogPrint("systemnode", "CSystemnodeMan::CheckAndRemove - Removing expired Systemnode broadcast %s\n", (*it3).second.GetHash().ToString());

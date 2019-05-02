@@ -92,7 +92,9 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast) {
     arith_uint256 PastDifficultyAverage;
     arith_uint256 PastDifficultyAveragePrev;
 
-    if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || BlockLastSolved->nHeight < PastBlocksMin) {
+    bool isAdjustmentPeriod = BlockLastSolved->nHeight >= Params().PoSStartHeight() - 1 && BlockLastSolved->nHeight < Params().PoSStartHeight() + PastBlocksMax;
+    if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || BlockLastSolved->nHeight < PastBlocksMin || isAdjustmentPeriod)
+    {
         return Params().ProofOfWorkLimit().GetCompact();
     }
 
@@ -142,6 +144,24 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
 
     if (pindexLast->nHeight + 1 >= 1059780) retarget = DIFF_DGW;
     else retarget = DIFF_BTC;
+
+    if (Params().NetworkID() == CBaseChainParams::TESTNET && pindexLast->nHeight >= 140400)
+    {
+        // Use Dark Gravity Wave like in mainnet
+        retarget = DIFF_DGW;
+    }
+
+    if (Params().NetworkID() == CBaseChainParams::TESTNET && pindexLast->nHeight >= 140394)
+    {
+        // Increase testnet difficulty
+        Params(CBaseChainParams::TESTNET).SetProofOfWorkLimit(~arith_uint256(0) >> 14);
+    }
+
+    if (Params().NetworkID() == CBaseChainParams::MAIN && pindexLast->nHeight >= Params().PoSStartHeight() - 1)
+    {
+        // Increase mainnet difficulty for POS
+        Params(CBaseChainParams::MAIN).SetProofOfWorkLimit(~arith_uint256(0) >> 22);
+    }
 
     // Default Bitcoin style retargeting
     if (retarget == DIFF_BTC)
@@ -231,6 +251,18 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits)
     arith_uint256 bnTarget;
 
     bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
+
+    if (Params().NetworkID() == CBaseChainParams::TESTNET && chainActive.Height() >= 140394)
+    {
+        // Increase testnet difficulty
+        Params(CBaseChainParams::TESTNET).SetProofOfWorkLimit(~arith_uint256(0) >> 14);
+    }
+
+    if (Params().NetworkID() == CBaseChainParams::MAIN && chainActive.Height() >= Params().PoSStartHeight() - 1)
+    {
+        // Increase mainnet difficulty for POS
+        Params(CBaseChainParams::MAIN).SetProofOfWorkLimit(~arith_uint256(0) >> 22);
+    }
 
     // Check range
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > Params().ProofOfWorkLimit())

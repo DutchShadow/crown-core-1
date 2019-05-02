@@ -13,7 +13,7 @@
 #include "uint256.h"
 
 #include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
+#include <mn-pos/stakepointer.h>
 
 /** The maximum allowed size for a serialized block, in bytes (network rule) */
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
@@ -31,7 +31,6 @@ public:
 
     // auxpow (if this is a merge-minded block)
     boost::shared_ptr<CAuxPow> auxpow;
-    bool readWriteAuxPow;
 
     CBlockHeader()
     {
@@ -46,13 +45,10 @@ public:
         nVersion = this->nVersion.GetBaseVersion();
         if (this->nVersion.IsAuxpow())
         {
-            if (readWriteAuxPow)
-            {
-                if (ser_action.ForRead())
-                    auxpow = boost::make_shared<CAuxPow>();
-                assert(auxpow);
-                READWRITE(*auxpow);
-            }
+            if (ser_action.ForRead())
+                auxpow.reset (new CAuxPow());
+            assert(auxpow);
+            READWRITE(*auxpow);
         } else if (ser_action.ForRead())
             auxpow.reset();
     }
@@ -66,7 +62,6 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
-        readWriteAuxPow = true;
     }
 
     bool IsNull() const
@@ -81,6 +76,8 @@ public:
      */
     void SetAuxpow (CAuxPow* apow);
 
+    void SetProofOfStake(bool fProofOfStake);
+
 };
 
 class CBlock : public CBlockHeader
@@ -88,6 +85,8 @@ class CBlock : public CBlockHeader
 public:
     // network and disk
     std::vector<CTransaction> vtx;
+    std::vector<unsigned char> vchBlockSig;
+    StakePointer stakePointer;
 
     // memory only
     mutable CScript payee;
@@ -112,12 +111,20 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(*(CBlockHeader*)this);
         READWRITE(vtx);
+
+        //Only applicable to PoS blocks
+        if (this->IsProofOfStake()) {
+            READWRITE(vchBlockSig);
+            READWRITE(stakePointer);
+        }
     }
 
     void SetNull()
     {
         CBlockHeader::SetNull();
         vtx.clear();
+        vchBlockSig.clear();
+        stakePointer.SetNull();
         fChecked = false;
         vMerkleTree.clear();
         payee = CScript();
@@ -145,6 +152,8 @@ public:
 
     std::vector<uint256> GetMerkleBranch(int nIndex) const;
     static uint256 CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMerkleBranch, int nIndex);
+    bool IsProofOfStake() const;
+    bool IsProofOfWork() const;
     std::string ToString() const;
 };
 

@@ -533,12 +533,21 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
 {
 
     if(fLiteMode) return; //disable all Masternode related functionality
-    if(!masternodeSync.IsBlockchainSynced()) return;
+    if (!GetBoolArg("-jumpstart", false))
+    {
+        if(!masternodeSync.IsBlockchainSynced()) return;
+    }
 
     LOCK(cs_process_message);
 
-    if (strCommand == "mnb") { //Masternode Broadcast
+    if (strCommand == "mnb" || strCommand == "mnb_new") { //Masternode Broadcast
         CMasternodeBroadcast mnb;
+        if (strCommand == "mnb") {
+            //Set to old version for old serialization
+            mnb.lastPing.nVersion = 1;
+        } else {
+            mnb.lastPing.nVersion = 2;
+        }
         vRecv >> mnb;
 
         int nDoS = 0;
@@ -550,8 +559,12 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
         }
     }
 
-    else if (strCommand == "mnp") { //Masternode Ping
+    else if (strCommand == "mnp" || strCommand == "mnp_new") { //Masternode Ping
         CMasternodePing mnp;
+        if (strCommand == "mnp") {
+            //Set to old version for old serialization
+            mnp.nVersion = 1;
+        }
         vRecv >> mnp;
 
         LogPrint("masternode", "mnp - Masternode ping, vin: %s\n", mnp.vin.ToString());
@@ -560,6 +573,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
         mapSeenMasternodePing.insert(make_pair(mnp.GetHash(), mnp));
 
         int nDoS = 0;
+        LOCK(cs_main);
         if(mnp.CheckAndUpdate(nDoS)) return;
 
         if(nDoS > 0) {
