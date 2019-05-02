@@ -2604,6 +2604,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
         if (!pblocktree->WriteTimestampBlockIndex(CTimestampBlockIndexKey(pindex->GetBlockHash()), CTimestampBlockIndexValue(logicalTS)))
             return AbortNode(state.GetRejectReason(), "Failed to write blockhash index");
+    }
 
     if (block.IsProofOfStake()) {
         COutPoint stakeSource(block.stakePointer.txid, block.stakePointer.nPos);
