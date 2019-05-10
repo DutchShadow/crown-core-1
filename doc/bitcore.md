@@ -64,16 +64,4 @@ Create a "crownd.tar.gz" file containing this "crownd" by typing:
 tar -cvzf crownd.tar.gz -C src crownd
 ```
 
-Create a Git tag `bitcore-bin-<xxx>` where `<xxx>` is a 3-digit number:
-
-```
-git tag bitcore-bin-<xxx>
-```
-
-Then type:
-
-```bash
-git push --tags
-```
-
-In github.com, Upload crownd.tar.gz to the assets of this tag (release).
+In the repo's GitLab web page, edit the tag `bitcore-bin-006`, then click "Attach a file" to upload this file.
