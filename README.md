@@ -1,6 +1,6 @@
 This is a bitcore-specific Crown Core. For details see "doc/bitcore.md".
 
-# Crown Platform 0.13.0
+# Crown Platform 0.13.4
 
 [![pipeline status](http://gitlab.crown.tech/crown/crown-core/badges/master/pipeline.svg)](http://gitlab.crown.tech/crown/crown-core/commits/master)
 
