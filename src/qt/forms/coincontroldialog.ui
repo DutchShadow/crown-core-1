@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>954</width>
+    <width>1000</width>
     <height>500</height>
    </rect>
   </property>
@@ -132,7 +132,7 @@
           <enum>Qt::ActionsContextMenu</enum>
          </property>
          <property name="text">
-          <string notr="true">0.00 CRW</string>
+          <string notr="true">0.00 BTC</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -140,7 +140,10 @@
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QLabel" name="labelCoinControlPriorityText">
+        <widget class="QLabel" name="labelCoinControlLowOutputText">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="font">
           <font>
            <weight>75</weight>
@@ -148,12 +151,15 @@
           </font>
          </property>
          <property name="text">
-          <string>Priority:</string>
+          <string>Dust:</string>
          </property>
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QLabel" name="labelCoinControlPriority">
+        <widget class="QLabel" name="labelCoinControlLowOutput">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
          </property>
@@ -161,7 +167,7 @@
           <enum>Qt::ActionsContextMenu</enum>
          </property>
          <property name="text">
-          <string>medium</string>
+          <string notr="true">no</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -206,42 +212,7 @@
           <enum>Qt::ActionsContextMenu</enum>
          </property>
          <property name="text">
-          <string notr="true">0.00 CRW</string>
-         </property>
-         <property name="textInteractionFlags">
-          <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="labelCoinControlLowOutputText">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="font">
-          <font>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Dust:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QLabel" name="labelCoinControlLowOutput">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="cursor">
-          <cursorShape>IBeamCursor</cursorShape>
-         </property>
-         <property name="contextMenuPolicy">
-          <enum>Qt::ActionsContextMenu</enum>
-         </property>
-         <property name="text">
-          <string>no</string>
+          <string notr="true">0.00 BTC</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -286,7 +257,7 @@
           <enum>Qt::ActionsContextMenu</enum>
          </property>
          <property name="text">
-          <string notr="true">0.00 CRW</string>
+          <string notr="true">0.00 BTC</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -321,7 +292,7 @@
           <enum>Qt::ActionsContextMenu</enum>
          </property>
          <property name="text">
-          <string notr="true">0.00 CRW</string>
+          <string notr="true">0.00 BTC</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -340,9 +311,6 @@
        <height>40</height>
       </size>
      </property>
-     <property name="styleSheet">
-      <string notr="true">border: 1px solid #f2f2f2;</string>
-     </property>
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>
      </property>
@@ -351,7 +319,7 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayoutPanel" stretch="0,0,0,0,0,0">
+       <layout class="QHBoxLayout" name="horizontalLayoutPanel" stretch="0,0,0,0,0">
         <property name="spacing">
          <number>14</number>
         </property>
@@ -363,30 +331,8 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="styleSheet">
-           <string notr="true">border: 1px solid #9c8b46; padding: 2px;</string>
-          </property>
           <property name="text">
            <string>(un)select all</string>
-          </property>
-          <property name="autoDefault">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButtonToggleLock">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">border: 1px solid #9c8b46; padding: 2px;</string>
-          </property>
-          <property name="text">
-           <string>toggle lock state</string>
           </property>
           <property name="autoDefault">
            <bool>false</bool>
@@ -401,9 +347,6 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="styleSheet">
-           <string notr="true">color: #a1a1a1;</string>
-          </property>
           <property name="text">
            <string>Tree mode</string>
           </property>
@@ -417,9 +360,6 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="styleSheet">
-           <string notr="true">color: #a1a1a1;</string>
-          </property>
           <property name="text">
            <string>List mode</string>
           </property>
@@ -430,11 +370,8 @@
         </item>
         <item>
          <widget class="QLabel" name="labelLocked">
-          <property name="styleSheet">
-           <string notr="true">color: #a1a1a1;</string>
-          </property>
           <property name="text">
-           <string>(1 locked)</string>
+           <string notr="true">(1 locked)</string>
           </property>
          </widget>
         </item>
@@ -461,14 +398,11 @@
      <property name="contextMenuPolicy">
       <enum>Qt::CustomContextMenu</enum>
      </property>
-     <property name="styleSheet">
-      <string notr="true">border: 1px solid #f2f2f2;</string>
-     </property>
      <property name="sortingEnabled">
       <bool>false</bool>
      </property>
      <property name="columnCount">
-      <number>13</number>
+      <number>10</number>
      </property>
      <attribute name="headerShowSortIndicator" stdset="0">
       <bool>true</bool>
@@ -507,16 +441,6 @@
       </property>
       <property name="toolTip">
        <string>Confirmed</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Priority</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string/>
       </property>
      </column>
      <column>
@@ -563,7 +487,7 @@
   <customwidget>
    <class>CoinControlTreeWidget</class>
    <extends>QTreeWidget</extends>
-   <header>coincontroltreewidget.h</header>
+   <header>qt/coincontroltreewidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

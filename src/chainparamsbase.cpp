@@ -1,165 +1,49 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2018 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "chainparamsbase.h"
+#include <chainparamsbase.h>
 
-#include "util.h"
+#include <tinyformat.h>
+#include <util.h>
+#include <utilmemory.h>
 
 #include <assert.h>
 
-#include <boost/assign/list_of.hpp>
+const std::string CBaseChainParams::MAIN = "main";
+const std::string CBaseChainParams::TESTNET = "test";
+const std::string CBaseChainParams::REGTEST = "regtest";
 
-using namespace boost::assign;
-
-/**
- * Main network
- */
-class CBaseMainParams : public CBaseChainParams
+void SetupChainParamsBaseOptions()
 {
-public:
-    CBaseMainParams()
-    {
-        networkID = CBaseChainParams::MAIN;
-        nRPCPort = 9341;
-    }
-};
-static CBaseMainParams mainParams;
+    gArgs.AddArg("-regtest", "Enter regression test mode, which uses a special chain in which blocks can be solved instantly. "
+                                   "This is intended for regression testing tools and app development.", true, OptionsCategory::CHAINPARAMS);
+    gArgs.AddArg("-testnet", "Use the test chain", false, OptionsCategory::CHAINPARAMS);
+}
 
-/**
- * Testnet (v3)
- */
-class CBaseTestNetParams : public CBaseMainParams
-{
-public:
-    CBaseTestNetParams()
-    {
-        networkID = CBaseChainParams::TESTNET;
-        nRPCPort = 19341;
-        strDataDir = "testnet3";
-    }
-};
-static CBaseTestNetParams testNetParams;
-
-/**
- * Devnet
- */
-class CBaseDevNetParams : public CBaseChainParams
-{
-public:
-    CBaseDevNetParams(const std::string &dataDir)
-    {
-        nRPCPort = 19342;
-        strDataDir = dataDir;
-    }
-};
-static CBaseDevNetParams *devNetParams;
-
-
-/*
- * Regression test
- */
-class CBaseRegTestParams : public CBaseTestNetParams
-{
-public:
-    CBaseRegTestParams()
-    {
-        networkID = CBaseChainParams::REGTEST;
-        strDataDir = "regtest";
-    }
-};
-static CBaseRegTestParams regTestParams;
-
-/*
- * Unit test
- */
-class CBaseUnitTestParams : public CBaseMainParams
-{
-public:
-    CBaseUnitTestParams()
-    {
-        networkID = CBaseChainParams::UNITTEST;
-        strDataDir = "unittest";
-    }
-};
-static CBaseUnitTestParams unitTestParams;
-
-static CBaseChainParams* pCurrentBaseParams = 0;
+static std::unique_ptr<CBaseChainParams> globalChainBaseParams;
 
 const CBaseChainParams& BaseParams()
 {
-    assert(pCurrentBaseParams);
-    return *pCurrentBaseParams;
+    assert(globalChainBaseParams);
+    return *globalChainBaseParams;
 }
 
-void SelectBaseParams(CBaseChainParams::Network network)
+std::unique_ptr<CBaseChainParams> CreateBaseChainParams(const std::string& chain)
 {
-    if (network == CBaseChainParams::DEVNET) {
-        std::string devNetName = GetDevNetName();
-        assert(!devNetName.empty());
-        devNetParams = new CBaseDevNetParams(devNetName);
-        pCurrentBaseParams = devNetParams;
-        return;
-    }
-
-    switch (network) {
-    case CBaseChainParams::MAIN:
-        pCurrentBaseParams = &mainParams;
-        break;
-    case CBaseChainParams::TESTNET:
-        pCurrentBaseParams = &testNetParams;
-        break;
-    case CBaseChainParams::REGTEST:
-        pCurrentBaseParams = &regTestParams;
-        break;
-    case CBaseChainParams::UNITTEST:
-        pCurrentBaseParams = &unitTestParams;
-        break;
-    default:
-        assert(false && "Unimplemented network");
-        return;
-    }
+    if (chain == CBaseChainParams::MAIN)
+        return MakeUnique<CBaseChainParams>("", 8332);
+    else if (chain == CBaseChainParams::TESTNET)
+        return MakeUnique<CBaseChainParams>("testnet3", 18332);
+    else if (chain == CBaseChainParams::REGTEST)
+        return MakeUnique<CBaseChainParams>("regtest", 18443);
+    else
+        throw std::runtime_error(strprintf("%s: Unknown chain %s.", __func__, chain));
 }
 
-CBaseChainParams::Network NetworkIdFromCommandLine()
+void SelectBaseParams(const std::string& chain)
 {
-    bool fRegTest = GetBoolArg("-regtest", false);
-    bool fDevNet = IsArgSet("-devnet");
-    bool fTestNet = GetBoolArg("-testnet", false);
-
-    int nameParamsCount = (fRegTest ? 1 : 0) + (fDevNet ? 1 : 0) + (fTestNet ? 1 : 0);
-    if (nameParamsCount > 1)
-        return CBaseChainParams::MAX_NETWORK_TYPES;
-
-    if (fDevNet)
-        return CBaseChainParams::DEVNET;
-    if (fRegTest)
-        return CBaseChainParams::REGTEST;
-    if (fTestNet)
-        return CBaseChainParams::TESTNET;
-    return CBaseChainParams::MAIN;
-}
-
-bool SelectBaseParamsFromCommandLine()
-{
-    CBaseChainParams::Network network = NetworkIdFromCommandLine();
-    if (network == CBaseChainParams::MAX_NETWORK_TYPES)
-        return false;
-
-    SelectBaseParams(network);
-    return true;
-}
-
-std::string GetDevNetName()
-{
-    // This function should never be called for non-devnets
-    assert(IsArgSet("-devnet"));
-    std::string devNetName = GetArg("-devnet", "");
-    return "devnet" + (devNetName.empty() ? "" : "-" + devNetName);
-}
-
-bool AreBaseParamsConfigured()
-{
-    return pCurrentBaseParams != NULL;
+    globalChainBaseParams = CreateBaseChainParams(chain);
+    gArgs.SelectConfigNetwork(chain);
 }

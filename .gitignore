@@ -1,17 +1,13 @@
-*.sublime-project
-*.sublime-workspace
-todo.txt
-reset-files.bash
-
 *.tar.gz
 
 *.exe
-src/crown
-src/crownd
-src/crown-cli
-src/crown-tx
-src/test/test_crown
-src/qt/test/test_crown-qt
+src/bitcoin
+src/bitcoind
+src/bitcoin-cli
+src/bitcoin-tx
+src/test/test_bitcoin
+src/test/test_bitcoin_fuzzy
+src/qt/test/test_bitcoin-qt
 
 # autoreconf
 Makefile.in
@@ -34,8 +30,8 @@ config.log
 config.status
 configure
 libtool
-src/config/crown-config.h
-src/config/crown-config.h.in
+src/config/bitcoin-config.h
+src/config/bitcoin-config.h.in
 src/config/stamp-h1
 share/setup.nsi
 share/qt/Info.plist
@@ -48,6 +44,12 @@ src/qt/forms/ui_*.h
 
 src/qt/test/moc*.cpp
 
+src/qt/bitcoin-qt.config
+src/qt/bitcoin-qt.creator
+src/qt/bitcoin-qt.creator.user
+src/qt/bitcoin-qt.files
+src/qt/bitcoin-qt.includes
+
 .deps
 .dirstamp
 .libs
@@ -59,7 +61,7 @@ src/qt/test/moc*.cpp
 *.pyc
 *.o
 *.o-*
-.crown
+*.patch
 *.a
 *.pb.cc
 *.pb.h
@@ -78,19 +80,16 @@ src/qt/test/moc*.cpp
 # Compilation and Qt preprocessor part
 *.qm
 Makefile
-crown-qt
-Crown-Qt.app
+bitcoin-qt
+Bitcoin-Qt.app
+background.tiff*
 
 # Unit-tests
 Makefile.test
-crown-qt_test
-src/test/buildenv.py
+bitcoin-qt_test
 
 # Resources cpp
 qrc_*.cpp
-
-# Qt creator
-*.pro.user
 
 # Mac specific
 .DS_Store
@@ -98,8 +97,9 @@ build
 
 #lcov
 *.gcno
+*.gcda
 /*.info
-test_crown.coverage/
+test_bitcoin.coverage/
 total.coverage/
 coverage_percent.txt
 
@@ -107,13 +107,12 @@ coverage_percent.txt
 linux-coverage-build
 linux-build
 win32-build
-qa/pull-tester/run-bitcoind-for-test.sh
-qa/pull-tester/tests-config.sh
-qa/pull-tester/cache/*
-qa/pull-tester/test.*/*
+test/config.ini
+test/cache/*
 
 !src/leveldb*/Makefile
 
-.cproject
-.project
 /doc/doxygen/
+
+libbitcoinconsensus.pc
+contrib/devtools/split-debug.sh

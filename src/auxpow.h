@@ -10,14 +10,15 @@
 #include "serialize.h"
 #include "uint256.h"
 
-#include "primitives/pureheader.h"
 #include "primitives/transaction.h"
+#include "primitives/block.h"
 
 #include <vector>
 
 class CBlock;
 class CBlockIndex;
 class CReserveKey;
+class CBlockHeader;
 
 /** Header for merge-mining data in the coinbase.  */
 static const unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' };
@@ -61,9 +62,8 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+    inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(*(CTransaction*)this);
-        nVersion = this->nVersion;
         READWRITE(hashBlock);
         READWRITE(vMerkleBranch);
         READWRITE(nIndex);
@@ -105,7 +105,7 @@ public:
   int nChainIndex;
 
   /** Parent block header (on which the real PoW is done).  */
-  CPureBlockHeader parentBlock;
+  CBlockHeader parentBlock;
 
 public:
 
@@ -121,10 +121,9 @@ public:
 
   template<typename Stream, typename Operation>
     inline void
-    SerializationOp (Stream& s, Operation ser_action, int nType, int nVersion)
+    SerializationOp (Stream& s, Operation ser_action)
   {
     READWRITE (*static_cast<CMerkleTx*> (this));
-    nVersion = this->nVersion;
 
     READWRITE (vChainMerkleBranch);
     READWRITE (nChainIndex);
@@ -158,7 +157,7 @@ public:
    * @return The parent block.
    */
   /* FIXME: Remove after the hardfork.  */
-  inline const CPureBlockHeader&
+  inline const CBlockHeader&
   getParentBlock () const
   {
     return parentBlock;
