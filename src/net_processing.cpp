@@ -1374,7 +1374,7 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
         //   nUnconnectingHeaders gets reset back to 0.
         if (!LookupBlockIndex(headers[0].hashPrevBlock) && nCount < MAX_BLOCKS_TO_ANNOUNCE) {
             nodestate->nUnconnectingHeaders++;
-            connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
+            //connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
             LogPrint(BCLog::NET, "received header %s: missing prev block %s, sending getheaders (%d) to end (peer=%d, nUnconnectingHeaders=%d)\n",
                     headers[0].GetHash().ToString(),
                     headers[0].hashPrevBlock.ToString(),
@@ -1480,7 +1480,7 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
             // TODO: optimize: if pindexLast is an ancestor of chainActive.Tip or pindexBestHeader, continue
             // from there instead.
             LogPrint(BCLog::NET, "more getheaders (%d) to end to peer=%d (startheight:%d)\n", pindexLast->nHeight, pfrom->GetId(), pfrom->nStartingHeight);
-            connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexLast), uint256()));
+            //connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexLast), uint256()));
         }
 
         bool fCanDirectFetch = CanDirectFetch(chainparams.GetConsensus());
@@ -1577,6 +1577,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         LogPrintf("dropmessagestest DROPPING RECV MESSAGE\n");
         return true;
     }
+    static std::pair<unsigned int, uint256> pairHighBlock;
 
 
     if (!(pfrom->GetLocalServices() & NODE_BLOOM) &&
@@ -1967,14 +1968,17 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
             if (inv.type == MSG_BLOCK) {
                 UpdateBlockAvailability(pfrom->GetId(), inv.hash);
-                if (!fAlreadyHave && !fImporting && !fReindex && !mapBlocksInFlight.count(inv.hash)) {
+                if (IsInitialBlockDownload() && pfrom->fSyncingWith && inv.hash == pairHighBlock.second) {
                     // We used to request the full block here, but since headers-announcements are now the
                     // primary method of announcement on the network, and since, in the case that a node
                     // fell back to inv we probably have a reorg which we should get the headers for first,
                     // we now only provide a getheaders response here. When we receive the headers, we will
                     // then ask for the blocks we need.
-                    connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), inv.hash));
+                    //connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), inv.hash));
+                    connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETBLOCKS, chainActive.GetLocator(), inv.hash));
                     LogPrint(BCLog::NET, "getheaders (%d) %s to peer=%d\n", pindexBestHeader->nHeight, inv.hash.ToString(), pfrom->GetId());
+                } else {
+                    pfrom->AskForBlock(inv);
                 }
             }
             else
@@ -2399,8 +2403,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         if (!LookupBlockIndex(cmpctblock.header.hashPrevBlock)) {
             // Doesn't connect (or is genesis), instead of DoSing in AcceptBlockHeader, request deeper headers
-            if (!IsInitialBlockDownload())
-                connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
+            //if (!IsInitialBlockDownload())
+            //    connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), uint256()));
             return true;
         }
 
@@ -2715,6 +2719,21 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
         LogPrint(BCLog::NET, "received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom->GetId());
 
+        bool inChain = mapBlockIndex.count(pblock->GetHash()) && chainActive.Contains(mapBlockIndex.at(pblock->GetHash()));
+
+        // When syncing with a peer, it will send this node its current chain tip after its round of 500 blocks of inventory
+        // This is to signal that it is ready to send the next round of inventory, but needs to be prompted to do so
+        bool fSentGetBlocks = false;
+        if (pfrom->fSyncingWith && !mapBlockIndex.count(pblock->hashPrevBlock) && pblock->GetHash() == pairHighBlock.second) {
+            //Signal sent from peer that they are ready for the next getblocks
+            std::cout << "getblocks3" << std::endl;
+            connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETBLOCKS, chainActive.GetLocator(), uint256()));
+            fSentGetBlocks = true;
+        } else if (pblock->nTime > pairHighBlock.first) {
+            pairHighBlock = std::make_pair(pblock->nTime, pblock->GetHash());
+        }
+
+
         bool forceProcessing = false;
         const uint256 hash(pblock->GetHash());
         {
@@ -2726,13 +2745,19 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             // so the race between here and cs_main in ProcessNewBlock is fine.
             mapBlockSource.emplace(hash, std::make_pair(pfrom->GetId(), true));
         }
-        bool fNewBlock = false;
-        ProcessNewBlock(chainparams, pblock, forceProcessing, &fNewBlock);
-        if (fNewBlock) {
-            pfrom->nLastBlockTime = GetTime();
+
+        if (!inChain && mapBlockIndex.count(pblock->hashPrevBlock) && mapBlockIndex.at(pblock->hashPrevBlock)->nChainTx) {
+            bool fNewBlock = false;
+            ProcessNewBlock(chainparams, pblock, forceProcessing, &fNewBlock);
+            if (fNewBlock) {
+                pfrom->nLastBlockTime = GetTime();
+            } else {
+                LOCK(cs_main);
+                mapBlockSource.erase(pblock->GetHash());
+            }
         } else {
-            LOCK(cs_main);
-            mapBlockSource.erase(pblock->GetHash());
+            if (!fSentGetBlocks)
+                connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETBLOCKS, chainActive.GetLocator(), uint256()));
         }
     }
 
@@ -3140,7 +3165,7 @@ void PeerLogicValidation::ConsiderEviction(CNode *pto, int64_t time_in_seconds)
             } else {
                 assert(state.m_chain_sync.m_work_header);
                 LogPrint(BCLog::NET, "sending getheaders to outbound peer=%d to verify chain work (current best known block:%s, benchmark blockhash: %s)\n", pto->GetId(), state.pindexBestKnownBlock != nullptr ? state.pindexBestKnownBlock->GetBlockHash().ToString() : "<none>", state.m_chain_sync.m_work_header->GetBlockHash().ToString());
-                connman->PushMessage(pto, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(state.m_chain_sync.m_work_header->pprev), uint256()));
+                //connman->PushMessage(pto, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(state.m_chain_sync.m_work_header->pprev), uint256()));
                 state.m_chain_sync.m_sent_getheaders = true;
                 constexpr int64_t HEADERS_RESPONSE_TIME = 120; // 2 minutes
                 // Bump the timeout to allow a response, which could clear the timeout
@@ -3359,7 +3384,9 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
                 if (pindexStart->pprev)
                     pindexStart = pindexStart->pprev;
                 LogPrint(BCLog::NET, "initial getheaders (%d) to peer=%d (startheight:%d)\n", pindexStart->nHeight, pto->GetId(), pto->nStartingHeight);
-                connman->PushMessage(pto, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexStart), uint256()));
+                //connman->PushMessage(pto, msgMaker.Make(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexStart), uint256()));
+                connman->PushMessage(pto, msgMaker.Make(NetMsgType::GETBLOCKS, chainActive.GetLocator(pindexStart), uint256()));
+                pto->fSyncingWith = true;
             }
         }
 
@@ -3714,15 +3741,34 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
         //
         std::vector<CInv> vGetData;
         if (!pto->fClient && ((fFetch && !pto->m_limited_node) || !IsInitialBlockDownload()) && state.nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
+            //std::vector<const CBlockIndex*> vToDownload;
+            //NodeId staller = -1;
+            //FindNextBlocksToDownload(pto->GetId(), MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller, consensusParams);
+            //for (const CBlockIndex *pindex : vToDownload) {
+            //    uint32_t nFetchFlags = GetFetchFlags(pto);
+            //    vGetData.push_back(CInv(MSG_BLOCK | nFetchFlags, pindex->GetBlockHash()));
+            //    MarkBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), pindex);
+            //    LogPrint(BCLog::NET, "Requesting block %s (%d) peer=%d\n", pindex->GetBlockHash().ToString(),
+            //        pindex->nHeight, pto->GetId());
+            //}
+            //if (state.nBlocksInFlight == 0 && staller != -1) {
+            //    if (State(staller)->nStallingSince == 0) {
+            //        State(staller)->nStallingSince = nNow;
+            //        LogPrint(BCLog::NET, "Stall started peer=%d\n", staller);
+            //    }
+            //}
+
             std::vector<const CBlockIndex*> vToDownload;
             NodeId staller = -1;
-            FindNextBlocksToDownload(pto->GetId(), MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller, consensusParams);
-            for (const CBlockIndex *pindex : vToDownload) {
-                uint32_t nFetchFlags = GetFetchFlags(pto);
-                vGetData.push_back(CInv(MSG_BLOCK | nFetchFlags, pindex->GetBlockHash()));
-                MarkBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), pindex);
-                LogPrint(BCLog::NET, "Requesting block %s (%d) peer=%d\n", pindex->GetBlockHash().ToString(),
-                    pindex->nHeight, pto->GetId());
+            //FindNextBlocksToDownload(pto->GetId(), MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller);
+            while (!pto->listAskForBlocks.empty()) {
+                const CInv& inv = pto->listAskForBlocks.front();
+                //Only request if this block is not already in the chain
+                if (!(mapBlockIndex.count(inv.hash) && chainActive.Contains(mapBlockIndex.at(inv.hash)))) {
+                    vGetData.push_back(inv);
+                    MarkBlockAsInFlight(pto->GetId(), inv.hash);
+                }
+                pto->listAskForBlocks.pop_front();
             }
             if (state.nBlocksInFlight == 0 && staller != -1) {
                 if (State(staller)->nStallingSince == 0) {

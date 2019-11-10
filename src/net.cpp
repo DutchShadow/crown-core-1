@@ -2759,6 +2759,7 @@ CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn
     nextSendTimeFeeFilter = 0;
     fPauseRecv = false;
     fPauseSend = false;
+    fSyncingWith = false;
     nProcessQueueSize = 0;
 
     for (const std::string &msg : getAllNetMessageTypes())
@@ -2775,6 +2776,13 @@ CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn
 CNode::~CNode()
 {
     CloseSocket(hSocket);
+}
+
+void CNode::AskForBlock(const CInv& inv)
+{
+    if (listAskForBlocks.size() > MAPASKFOR_MAX_SZ)
+        return;
+    listAskForBlocks.emplace_back(inv);
 }
 
 void CNode::AskFor(const CInv& inv)
