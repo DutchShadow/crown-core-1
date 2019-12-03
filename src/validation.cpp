@@ -40,6 +40,7 @@
 #include <utilstrencodings.h>
 #include <validationinterface.h>
 #include <warnings.h>
+#include <txdb.h>
 
 #include <future>
 #include <sstream>
@@ -997,6 +998,56 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
 {
     const CChainParams& chainparams = Params();
     return AcceptToMemoryPoolWithTime(chainparams, pool, state, tx, pfMissingInputs, GetTime(), plTxnReplaced, bypass_limits, nAbsurdFee, test_accept);
+}
+
+int GetTransactionAge(const uint256 &txid)
+{
+    CTransactionRef tx;
+    uint256 hashBlock;
+    if (GetTransaction(txid, tx, Params().GetConsensus(), hashBlock, true))
+    {
+        BlockMap::iterator it = mapBlockIndex.find(hashBlock);
+        if (it != mapBlockIndex.end())
+        {   
+            return (chainActive.Tip()->nHeight + 1) - it->second->nHeight;
+        }
+    }
+
+    return -1;
+}
+
+int GetInputHeight(const CTxIn& vin)
+{
+    CCoinsView viewDummy;
+    CCoinsViewCache view(&viewDummy);
+    {
+        LOCK(mempool.cs); 
+        CCoinsViewMemPool viewMempool(pcoinsTip.get(), mempool);
+        view.SetBackend(viewMempool); // temporarily switch cache backend to db+mempool view
+
+        //const CCoins* coins = view.AccessCoins(vin.prevout.hash);
+
+        //if (coins) {
+        //    return coins->nHeight;
+        //}
+        //else
+        //    return -1;
+    }
+}
+
+
+int GetInputAge(const CTxIn& vin)
+{
+    int height = GetInputHeight(vin);
+
+    if (height < 0 || height == MEMPOOL_HEIGHT)
+        return 0;
+
+    return (chainActive.Tip()->nHeight + 1) - height;
+}
+
+int GetInputAgeIX(uint256 nTXHash, const CTxIn& vin)
+{
 }
 
 /**

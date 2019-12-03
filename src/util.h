@@ -36,8 +36,8 @@
 #include <boost/thread/condition_variable.hpp> // for boost::thread_interrupted
 
 //Crown only features
-//extern bool fMasterNode;
-//extern bool fSystemNode;
+extern bool fMasterNode;
+extern bool fSystemNode;
 //extern bool fLiteMode;
 //extern bool fEnableInstantX;
 //extern int nInstantXDepth;

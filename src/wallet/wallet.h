@@ -64,6 +64,9 @@ static const bool DEFAULT_WALLET_RBF = false;
 static const bool DEFAULT_WALLETBROADCAST = true;
 static const bool DEFAULT_DISABLE_WALLET = false;
 
+static const int MASTERNODE_COLLATERAL = 10000;
+static const int SYSTEMNODE_COLLATERAL = 500;
+
 //! Pre-calculated constants for input size estimation in *virtual size*
 static constexpr size_t DUMMY_NESTED_P2WPKH_INPUT_SIZE = 91;
 
@@ -112,6 +115,16 @@ enum WalletFlags : uint64_t {
 };
 
 static constexpr uint64_t g_known_wallet_flags = WALLET_FLAG_DISABLE_PRIVATE_KEYS;
+
+enum AvailableCoinsType
+{   
+    ALL_COINS = 1,
+    ONLY_DENOMINATED = 2,
+    ONLY_NOT10000IFMN = 3,
+    ONLY_NONDENOMINATED_NOT10000IFMN = 4,
+    ONLY_10000 = 5, // find throne outputs including locked ones (use with caution)
+    ONLY_500 = 6, // find systemnode outputs including locked ones
+};  
 
 /** A key pool entry */
 class CKeyPool
@@ -276,6 +289,7 @@ public:
 
     const uint256& GetHash() const { return tx->GetHash(); }
     bool IsCoinBase() const { return tx->IsCoinBase(); }
+    bool IsCoinStake() const { return tx->IsCoinStake(); }
 };
 
 //Get the marginal bytes of spending the specified output
@@ -535,6 +549,11 @@ public:
     inline CInputCoin GetInputCoin() const
     {
         return CInputCoin(tx->tx, i, nInputBytes);
+    }
+
+    friend bool operator==(const COutput& a, const COutput& b)
+    {
+        return a.tx == b.tx && a.i == b.i;
     }
 };
 
@@ -844,6 +863,7 @@ public:
      * populate vCoins with vector of available COutputs.
      */
     void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe=true, const CCoinControl *coinControl = nullptr, const CAmount& nMinimumAmount = 1, const CAmount& nMaximumAmount = MAX_MONEY, const CAmount& nMinimumSumAmount = MAX_MONEY, const uint64_t nMaximumCount = 0, const int nMinDepth = 0, const int nMaxDepth = 9999999) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void AvailableCoins2(std::vector<COutput>& vCoins, bool fOnlyConfirmed=true, const CCoinControl *coinControl = NULL, AvailableCoinsType coin_type=ALL_COINS, bool useIX = false) const;
 
     /**
      * Return list of available coins and locked coins grouped by non-change output address.

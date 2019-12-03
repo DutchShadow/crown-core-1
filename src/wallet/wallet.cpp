@@ -2350,6 +2350,76 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
     }
 }
 
+/**
+   * populate vCoins with vector of available COutputs.
+    */
+void CWallet::AvailableCoins2(std::vector<COutput>& vCoins, bool fOnlyConfirmed, const CCoinControl *coinControl, AvailableCoinsType coin_type, bool useIX) const
+{
+    vCoins.clear();
+
+    {
+        LOCK2(cs_main, cs_wallet);
+        for (const auto& entry : mapWallet)
+        {
+            const uint256& wtxid = entry.first;
+            const CWalletTx* pcoin = &entry.second;
+
+            if (!CheckFinalTx(*pcoin->tx))
+                continue;
+
+            if ((pcoin->IsCoinBase() || pcoin->IsCoinStake()) && pcoin->GetBlocksToMaturity() > 0)
+                continue;
+
+            int nDepth = pcoin->GetDepthInMainChain();
+            if (nDepth < 0)
+                continue;
+
+            if (nDepth == 0 && !pcoin->InMempool())
+                continue;
+
+            bool safeTx = pcoin->IsTrusted();
+
+            if (nDepth == 0 && pcoin->mapValue.count("replaces_txid")) {
+                safeTx = false;
+            }
+
+            if (nDepth == 0 && pcoin->mapValue.count("replaced_by_txid")) {
+                safeTx = false;
+            }
+
+            if (fOnlyConfirmed && !safeTx) {
+                continue;
+            }
+            
+            for (unsigned int i = 0; i < pcoin->tx->vout.size(); i++)
+            {
+                bool found = false;
+                if(coin_type == ONLY_NOT10000IFMN) {
+                    found = !(fMasterNode && pcoin->tx->vout[i].nValue == 10000*COIN);
+                } else if(coin_type == ONLY_10000) {
+                    found = pcoin->tx->vout[i].nValue == MASTERNODE_COLLATERAL*COIN;
+                } else if (coin_type == ONLY_500) {
+                    found = pcoin->tx->vout[i].nValue == SYSTEMNODE_COLLATERAL*COIN;
+                } else {
+                    found = true;
+                }
+                if(!found) continue;
+
+                isminetype mine = IsMine(pcoin->tx->vout[i]);
+                bool solvable = IsSolvable(*this, pcoin->tx->vout[i].scriptPubKey);
+                bool spendable = ((mine & ISMINE_SPENDABLE) != ISMINE_NO) || (((mine & ISMINE_WATCH_ONLY) != ISMINE_NO) && (coinControl && coinControl->fAllowWatchOnly && solvable));
+
+                if (!(IsSpent(wtxid, i)) && mine != ISMINE_NO &&
+                        (!IsLockedCoin(wtxid, i) || coin_type == ONLY_10000 || coin_type == ONLY_500) &&
+                        (pcoin->tx->vout[i].nValue > 0) &&
+                        (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected(COutPoint(entry.first, i))))
+                    vCoins.push_back(COutput(pcoin, i, nDepth, spendable, solvable, safeTx, (coinControl && coinControl->fAllowWatchOnly)));
+            }
+        }
+    }
+}
+
+
 std::map<CTxDestination, std::vector<COutput>> CWallet::ListCoins() const
 {
     // TODO: Add AssertLockHeld(cs_wallet) here.

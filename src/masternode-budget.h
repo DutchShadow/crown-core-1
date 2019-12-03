@@ -6,7 +6,7 @@
 #ifndef MASTERNODE_BUDGET_H
 #define MASTERNODE_BUDGET_H
 
-#include "main.h"
+#include "validation.h"
 #include "sync.h"
 #include "net.h"
 #include "key.h"

@@ -180,6 +180,7 @@ public:
 
         /* disable fallback fee on mainnet */
         m_fallback_fee_enabled = false;
+        strLegacySignerDummyAddress = "18WTcWvwrNnfqeQAn6th9QQ2EpnXMq5Th8";
     }
 };
 

@@ -224,7 +224,7 @@ BitcoinGUI::~BitcoinGUI()
 
 void BitcoinGUI::createActions()
 {
-    QActionGroup *tabGroup = new QActionGroup(this);
+    tabGroup = new QActionGroup(this);
 
     overviewAction = new QAction(platformStyle->SingleColorIcon(":/icons/overview"), tr("&Overview"), this);
     overviewAction->setStatusTip(tr("Show general overview of wallet"));
@@ -403,16 +403,25 @@ void BitcoinGUI::createToolBars()
 {
     if(walletFrame)
     {
-        QToolBar *toolbar = addToolBar(tr("Tabs toolbar"));
+        toolbar = new QToolBar(tr("Tabs toolbar"));
+        //toolbar->setOrientation(Qt::Vertical);
         appToolBar = toolbar;
         toolbar->setContextMenuPolicy(Qt::PreventContextMenu);
+        addToolBar(Qt::LeftToolBarArea, toolbar);
         toolbar->setMovable(false);
+
         toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
         toolbar->addAction(overviewAction);
         toolbar->addAction(sendCoinsAction);
         toolbar->addAction(receiveCoinsAction);
         toolbar->addAction(historyAction);
         overviewAction->setChecked(true);
+
+        QLayout* lay = toolbar->layout();
+        for (int i = 0; i < lay->count(); ++i)
+        {
+            lay->itemAt(i)->setAlignment(Qt::AlignLeft);
+        }
 
 #ifdef ENABLE_WALLET
         QWidget *spacer = new QWidget();
@@ -505,6 +514,14 @@ bool BitcoinGUI::addWallet(WalletModel *walletModel)
 {
     if(!walletFrame)
         return false;
+    if (walletModel->getOptionsModel()->getSystemnodesEnabled())
+    {
+        enableSystemnodes();
+    }
+    if (walletModel->getOptionsModel()->getMasternodesEnabled())
+    {
+        enableMasternodes();
+    }
     const QString name = walletModel->getWalletName();
     QString display_name = name.isEmpty() ? "["+tr("default wallet")+"]" : name;
     setWalletActionsEnabled(true);
@@ -1234,6 +1251,68 @@ void BitcoinGUI::unsubscribeFromCoreSignals()
 void BitcoinGUI::toggleNetworkActive()
 {
     m_node.setNetworkActive(!m_node.getNetworkActive());
+}
+
+void BitcoinGUI::enableSystemnodes()
+{
+    if (systemnodeAction == NULL)
+    {
+        systemnodeAction = new QAction(QIcon(":/icons/systemnode"), tr("&Systemnodes"), this);
+        systemnodeAction->setStatusTip(tr("Browse systemnodes"));
+        systemnodeAction->setToolTip(systemnodeAction->statusTip());
+        systemnodeAction->setCheckable(true);
+#ifdef Q_OS_MAC
+        systemnodeAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_6));
+#else
+        systemnodeAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
+#endif
+        tabGroup->addAction(systemnodeAction);
+        connect(systemnodeAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+        connect(systemnodeAction, SIGNAL(triggered()), this, SLOT(gotoSystemnodePage()));
+    }
+    toolbar->addAction(systemnodeAction);
+}
+
+void BitcoinGUI::disableSystemnodes()
+{
+    toolbar->removeAction(systemnodeAction);
+    gotoOverviewPage();
+}
+
+void BitcoinGUI::enableMasternodes()
+{
+    if (masternodeAction == NULL)
+    {
+        masternodeAction = new QAction(QIcon(":/icons/masternode"), tr("&Masternodes"), this);
+        masternodeAction->setStatusTip(tr("Browse masternodes"));
+        masternodeAction->setToolTip(masternodeAction->statusTip());
+        masternodeAction->setCheckable(true);
+#ifdef Q_OS_MAC
+        masternodeAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_6));
+#else
+        masternodeAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
+#endif
+        tabGroup->addAction(masternodeAction);
+        connect(masternodeAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+        connect(masternodeAction, SIGNAL(triggered()), this, SLOT(gotoMasternodePage()));
+    }
+    toolbar->addAction(masternodeAction);
+}
+
+void BitcoinGUI::disableMasternodes()
+{
+    toolbar->removeAction(masternodeAction);
+    gotoOverviewPage();
+}
+
+void BitcoinGUI::guiEnableSystemnodesChanged(bool enabled)
+{
+    enabled ? enableSystemnodes() : disableSystemnodes();
+}
+
+void BitcoinGUI::guiEnableMasternodesChanged(bool enabled)
+{
+    enabled ? enableMasternodes() : disableMasternodes();
 }
 
 UnitDisplayStatusBarControl::UnitDisplayStatusBarControl(const PlatformStyle *platformStyle) :

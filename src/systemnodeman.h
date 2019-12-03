@@ -10,7 +10,7 @@
 #include "key.h"
 #include "util.h"
 #include "base58.h"
-#include "main.h"
+#include "validation.h"
 #include "systemnode.h"
 
 #define SYSTEMNODES_DUMP_SECONDS               (15*60)

@@ -5,12 +5,14 @@
 #ifndef SYSTEMNODE_H
 #define SYSTEMNODE_H
 
+#include <arith_uint256.h>
+#include "chain.h"
+#include "validation.h"
 #include "sync.h"
 #include "net.h"
 #include "key.h"
 #include "util.h"
 #include "base58.h"
-#include "main.h"
 #include "timedata.h"
 
 #define SYSTEMNODE_MIN_CONFIRMATIONS           15

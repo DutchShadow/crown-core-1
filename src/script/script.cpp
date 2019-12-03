@@ -8,6 +8,16 @@
 #include <tinyformat.h>
 #include <utilstrencodings.h>
 
+namespace {
+    inline std::string ValueString(const std::vector<unsigned char>& vch)
+    {
+        if (vch.size() <= 4)
+            return strprintf("%d", CScriptNum(vch, false).getint());
+        else
+            return HexStr(vch);
+    }
+} // anon namespace
+
 const char* GetOpName(opcodetype opcode)
 {
     switch (opcode)
@@ -279,6 +289,29 @@ bool CScript::HasValidOps() const
         }
     }
     return true;
+}
+
+std::string CScript::ToString() const
+{
+    std::string str;
+    opcodetype opcode;
+    std::vector<unsigned char> vch;
+    const_iterator pc = begin();
+    while (pc < end())
+    {
+        if (!str.empty())
+            str += " ";
+        if (!GetOp(pc, opcode, vch))
+        {
+            str += "[error]";
+            return str;
+        }
+        if (0 <= opcode && opcode <= OP_PUSHDATA4)
+            str += ValueString(vch);
+        else
+            str += GetOpName(opcode);
+    }
+    return str;
 }
 
 bool GetScriptOp(CScriptBase::const_iterator& pc, CScriptBase::const_iterator end, opcodetype& opcodeRet, std::vector<unsigned char>* pvchRet)

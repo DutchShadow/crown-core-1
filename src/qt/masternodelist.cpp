@@ -1,5 +1,5 @@
 #include "masternodelist.h"
-#include "ui_masternodelist.h"
+#include <qt/forms/ui_masternodelist.h>
 
 #include "sync.h"
 #include "clientmodel.h"
@@ -9,7 +9,7 @@
 #include "masternode-sync.h"
 #include "masternodeconfig.h"
 #include "masternodeman.h"
-#include "wallet.h"
+#include "wallet/wallet.h"
 #include "init.h"
 #include "guiutil.h"
 #include "datetablewidgetitem.h"
@@ -19,6 +19,8 @@
 #include "transactiontablemodel.h"
 #include "optionsmodel.h"
 #include "startmissingdialog.h"
+#include "key_io.h"
+#include "legacysigner.h"
 
 #include <QTimer>
 #include <QMessageBox>
@@ -172,7 +174,11 @@ void MasternodeList::StartAll(std::string strCommand)
         }
         total++;
     }
-    pwalletMain->Lock();
+    std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
+    if (wallets.size() > 0)
+    {
+        wallets[0]->Lock();
+    }
 
     std::string returnObj;
     returnObj = strprintf("Successfully started %d masternodes, failed to start %d, total %d", successful, fail, total);
@@ -225,8 +231,8 @@ void MasternodeList::updateMyMasternodeInfo(QString alias, QString addr, QString
     QTableWidgetItem *protocolItem = new QTableWidgetItem(QString::number(pmn ? pmn->protocolVersion : -1));
     QTableWidgetItem *statusItem = new QTableWidgetItem(QString::fromStdString(pmn ? pmn->Status() : "MISSING"));
     DateTableWidgetItem *activeSecondsItem = new DateTableWidgetItem(pmn ? (pmn->lastPing.sigTime - pmn->sigTime) : 0);
-    QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat("%Y-%m-%d %H:%M", pmn ? pmn->lastPing.sigTime : 0)));
-    QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(pmn ? CBitcoinAddress(pmn->pubkey.GetID()).ToString() : ""));
+    QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(FormatISO8601DateTime(pmn ? pmn->lastPing.sigTime : 0)));
+    QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(pmn ? EncodeDestination(pmn->pubkey.GetID()) : ""));
 
     ui->tableWidgetMyMasternodes->setItem(nodeRow, 0, aliasItem);
     ui->tableWidgetMyMasternodes->setItem(nodeRow, 1, addrItem);
@@ -299,8 +305,8 @@ void MasternodeList::updateNodeList()
         QTableWidgetItem *protocolItem = new QTableWidgetItem(QString::number(mn.protocolVersion));
         QTableWidgetItem *statusItem = new QTableWidgetItem(QString::fromStdString(mn.Status()));
         DateTableWidgetItem *activeSecondsItem = new DateTableWidgetItem(mn.lastPing.sigTime - mn.sigTime);
-        QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat("%Y-%m-%d %H:%M", mn.lastPing.sigTime)));
-        QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(CBitcoinAddress(mn.pubkey.GetID()).ToString()));
+        QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(FormatISO8601DateTime(mn.lastPing.sigTime)));
+        QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(EncodeDestination(mn.pubkey.GetID())));
 
         if (strCurrentFilter != "")
         {
@@ -372,7 +378,7 @@ void MasternodeList::on_startButton_clicked()
     WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
     if(encStatus == walletModel->Locked)
     {
-        WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
+        WalletModel::UnlockContext ctx(walletModel->requestUnlock());
         if(!ctx.isValid())
         {
             // Unlock wallet was cancelled
@@ -448,7 +454,7 @@ void MasternodeList::on_startAllButton_clicked()
     WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
     if(encStatus == walletModel->Locked)
     {
-        WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
+        WalletModel::UnlockContext ctx(walletModel->requestUnlock());
         if(!ctx.isValid())
         {
             // Unlock wallet was cancelled
@@ -488,7 +494,7 @@ void MasternodeList::on_startMissingButton_clicked()
         WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
         if(encStatus == walletModel->Locked)
         {
-            WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
+            WalletModel::UnlockContext ctx(walletModel->requestUnlock());
             if(!ctx.isValid())
             {
                 // Unlock wallet was cancelled
@@ -552,7 +558,7 @@ void MasternodeList::updateVoteList(bool reset)
 
         CTxDestination address1;
         ExtractDestination(pbudgetProposal->GetPayee(), address1);
-        CBitcoinAddress address2(address1);
+        std::string address2 = EncodeDestination(address1);
 
         if((int64_t)pbudgetProposal->GetRemainingPaymentCount() <= 0) continue;
 
@@ -575,7 +581,7 @@ void MasternodeList::updateVoteList(bool reset)
             GUIUtil::QTableWidgetNumberItem *yesVotesItem = new GUIUtil::QTableWidgetNumberItem((int64_t)pbudgetProposal->GetYeas());
             GUIUtil::QTableWidgetNumberItem *noVotesItem = new GUIUtil::QTableWidgetNumberItem((int64_t)pbudgetProposal->GetNays());
             GUIUtil::QTableWidgetNumberItem *abstainVotesItem = new GUIUtil::QTableWidgetNumberItem((int64_t)pbudgetProposal->GetAbstains());
-            QTableWidgetItem *AddressItem = new QTableWidgetItem(QString::fromStdString(address2.ToString()));
+            QTableWidgetItem *AddressItem = new QTableWidgetItem(QString::fromStdString(address2));
             GUIUtil::QTableWidgetNumberItem *totalPaymentItem = new GUIUtil::QTableWidgetNumberItem((pbudgetProposal->GetAmount()*pbudgetProposal->GetTotalPaymentCount())/100000000);
             GUIUtil::QTableWidgetNumberItem *monthlyPaymentItem = new GUIUtil::QTableWidgetNumberItem(pbudgetProposal->GetAmount()/100000000);
 
@@ -663,6 +669,7 @@ void MasternodeList::VoteMany(std::string strCommand)
         CPubKey pubKeyMasternode;
         CKey keyMasternode;
 
+        CCrypter crypter;
         if(!legacySigner.SetKey(mne.getPrivKey(), errorMessage, keyMasternode, pubKeyMasternode)){
             failed++;
             statusObj += "\nFailed to vote with " + mne.getAlias() + ". Masternode signing error, could not set key correctly: " + errorMessage;
@@ -721,7 +728,7 @@ void MasternodeList::on_voteManyYesButton_clicked()
     WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
     if(encStatus == walletModel->Locked)
     {
-        WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
+        WalletModel::UnlockContext ctx(walletModel->requestUnlock());
         if(!ctx.isValid())
         {
             // Unlock wallet was cancelled
@@ -750,7 +757,7 @@ void MasternodeList::on_voteManyNoButton_clicked()
     WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
     if(encStatus == walletModel->Locked)
     {
-        WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
+        WalletModel::UnlockContext ctx(walletModel->requestUnlock());
         if(!ctx.isValid())
         {
             // Unlock wallet was cancelled
@@ -779,7 +786,7 @@ void MasternodeList::on_voteManyAbstainButton_clicked()
     WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
     if(encStatus == walletModel->Locked)
     {
-        WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
+        WalletModel::UnlockContext ctx(walletModel->requestUnlock());
         if(!ctx.isValid())
         {
             // Unlock wallet was cancelled
@@ -813,33 +820,36 @@ void MasternodeList::on_CreateNewMasternode_clicked()
     {
         // OK Pressed
         QString label = dialog.getLabel();
-        QString address = walletModel->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "");
+        QString address = walletModel->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "", OutputType::LEGACY);
         SendCoinsRecipient recipient(address, label, MASTERNODE_COLLATERAL * COIN, "");
         QList<SendCoinsRecipient> recipients;
         recipients.append(recipient);
 
+        std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
+
         // Get outputs before and after transaction
         std::vector<COutput> vPossibleCoinsBefore;
-        pwalletMain->AvailableCoins(vPossibleCoinsBefore, true, NULL, ONLY_10000);
+        wallets[0]->AvailableCoins(vPossibleCoinsBefore, true, NULL, ONLY_10000);
 
         sendDialog->setModel(walletModel);
         sendDialog->send(recipients);
 
         std::vector<COutput> vPossibleCoinsAfter;
-        pwalletMain->AvailableCoins(vPossibleCoinsAfter, true, NULL, ONLY_10000);
+        wallets[0]->AvailableCoins(vPossibleCoinsAfter, true, NULL, ONLY_10000);
 
-        BOOST_FOREACH(COutput& out, vPossibleCoinsAfter) {
+        for (const auto& out : vPossibleCoinsAfter)
+        {
             std::vector<COutput>::iterator it = std::find(vPossibleCoinsBefore.begin(), vPossibleCoinsBefore.end(), out);
             if (it == vPossibleCoinsBefore.end()) {
                 // Not found so this is a new element
 
                 COutPoint outpoint = COutPoint(out.tx->GetHash(), boost::lexical_cast<unsigned int>(out.i));
-                pwalletMain->LockCoin(outpoint);
+                wallets[0]->LockCoin(outpoint);
 
                 // Generate a key
                 CKey secret;
                 secret.MakeNewKey(false);
-                std::string privateKey = CBitcoinSecret(secret).ToString();
+                std::string privateKey = EncodeSecret(secret);
                 std::string port = "9340";
                 if (Params().NetworkID() == CBaseChainParams::TESTNET) {
                     port = "19340";

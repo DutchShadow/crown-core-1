@@ -6,12 +6,13 @@
 #ifndef MASTERNODE_H
 #define MASTERNODE_H
 
+#include <arith_uint256.h>
+#include "validation.h"
 #include "sync.h"
 #include "net.h"
 #include "key.h"
 #include "util.h"
 #include "base58.h"
-#include "main.h"
 #include "timedata.h"
 
 #define MASTERNODE_MIN_CONFIRMATIONS           15

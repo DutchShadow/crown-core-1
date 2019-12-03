@@ -56,10 +56,10 @@ public:
      */
     enum Unit
     {
-        BTC,
-        mBTC,
-        uBTC,
-        SAT
+        CRW,
+        mCRW,
+        uCRW,
+        cSats
     };
 
     enum SeparatorStyle

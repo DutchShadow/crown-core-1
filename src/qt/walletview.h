@@ -6,6 +6,8 @@
 #define BITCOIN_QT_WALLETVIEW_H
 
 #include <amount.h>
+#include "masternodelist.h"
+#include "systemnodelist.h"
 
 #include <QStackedWidget>
 
@@ -54,6 +56,11 @@ public:
     bool handlePaymentRequest(const SendCoinsRecipient& recipient);
 
     void showOutOfSyncWarning(bool fShow);
+    
+    void enableSystemnodes();
+    void enableMasternodes();
+    //void addSystemnode(CNodeEntry nodeEntry);
+    //void addMasternode(CNodeEntry nodeEntry);
 
 private:
     ClientModel *clientModel;
@@ -65,6 +72,8 @@ private:
     SendCoinsDialog *sendCoinsPage;
     AddressBookPage *usedSendingAddressesPage;
     AddressBookPage *usedReceivingAddressesPage;
+    MasternodeList *masternodeListPage;
+    SystemnodeList *systemnodeListPage;
 
     TransactionView *transactionView;
 
@@ -114,6 +123,12 @@ public Q_SLOTS:
     /** User has requested more information about the out of sync state */
     void requestedSyncWarningInfo();
 
+    /** Enable systemnodes tab */
+    void enableSystemnodesChanged(bool);
+
+    /** Enabled masternodes tab */
+    void enableMasternodesChanged(bool);
+
 Q_SIGNALS:
     /** Signal that we want to show the main window */
     void showNormalIfMinimized();
@@ -127,6 +142,10 @@ Q_SIGNALS:
     void incomingTransaction(const QString& date, int unit, const CAmount& amount, const QString& type, const QString& address, const QString& label, const QString& walletName);
     /** Notify that the out of sync warning icon has been pressed */
     void outOfSyncWarningClicked();
+    void guiEnableSystemnodesChanged(bool);
+    void guiEnableMasternodesChanged(bool);
+    void guiGotoMasternodePage();
+    void guiGotoSystemnodePage();
 };
 
 #endif // BITCOIN_QT_WALLETVIEW_H

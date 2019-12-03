@@ -21,7 +21,7 @@ public:
     void setWarningText(const QString& text);
     bool checkboxChecked();
 
-private slots:
+private Q_SLOTS:
     void CheckBoxStateChanged(int state);
 
 private:

@@ -102,8 +102,12 @@ private:
 
     QMenuBar* appMenuBar = nullptr;
     QToolBar* appToolBar = nullptr;
+    QToolBar *toolbar = nullptr;
+    QActionGroup *tabGroup = nullptr;
     QAction* overviewAction = nullptr;
     QAction* historyAction = nullptr;
+    QAction *masternodeAction = nullptr;
+    QAction *systemnodeAction = nullptr;
     QAction* quitAction = nullptr;
     QAction* sendCoinsAction = nullptr;
     QAction* sendCoinsMenuAction = nullptr;
@@ -186,6 +190,8 @@ public Q_SLOTS:
        @param[in] ret       pointer to a bool that will be modified to whether Ok was clicked (modal only)
     */
     void message(const QString &title, const QString &message, unsigned int style, bool *ret = nullptr);
+    void guiEnableSystemnodesChanged(bool);
+    void guiEnableMasternodesChanged(bool);
 
 #ifdef ENABLE_WALLET
     bool setCurrentWallet(const QString& name);
@@ -270,6 +276,13 @@ private Q_SLOTS:
     void toggleNetworkActive();
 
     void showModalOverlay();
+
+private:
+    void enableSystemnodes();
+    void disableSystemnodes();
+    void enableMasternodes();
+    void disableMasternodes();
+
 };
 
 class UnitDisplayStatusBarControl : public QLabel

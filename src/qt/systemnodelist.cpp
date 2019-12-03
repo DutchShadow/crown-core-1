@@ -1,5 +1,5 @@
 #include "systemnodelist.h"
-#include "ui_systemnodelist.h"
+#include <qt/forms/ui_systemnodelist.h>
 
 #include "sync.h"
 #include "clientmodel.h"
@@ -8,7 +8,7 @@
 #include "systemnode-sync.h"
 #include "systemnodeconfig.h"
 #include "systemnodeman.h"
-#include "wallet.h"
+#include "wallet/wallet.h"
 #include "init.h"
 #include "guiutil.h"
 #include "datetablewidgetitem.h"
@@ -18,6 +18,8 @@
 #include "transactiontablemodel.h"
 #include "optionsmodel.h"
 #include "startmissingdialog.h"
+#include "key_io.h"
+#include "legacysigner.h"
 
 #include <QTimer>
 #include <QMessageBox>
@@ -166,7 +168,11 @@ void SystemnodeList::StartAll(std::string strCommand)
         }
         total++;
     }
-    pwalletMain->Lock();
+    std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
+    if (wallets.size() > 0)
+    {
+        wallets[0]->Lock();
+    }
 
     std::string returnObj;
     returnObj = strprintf("Successfully started %d systemnodes, failed to start %d, total %d", successful, fail, total);
@@ -219,8 +225,8 @@ void SystemnodeList::updateMySystemnodeInfo(QString alias, QString addr, QString
     QTableWidgetItem *protocolItem = new QTableWidgetItem(QString::number(pmn ? pmn->protocolVersion : -1));
     QTableWidgetItem *statusItem = new QTableWidgetItem(QString::fromStdString(pmn ? pmn->Status() : "MISSING"));
     DateTableWidgetItem *activeSecondsItem = new DateTableWidgetItem(pmn ? (pmn->lastPing.sigTime - pmn->sigTime) : 0);
-    QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat("%Y-%m-%d %H:%M", pmn ? pmn->lastPing.sigTime : 0)));
-    QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(pmn ? CBitcoinAddress(pmn->pubkey.GetID()).ToString() : ""));
+    QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(FormatISO8601DateTime(pmn ? pmn->lastPing.sigTime : 0)));
+    QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(pmn ? EncodeDestination(pmn->pubkey.GetID()) : ""));
 
     ui->tableWidgetMySystemnodes->setItem(nodeRow, 0, aliasItem);
     ui->tableWidgetMySystemnodes->setItem(nodeRow, 1, addrItem);
@@ -293,8 +299,8 @@ void SystemnodeList::updateNodeList()
         QTableWidgetItem *protocolItem = new QTableWidgetItem(QString::number(mn.protocolVersion));
         QTableWidgetItem *statusItem = new QTableWidgetItem(QString::fromStdString(mn.Status()));
         DateTableWidgetItem *activeSecondsItem = new DateTableWidgetItem(mn.lastPing.sigTime - mn.sigTime);
-        QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat("%Y-%m-%d %H:%M", mn.lastPing.sigTime)));
-        QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(CBitcoinAddress(mn.pubkey.GetID()).ToString()));
+        QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(FormatISO8601DateTime(mn.lastPing.sigTime)));
+        QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(EncodeDestination(mn.pubkey.GetID())));
 
         if (strCurrentFilter != "")
         {
@@ -354,7 +360,7 @@ void SystemnodeList::on_startButton_clicked()
     WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
     if(encStatus == walletModel->Locked)
     {
-        WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
+        WalletModel::UnlockContext ctx(walletModel->requestUnlock());
         if(!ctx.isValid())
         {
             // Unlock wallet was cancelled
@@ -430,7 +436,7 @@ void SystemnodeList::on_startAllButton_clicked()
     WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
     if(encStatus == walletModel->Locked)
     {
-        WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
+        WalletModel::UnlockContext ctx(walletModel->requestUnlock());
         if(!ctx.isValid())
         {
             // Unlock wallet was cancelled
@@ -469,7 +475,7 @@ void SystemnodeList::on_startMissingButton_clicked()
         WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
         if(encStatus == walletModel->Locked)
         {
-            WalletModel::UnlockContext ctx(walletModel->requestUnlock(true));
+            WalletModel::UnlockContext ctx(walletModel->requestUnlock());
             if(!ctx.isValid())
             {
                 // Unlock wallet was cancelled
@@ -506,20 +512,22 @@ void SystemnodeList::on_CreateNewSystemnode_clicked()
     {
         // OK Pressed
         QString label = dialog.getLabel();
-        QString address = walletModel->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "");
+        QString address = walletModel->getAddressTableModel()->addRow(AddressTableModel::Receive, label, "", OutputType::LEGACY);
         SendCoinsRecipient recipient(address, label, SYSTEMNODE_COLLATERAL * COIN, "");
         QList<SendCoinsRecipient> recipients;
         recipients.append(recipient);
 
+        std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
+
         // Get outputs before and after transaction
         std::vector<COutput> vPossibleCoinsBefore;
-        pwalletMain->AvailableCoins(vPossibleCoinsBefore, true, NULL, ONLY_500);
+        wallets[0]->AvailableCoins(vPossibleCoinsBefore, true, NULL, ONLY_500);
 
         sendDialog->setModel(walletModel);
         sendDialog->send(recipients);
 
         std::vector<COutput> vPossibleCoinsAfter;
-        pwalletMain->AvailableCoins(vPossibleCoinsAfter, true, NULL, ONLY_500);
+        wallets[0]->AvailableCoins(vPossibleCoinsAfter, true, NULL, ONLY_500);
 
         BOOST_FOREACH(COutput& out, vPossibleCoinsAfter) {
             std::vector<COutput>::iterator it = std::find(vPossibleCoinsBefore.begin(), vPossibleCoinsBefore.end(), out);
@@ -527,12 +535,12 @@ void SystemnodeList::on_CreateNewSystemnode_clicked()
                 // Not found so this is a new element
 
                 COutPoint outpoint = COutPoint(out.tx->GetHash(), boost::lexical_cast<unsigned int>(out.i));
-                pwalletMain->LockCoin(outpoint);
+                wallets[0]->LockCoin(outpoint);
 
                 // Generate a key
                 CKey secret;
                 secret.MakeNewKey(false);
-                std::string privateKey = CBitcoinSecret(secret).ToString();
+                std::string privateKey = EncodeSecret(secret);
                 std::string port = "9340";
                 if (Params().NetworkID() == CBaseChainParams::TESTNET) {
                     port = "19340";

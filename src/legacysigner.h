@@ -5,7 +5,7 @@
 #ifndef LEGACYSIGNER_H
 #define LEGACYSIGNER_H
 
-#include "main.h"
+#include "validation.h"
 #include "sync.h"
 #include "activemasternode.h"
 #include "masternodeman.h"

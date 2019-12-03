@@ -11,7 +11,7 @@
 #include "key.h"
 #include "util.h"
 #include "base58.h"
-#include "main.h"
+#include "validation.h"
 #include "masternode.h"
 
 #define MASTERNODES_DUMP_SECONDS               (15*60)

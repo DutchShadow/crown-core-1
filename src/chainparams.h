@@ -86,7 +86,9 @@ public:
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     const CCheckpointData& Checkpoints() const { return checkpointData; }
     const ChainTxData& TxData() const { return chainTxData; }
+    const std::string NetworkID() const { return strNetworkID; }
     void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
+    std::string LegacySignerDummyAddress() const { return strLegacySignerDummyAddress; }
 
     // TODO old values
     // const uint256& HashGenesisBlock() const { return hashGenesisBlock; }
@@ -175,6 +177,7 @@ protected:
     CCheckpointData checkpointData;
     ChainTxData chainTxData;
     bool m_fallback_fee_enabled;
+    std::string strLegacySignerDummyAddress;
 
     //TODO old values
     // uint256 hashGenesisBlock;

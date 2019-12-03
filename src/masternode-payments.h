@@ -7,7 +7,7 @@
 #define MASTERNODE_PAYMENTS_H
 
 #include "key.h"
-#include "main.h"
+#include "validation.h"
 #include "masternode.h"
 #include <boost/lexical_cast.hpp>
 
@@ -78,7 +78,7 @@ public:
     void AddPayee(CScript payeeIn, int nIncrement){
         LOCK(cs_vecPayments);
 
-        BOOST_FOREACH(CMasternodePayee& payee, vecPayments){
+        for (auto& payee : vecPayments) {
             if(payee.scriptPubKey == payeeIn) {
                 payee.nVotes += nIncrement;
                 return;
@@ -94,7 +94,7 @@ public:
         LOCK(cs_vecPayments);
 
         int nVotes = -1;
-        BOOST_FOREACH(CMasternodePayee& p, vecPayments){
+        for (auto& p : vecPayments) {
             if(p.nVotes > nVotes){
                 payee = p.scriptPubKey;
                 nVotes = p.nVotes;
@@ -108,7 +108,7 @@ public:
     {
         LOCK(cs_vecPayments);
 
-        BOOST_FOREACH(CMasternodePayee& p, vecPayments){
+        for (auto& p : vecPayments) {
             if(p.nVotes >= nVotesReq && p.scriptPubKey == payee) return true;
         }
 

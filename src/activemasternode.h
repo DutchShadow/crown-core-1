@@ -9,8 +9,8 @@
 #include "net.h"
 #include "key.h"
 #include "init.h"
-#include "wallet.h"
-#include "legacysigner.h"
+#include "wallet/wallet.h"
+//#include "legacysigner.h"
 #include "masternode.h"
 
 #define ACTIVE_MASTERNODE_INITIAL                     0 // initial state

@@ -24,9 +24,9 @@ private:
     QPushButton *show;
     QPushButton *copy;
 
-signals:
+Q_SIGNALS:
 
-public slots:
+public Q_SLOTS:
     void showClicked(bool show_hide);
     void copyClicked();
 };

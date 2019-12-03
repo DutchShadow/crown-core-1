@@ -109,6 +109,12 @@ void WalletView::setBitcoinGUI(BitcoinGUI *gui)
 
         // Connect HD enabled state signal
         connect(this, SIGNAL(hdEnabledStatusChanged()), gui, SLOT(updateWalletStatus()));
+
+        connect(this, SIGNAL(guiEnableSystemnodesChanged(bool)), gui, SLOT(guiEnableSystemnodesChanged(bool)));
+        connect(this, SIGNAL(guiEnableMasternodesChanged(bool)), gui, SLOT(guiEnableMasternodesChanged(bool)));
+
+        connect(this, SIGNAL(guiGotoMasternodePage()), gui, SLOT(gotoMasternodePage()));
+        connect(this, SIGNAL(guiGotoSystemnodePage()), gui, SLOT(gotoSystemnodePage()));
     }
 }
 
@@ -155,6 +161,24 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
         connect(_walletModel, SIGNAL(showProgress(QString,int)), this, SLOT(showProgress(QString,int)));
     }
 }
+
+//void WalletView::addSystemnode(CNodeEntry nodeEntry)
+//{
+//    systemnodeConfig.add(nodeEntry);
+//    systemnodeConfig.write();
+//    emit guiGotoSystemnodePage();
+//    systemnodeListPage->updateMyNodeList(true);
+//    systemnodeListPage->selectAliasRow(QString::fromStdString(nodeEntry.getAlias()));
+//}
+//
+//void WalletView::addMasternode(CNodeEntry nodeEntry)
+//{
+//    masternodeConfig.add(nodeEntry);
+//    masternodeConfig.write();
+//    emit guiGotoMasternodePage();
+//    masternodeListPage->updateMyNodeList(true);
+//    masternodeListPage->selectAliasRow(QString::fromStdString(nodeEntry.getAlias()));
+//}
 
 void WalletView::processNewTransaction(const QModelIndex& parent, int start, int /*end*/)
 {
@@ -340,3 +364,50 @@ void WalletView::requestedSyncWarningInfo()
 {
     Q_EMIT outOfSyncWarningClicked();
 }
+
+void WalletView::enableSystemnodes()
+{
+    if (systemnodeListPage == NULL)
+    {
+        systemnodeListPage = new SystemnodeList();
+        connect(systemnodeListPage->getSendCollateralDialog(), SIGNAL(message(QString,QString,unsigned int)),
+                this, SIGNAL(message(QString,QString,unsigned int)));
+        addWidget(systemnodeListPage);
+    }
+}
+
+void WalletView::enableMasternodes()
+{
+    if (masternodeListPage == NULL)
+    {
+        masternodeListPage = new MasternodeList();
+        connect(masternodeListPage->getSendCollateralDialog(), SIGNAL(message(QString,QString,unsigned int)),
+                this, SIGNAL(message(QString,QString,unsigned int)));
+        addWidget(masternodeListPage);
+    }
+}
+
+/** Enable systemnodes tab */
+void WalletView::enableSystemnodesChanged(bool enabled)
+{
+    if (enabled)
+    {
+        enableSystemnodes();
+        systemnodeListPage->setWalletModel(walletModel);
+        systemnodeListPage->setClientModel(clientModel);
+    }
+    Q_EMIT guiEnableSystemnodesChanged(enabled);
+}
+
+/** Enabled masternodes tab */
+void WalletView::enableMasternodesChanged(bool enabled)
+{
+    if (enabled)
+    {
+        enableMasternodes();
+        masternodeListPage->setWalletModel(walletModel);
+        masternodeListPage->setClientModel(clientModel);
+    }
+    Q_EMIT guiEnableMasternodesChanged(enabled);
+}
+

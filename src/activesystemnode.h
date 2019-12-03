@@ -9,7 +9,7 @@
 #include "net.h"
 #include "key.h"
 #include "init.h"
-#include "wallet.h"
+#include "wallet/wallet.h"
 #include "systemnode-sync.h"
 #include "legacysigner.h"
 #include "systemnode.h"

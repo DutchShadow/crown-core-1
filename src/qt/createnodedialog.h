@@ -24,7 +24,7 @@ public:
     void setNoteLabel(QString text);
     void setEditMode();
 
-protected slots:
+protected Q_SLOTS:
     void accept();
 
 private:

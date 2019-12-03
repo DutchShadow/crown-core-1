@@ -78,6 +78,9 @@
 #include <openssl/conf.h>
 #include <thread>
 
+bool fMasterNode = false;
+bool fSystemNode = false;
+
 // Application startup time (used for uptime calculation)
 const int64_t nStartupTime = GetTime();
 
