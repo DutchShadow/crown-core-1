@@ -2537,6 +2537,25 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
     }
 }
 
+/// Get 10000CRW input that can be used for the Masternode
+bool GetMasternodeVinAndKeys(CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash = "", std::string strOutputIndex = "")
+{
+    //TODO
+}
+
+/// Get 500CRW input that can be used for the Systemnode
+bool GetSystemnodeVinAndKeys(CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash = "", std::string strOutputIndex = "")
+{
+    //TODO
+}
+
+// Extract vin information from output
+bool GetVinAndKeysFromOutput(COutput out, CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet)
+{
+    //TODO
+}
+
+
 bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const
 {
     std::vector<COutput> vCoins(vAvailableCoins);

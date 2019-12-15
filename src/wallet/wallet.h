@@ -812,6 +812,13 @@ public:
     bool SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
                     const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const;
 
+    /// Get 10000CRW input that can be used for the Masternode
+    bool GetMasternodeVinAndKeys(CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash = "", std::string strOutputIndex = "");
+    /// Get 500CRW input that can be used for the Systemnode
+    bool GetSystemnodeVinAndKeys(CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash = "", std::string strOutputIndex = "");
+    // Extract vin information from output
+    bool GetVinAndKeysFromOutput(COutput out, CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet);
+
     /** Get a name for this wallet for logging/debugging purposes.
      */
     const std::string& GetName() const { return m_name; }

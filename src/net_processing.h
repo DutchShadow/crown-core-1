@@ -83,5 +83,9 @@ struct CNodeStateStats {
 
 /** Get statistics from node state */
 bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats);
+void RelayInv(CInv &inv, const int minProtoVersion = MinPeerProtoVersion());
+
+/** Increase a node's misbehavior score. */
+void Misbehaving(NodeId nodeid, int howmuch, const std::string& message="") EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
 #endif // BITCOIN_NET_PROCESSING_H

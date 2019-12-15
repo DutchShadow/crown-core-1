@@ -41,6 +41,7 @@
 #include <validationinterface.h>
 #include <warnings.h>
 #include <txdb.h>
+#include <instantx.h>
 
 #include <future>
 #include <sstream>
@@ -4870,6 +4871,186 @@ bool DumpMempool(void)
         LogPrintf("Failed to dump mempool: %s. Continuing anyway.\n", e.what());
         return false;
     }
+    return true;
+}
+
+bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, const CTransaction &tx, bool fLimitFree,
+                        bool* pfMissingInputs, bool fRejectInsaneFee, bool isDSTX)
+{
+    AssertLockHeld(cs_main);
+    if (pfMissingInputs)
+        *pfMissingInputs = false;
+
+    if (!CheckTransaction(tx, state))
+        return error("AcceptableInputs: : CheckTransaction failed");
+
+    // Coinbase is only valid in a block, not as a loose transaction
+    if (tx.IsCoinBase() || tx.IsCoinStake())
+        return state.DoS(100, error("AcceptableInputs: : coinbase as individual tx"),
+                         REJECT_INVALID, "coinbase");
+
+    // Rather not work on nonstandard transactions (unless -testnet/-regtest)
+    std::string reason;
+// for any real tx this will be checked on AcceptToMemoryPool anyway
+//    if (Params().RequireStandard() && !IsStandardTx(tx, reason))
+//        return state.DoS(0,
+//                         error("AcceptableInputs : nonstandard transaction: %s", reason),
+//                         REJECT_NONSTANDARD, reason);
+
+    // is it already in the memory pool?
+    uint256 hash = tx.GetHash();
+    if (pool.exists(hash))
+        return false;
+
+    // ----------- instantX transaction scanning -----------
+
+    for (const auto& in : tx.vin)
+    {
+        boost::optional<uint256> txHash = GetInstantSend().GetLockedTx(in.prevout);
+        if (txHash && txHash.get() != tx.GetHash())
+        {
+            return state.DoS(0, error("AcceptableInputs : conflicts with existing transaction lock: %s", reason),
+                             REJECT_INVALID, "tx-lock-conflict");
+        }
+    }
+
+    // Check for conflicts with in-memory transactions
+    {
+        LOCK(pool.cs); // protect pool.mapNextTx
+        for (unsigned int i = 0; i < tx.vin.size(); i++)
+        {
+            COutPoint outpoint = tx.vin[i].prevout;
+            if (pool.mapNextTx.count(outpoint))
+            {
+                // Disable replacement feature for now
+                return false;
+            }
+        }
+    }
+
+
+    {
+        CCoinsView dummy;
+        CCoinsViewCache view(&dummy);
+
+        CAmount nValueIn = 0;
+        {
+            LOCK(pool.cs);
+            CCoinsViewMemPool viewMemPool(pcoinsTip.get(), pool);
+            view.SetBackend(viewMemPool);
+
+            // do we already have it?
+            // TODO check later if correct
+            if (view.HaveCoin(COutPoint(tx.GetHash(), 0)))
+                return false;
+
+            // do all inputs exist?
+            // Note that this does not check for the presence of actual outputs (see the next check for that),
+            // only helps filling in pfMissingInputs (to determine missing vs spent).
+            for (const auto& txin : tx.vin)
+            {
+                //if (!view.HaveCoins(txin.prevout.hash)) {
+                if (!view.HaveCoin(txin.prevout)) {
+                    if (pfMissingInputs)
+                        *pfMissingInputs = true;
+                    return false;
+                }
+            }
+
+            // are the actual inputs available?
+            if (!view.HaveInputs(tx))
+                return state.Invalid(error("AcceptableInputs : inputs already spent"),
+                                     REJECT_DUPLICATE, "bad-txns-inputs-spent");
+
+            // Bring the best block into scope
+            view.GetBestBlock();
+
+            nValueIn = view.GetValueIn(tx);
+
+            // we have all inputs cached now, so switch back to dummy, so we don't need to keep lock on mempool
+            view.SetBackend(dummy);
+        }
+
+        // Check for non-standard pay-to-script-hash in inputs
+// for any real tx this will be checked on AcceptToMemoryPool anyway
+//        if (Params().RequireStandard() && !AreInputsStandard(tx, view))
+//            return error("AcceptableInputs: : nonstandard transaction input");
+
+        // Check that the transaction doesn't have an excessive number of
+        // sigops, making it impossible to mine. Since the coinbase transaction
+        // itself can contain sigops MAX_TX_SIGOPS is less than
+        // MAX_BLOCK_SIGOPS; we still consider this an invalid rather than
+        // merely non-standard transaction.
+        unsigned int nSigOps = GetLegacySigOpCount(tx);
+        nSigOps += GetP2SHSigOpCount(tx, view);
+        // TODO
+        //if (nSigOps > MAX_TX_SIGOPS)
+        //    return state.DoS(0,
+        //                     error("AcceptableInputs : too many sigops %s, %d > %d",
+        //                           hash.ToString(), nSigOps, MAX_TX_SIGOPS),
+        //                     REJECT_NONSTANDARD, "bad-txns-too-many-sigops");
+
+        CAmount nValueOut = tx.GetValueOut();
+        CAmount nFees = nValueIn-nValueOut;
+        //double dPriority = view.GetPriority(tx, chainActive.Height());
+
+        //CTxMemPoolEntry entry(tx, nFees, GetTime(), dPriority, chainActive.Height());
+        //unsigned int nSize = entry.GetTxSize();
+
+        //// Don't accept it if it can't get into a block
+        //// but prioritise dstx and don't check fees for it
+        //if(isDSTX) {
+        //    mempool.PrioritiseTransaction(hash, hash.ToString(), 1000, 0.1*COIN);
+        //} else { // same as !ignoreFees for AcceptToMemoryPool
+        //    CAmount txMinFee = GetMinRelayFee(tx, nSize, true);
+        //    if (fLimitFree && nFees < txMinFee)
+        //        return state.DoS(0, error("AcceptableInputs : not enough fees %s, %d < %d",
+        //                                  hash.ToString(), nFees, txMinFee),
+        //                         REJECT_INSUFFICIENTFEE, "insufficient fee");
+
+        //    // Require that free transactions have sufficient priority to be mined in the next block.
+        //    if (GetBoolArg("-relaypriority", true) && nFees < ::minRelayTxFee.GetFee(nSize) && !AllowFree(view.GetPriority(tx, chainActive.Height() + 1))) {
+        //        return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "insufficient priority");
+        //    }
+
+        //    // Continuously rate-limit free (really, very-low-fee) transactions
+        //    // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
+        //    // be annoying or make others' transactions take longer to confirm.
+        //    if (fLimitFree && nFees < ::minRelayTxFee.GetFee(nSize))
+        //    {
+        //        static CCriticalSection csFreeLimiter;
+        //        static double dFreeCount;
+        //        static int64_t nLastTime;
+        //        int64_t nNow = GetTime();
+
+        //        LOCK(csFreeLimiter);
+
+        //        // Use an exponentially decaying ~10-minute window:
+        //        dFreeCount *= pow(1.0 - 1.0/600.0, (double)(nNow - nLastTime));
+        //        nLastTime = nNow;
+        //        // -limitfreerelay unit is thousand-bytes-per-minute
+        //        // At default rate it would take over a month to fill 1GB
+        //        if (dFreeCount >= GetArg("-limitfreerelay", 15)*10*1000)
+        //            return state.DoS(0, error("AcceptableInputs : free transaction rejected by rate limiter"),
+        //                             REJECT_INSUFFICIENTFEE, "rate limited free transaction");
+        //        LogPrint("mempool", "Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
+        //        dFreeCount += nSize;
+        //    }
+        //}
+
+        //if (fRejectInsaneFee && nFees > ::minRelayTxFee.GetFee(nSize) * 10000)
+        //    return error("AcceptableInputs: : insane fees %s, %d > %d",
+        //                 hash.ToString(),
+        //                 nFees, ::minRelayTxFee.GetFee(nSize) * 10000);
+
+        //// Check against previous transactions
+        //// This is done last to help prevent CPU exhaustion denial-of-service attacks.
+        //if (!CheckInputs(tx, state, view, false, STANDARD_SCRIPT_VERIFY_FLAGS, true))
+        //{
+        //    return error("AcceptableInputs: : ConnectInputs failed %s", hash.ToString());
+        //}
+    }
+
     return true;
 }
 

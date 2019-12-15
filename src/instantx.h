@@ -10,7 +10,6 @@
 #include "key.h"
 #include "util.h"
 #include "base58.h"
-#include "main.h"
 #include "spork.h"
 
 /*

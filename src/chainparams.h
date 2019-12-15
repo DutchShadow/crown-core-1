@@ -89,6 +89,7 @@ public:
     const std::string NetworkID() const { return strNetworkID; }
     void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
     std::string LegacySignerDummyAddress() const { return strLegacySignerDummyAddress; }
+    int ValidStakePointerDuration() const { return nStakePointerValidityPeriod; }
 
     // TODO old values
     // const uint256& HashGenesisBlock() const { return hashGenesisBlock; }
@@ -178,6 +179,7 @@ protected:
     ChainTxData chainTxData;
     bool m_fallback_fee_enabled;
     std::string strLegacySignerDummyAddress;
+    int nStakePointerValidityPeriod;
 
     //TODO old values
     // uint256 hashGenesisBlock;

@@ -3,7 +3,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "legacysigner.h"
-#include "main.h"
 #include "init.h"
 #include "util.h"
 #include "masternodeman.h"
@@ -29,13 +28,14 @@ CLegacySigner legacySigner;
 CActiveMasternode activeMasternode;
 
 bool CLegacySigner::SetCollateralAddress(std::string strAddress){
-    CBitcoinAddress address;
-    if (!address.SetString(strAddress))
-    {
-        LogPrintf("CLegacySigner::SetCollateralAddress - Invalid collateral address\n");
-        return false;
-    }
-    collateralPubKey = GetScriptForDestination(address.Get());
+    // TODO fix
+    //CBitcoinAddress address;
+    //if (!address.SetString(strAddress))
+    //{
+    //    LogPrintf("CLegacySigner::SetCollateralAddress - Invalid collateral address\n");
+    //    return false;
+    //}
+    //collateralPubKey = GetScriptForDestination(address.Get());
     return true;
 }
 
@@ -45,28 +45,30 @@ bool CLegacySigner::IsVinAssociatedWithPubkey(CTxIn& vin, CPubKey& pubkey, int v
 
     CTransaction txVin;
     uint256 hash;
-    if(GetTransaction(vin.prevout.hash, txVin, hash, true)){
-        BOOST_FOREACH(CTxOut out, txVin.vout){
-            if(out.nValue == value*COIN){
-                if(out.scriptPubKey == payee2) return true;
-            }
-        }
-    }
+    // TODO fix
+    //if(GetTransaction(vin.prevout.hash, txVin, hash, true)){
+    //    BOOST_FOREACH(CTxOut out, txVin.vout){
+    //        if(out.nValue == value*COIN){
+    //            if(out.scriptPubKey == payee2) return true;
+    //        }
+    //    }
+    //}
 
     return false;
 }
 
 bool CLegacySigner::SetKey(std::string strSecret, std::string& errorMessage, CKey& key, CPubKey& pubkey){
-    CBitcoinSecret vchSecret;
-    bool fGood = vchSecret.SetString(strSecret);
+    // TODO fix
+    //CBitcoinSecret vchSecret;
+    //bool fGood = vchSecret.SetString(strSecret);
 
-    if (!fGood) {
-        errorMessage = _("Invalid private key.");
-        return false;
-    }
+    //if (!fGood) {
+    //    errorMessage = _("Invalid private key.");
+    //    return false;
+    //}
 
-    key = vchSecret.GetKey();
-    pubkey = key.GetPubKey();
+    //key = vchSecret.GetKey();
+    //pubkey = key.GetPubKey();
 
     return true;
 }
@@ -110,7 +112,8 @@ bool CLegacySigner::VerifyMessage(CPubKey pubkey, const vector<unsigned char>& v
 //TODO: Rename/move to core
 void ThreadCheckLegacySigner()
 {
-    if(fLiteMode) return; //disable all Masternode related functionality
+    // TODO fix
+    //if(fLiteMode) return; //disable all Masternode related functionality
 
     // Make this thread recognisable as the wallet flushing thread
     RenameThread("crown-legacysigner");

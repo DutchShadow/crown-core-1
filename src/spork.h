@@ -10,7 +10,6 @@
 #include "key.h"
 #include "util.h"
 #include "base58.h"
-#include "main.h"
 
 #include "protocol.h"
 #include "legacysigner.h"
@@ -63,7 +62,7 @@ extern std::map<uint256, CSporkMessage> mapSporks;
 extern std::map<int, CSporkMessage> mapSporksActive;
 extern CSporkManager sporkManager;
 
-void ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
+void ProcessSpork(CNode* pfrom, CConnman* connman, std::string& strCommand, CDataStream& vRecv);
 int64_t GetSporkValue(int nSporkID);
 bool IsSporkActive(int nSporkID);
 void ExecuteSpork(int nSporkID, int nValue);
@@ -90,7 +89,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+    inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(nSporkID);
         READWRITE(nValue);
         READWRITE(nTimeSigned);

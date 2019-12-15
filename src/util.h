@@ -38,6 +38,8 @@
 //Crown only features
 extern bool fMasterNode;
 extern bool fSystemNode;
+extern std::string strMasterNodePrivKey;
+extern std::string strSystemNodePrivKey;
 //extern bool fLiteMode;
 //extern bool fEnableInstantX;
 //extern int nInstantXDepth;

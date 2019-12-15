@@ -75,9 +75,6 @@ std::map<uint256, COrphanTx> mapOrphanTransactions GUARDED_BY(g_cs_orphans);
 
 void EraseOrphansFor(NodeId peer);
 
-/** Increase a node's misbehavior score. */
-void Misbehaving(NodeId nodeid, int howmuch, const std::string& message="") EXCLUSIVE_LOCKS_REQUIRED(cs_main);
-
 /** Average delay between local address broadcasts in seconds. */
 static constexpr unsigned int AVG_LOCAL_ADDRESS_BROADCAST_INTERVAL = 24 * 60 * 60;
 /** Average delay between peer address broadcasts in seconds. */
@@ -1068,6 +1065,15 @@ static void RelayTransaction(const CTransaction& tx, CConnman* connman)
         pnode->PushInventory(inv);
     });
 }
+
+void RelayInv(CInv &inv, const int minProtoVersion) {
+    // TODO fix
+//    LOCK(cs_vNodes);
+//    for (const auto& pnode : vNodes)
+//        if(pnode->nVersion >= minProtoVersion)
+//            pnode->PushInventory(inv);
+}
+
 
 static void RelayAddress(const CAddress& addr, bool fReachable, CConnman* connman)
 {

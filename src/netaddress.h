@@ -146,6 +146,7 @@ class CService : public CNetAddr
 
     public:
         CService();
+        CService(std::string a) { /* TODO fix */ }
         CService(const CNetAddr& ip, unsigned short port);
         CService(const struct in_addr& ipv4Addr, unsigned short port);
         explicit CService(const struct sockaddr_in& addr);

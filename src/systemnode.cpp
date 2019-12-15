@@ -463,7 +463,7 @@ bool CSystemnodeBroadcast::CheckAndUpdate(int& nDos) const
                         vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
 
         LogPrint("systemnode", "snb - sanitized strMessage: %s, pubkey address: %s, sig: %s\n",
-            SanitizeString(strMessage), CBitcoinAddress(pubkey.GetID()).ToString(),
+            SanitizeString(strMessage), EncodeDestination(pubkey.GetID()),
             EncodeBase64(&sig[0], sig.size()));
 
         if(!legacySigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)){
@@ -474,7 +474,7 @@ bool CSystemnodeBroadcast::CheckAndUpdate(int& nDos) const
                                 vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
 
                 LogPrint("systemnode", "snb - sanitized strMessage: %s, pubkey address: %s, sig: %s\n",
-                    SanitizeString(strMessage), CBitcoinAddress(pubkey.GetID()).ToString(),
+                    SanitizeString(strMessage), EncodeDestination(pubkey.GetID()),
                     EncodeBase64(&sig[0], sig.size()));
 
                 if(!legacySigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)){
@@ -496,7 +496,7 @@ bool CSystemnodeBroadcast::CheckAndUpdate(int& nDos) const
                         boost::lexical_cast<std::string>(protocolVersion);
 
         LogPrint("systemnode", "snb - strMessage: %s, pubkey address: %s, sig: %s\n",
-            strMessage, CBitcoinAddress(pubkey.GetID()).ToString(), EncodeBase64(&sig[0], sig.size()));
+            strMessage, EncodeDestination(pubkey.GetID()), EncodeBase64(&sig[0], sig.size()));
 
         if(!legacySigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)){
             LogPrintf("snb - Got bad systemnode address signature, error: %s\n", errorMessage);

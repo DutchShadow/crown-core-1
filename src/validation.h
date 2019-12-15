@@ -18,6 +18,7 @@
 #include <script/script_error.h>
 #include <sync.h>
 #include <versionbits.h>
+#include <net.h>
 
 #include <algorithm>
 #include <exception>
@@ -498,6 +499,9 @@ bool DumpMempool();
 
 /** Load the mempool from disk. */
 bool LoadMempool();
+
+bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, const CTransaction &tx, bool fLimitFree,
+                                bool* pfMissingInputs, bool fRejectInsaneFee=false, bool isDSTX=false);
 
 //! Check whether the block associated with this index entry is pruned or not.
 inline bool IsBlockPruned(const CBlockIndex* pblockindex)

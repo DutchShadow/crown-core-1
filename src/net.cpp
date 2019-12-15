@@ -2901,3 +2901,12 @@ uint64_t CConnman::CalculateKeyedNetGroup(const CAddress& ad) const
 
     return GetDeterministicRandomizer(RANDOMIZER_ID_NETGROUP).Write(vchNetGroup.data(), vchNetGroup.size()).Finalize();
 }
+
+int MinPeerProtoVersion()
+{
+    // TODO fix
+//    if (IsSporkActive(SPORK_16_DISCONNECT_OLD_NODES))
+//        return MIN_PEER_PROTO_VERSION_CURR;
+//    else
+//        return MIN_PEER_PROTO_VERSION_PREV;
+}

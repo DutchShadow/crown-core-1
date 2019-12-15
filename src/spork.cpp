@@ -8,7 +8,7 @@
 #include "base58.h"
 #include "protocol.h"
 #include "spork.h"
-#include "main.h"
+#include "net_processing.h"
 #include "masternode-budget.h"
 #include <boost/lexical_cast.hpp>
 
@@ -24,9 +24,10 @@ std::map<uint256, CSporkMessage> mapSporks;
 std::map<int, CSporkMessage> mapSporksActive;
 
 
-void ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
+void ProcessSpork(CNode* pfrom, CConnman* connman, std::string& strCommand, CDataStream& vRecv)
 {
-    if(fLiteMode) return; //disable all masternode related functionality
+    // TODO fix
+    //if(fLiteMode) return; //disable all masternode related functionality
 
     if (strCommand == "spork")
     {
@@ -40,10 +41,10 @@ void ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
         uint256 hash = spork.GetHash();
         if(mapSporksActive.count(spork.nSporkID)) {
             if(mapSporksActive[spork.nSporkID].nTimeSigned >= spork.nTimeSigned){
-                if(fDebug) LogPrintf("spork - seen %s block %d \n", hash.ToString(), chainActive.Tip()->nHeight);
+                //if(fDebug) LogPrintf("spork - seen %s block %d \n", hash.ToString(), chainActive.Tip()->nHeight);
                 return;
             } else {
-                if(fDebug) LogPrintf("spork - got updated spork %s block %d \n", hash.ToString(), chainActive.Tip()->nHeight);
+                //if(fDebug) LogPrintf("spork - got updated spork %s block %d \n", hash.ToString(), chainActive.Tip()->nHeight);
             }
         }
 
@@ -67,7 +68,8 @@ void ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
         std::map<int, CSporkMessage>::iterator it = mapSporksActive.begin();
 
         while(it != mapSporksActive.end()) {
-            pfrom->PushMessage("spork", it->second);
+            // TODO fix
+            //connman->PushMessage(pfrom, "spork", it->second);
             it++;
         }
     }
@@ -147,45 +149,47 @@ void ExecuteSpork(int nSporkID, int nValue)
     }
     else if (nSporkID == SPORK_16_DISCONNECT_OLD_NODES && nValue == 1)
     {
-        LOCK(cs_vNodes);
+        // TODO fix
+        //LOCK(cs_vNodes);
 
-        for (std::vector<CNode*>::iterator i = vNodes.begin(); i != vNodes.end(); ++i)
-        {
-            if ((*i)->nVersion < MinPeerProtoVersion())
-                (*i)->fDisconnect = true;
-        }
+        //for (std::vector<CNode*>::iterator i = vNodes.begin(); i != vNodes.end(); ++i)
+        //{
+        //    if ((*i)->nVersion < MinPeerProtoVersion())
+        //        (*i)->fDisconnect = true;
+        //}
     }
 }
 
 void ReprocessBlocks(int nBlocks) 
 {   
-    std::map<uint256, int64_t>::iterator it = mapRejectedBlocks.begin();
-    while(it != mapRejectedBlocks.end()){
-        //use a window twice as large as is usual for the nBlocks we want to reset
-        if((*it).second  > GetTime() - (nBlocks*60*5)) {   
-            BlockMap::iterator mi = mapBlockIndex.find((*it).first);
-            if (mi != mapBlockIndex.end() && (*mi).second) {
-                LOCK(cs_main);
-                
-                CBlockIndex* pindex = (*mi).second;
-                LogPrintf("ReprocessBlocks - %s\n", (*it).first.ToString());
+    // TODO fix
+    //std::map<uint256, int64_t>::iterator it = mapRejectedBlocks.begin();
+    //while(it != mapRejectedBlocks.end()){
+    //    //use a window twice as large as is usual for the nBlocks we want to reset
+    //    if((*it).second  > GetTime() - (nBlocks*60*5)) {   
+    //        BlockMap::iterator mi = mapBlockIndex.find((*it).first);
+    //        if (mi != mapBlockIndex.end() && (*mi).second) {
+    //            LOCK(cs_main);
+    //            
+    //            CBlockIndex* pindex = (*mi).second;
+    //            LogPrintf("ReprocessBlocks - %s\n", (*it).first.ToString());
 
-                CValidationState state;
-                ReconsiderBlock(state, pindex);
-            }
-        }
-        ++it;
-    }
+    //            CValidationState state;
+    //            ReconsiderBlock(state, pindex);
+    //        }
+    //    }
+    //    ++it;
+    //}
 
-    CValidationState state;
-    {
-        LOCK(cs_main);
-        DisconnectBlocksAndReprocess(nBlocks);
-    }
+    //CValidationState state;
+    //{
+    //    LOCK(cs_main);
+    //    DisconnectBlocksAndReprocess(nBlocks);
+    //}
 
-    if (state.IsValid()) {
-        ActivateBestChain(state);
-    }
+    //if (state.IsValid()) {
+    //    ActivateBestChain(state);
+    //}
 }
 
 
@@ -193,12 +197,13 @@ bool CSporkManager::CheckSignature(CSporkMessage& spork)
 {
     //note: need to investigate why this is failing
     std::string strMessage = boost::lexical_cast<std::string>(spork.nSporkID) + boost::lexical_cast<std::string>(spork.nValue) + boost::lexical_cast<std::string>(spork.nTimeSigned);
-    CPubKey pubkey(ParseHex(Params().SporkKey()));
+    // TODO fix
+    //CPubKey pubkey(ParseHex(Params().SporkKey()));
 
-    std::string errorMessage = "";
-    if(!legacySigner.VerifyMessage(pubkey, spork.vchSig, strMessage, errorMessage)){
-        return false;
-    }
+    //std::string errorMessage = "";
+    //if(!legacySigner.VerifyMessage(pubkey, spork.vchSig, strMessage, errorMessage)){
+    //    return false;
+    //}
 
     return true;
 }
