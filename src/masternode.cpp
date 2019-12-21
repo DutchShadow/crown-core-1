@@ -226,8 +226,9 @@ void CMasternode::Check(bool forceCheck)
 
 bool CMasternode::IsValidNetAddr() const
 {
-    if (Params().NetworkID() == CBaseChainParams::DEVNET)
-        return true;
+    // TODO fix
+    //if (Params().NetworkID() == CBaseChainParams::DEVNET)
+    //    return true;
     // TODO: regtest is fine with any addresses for now,
     // should probably be a bit smarter if one day we start to implement tests for this
     return (addr.IsIPv4() && addr.IsRoutable());
@@ -417,11 +418,12 @@ bool CMasternodeBroadcast::Create(std::string strService, std::string strKeyMast
         return false;
     }
 
-    if(!GetWallets()[0]->GetMasternodeVinAndKeys(txin, pubKeyCollateralAddress, keyCollateralAddress, strTxHash, strOutputIndex)) {
-        strErrorMessage = strprintf("Could not allocate txin %s:%s for masternode %s", strTxHash, strOutputIndex, strService);
-        LogPrintf("CMasternodeBroadcast::Create -- %s\n", strErrorMessage);
-        return false;
-    }
+    // TODO fix
+    //if(!GetWallets()[0]->GetMasternodeVinAndKeys(txin, pubKeyCollateralAddress, keyCollateralAddress, strTxHash, strOutputIndex)) {
+    //    strErrorMessage = strprintf("Could not allocate txin %s:%s for masternode %s", strTxHash, strOutputIndex, strService);
+    //    LogPrintf("CMasternodeBroadcast::Create -- %s\n", strErrorMessage);
+    //    return false;
+    //}
 
     int age = GetInputAge(txin);
     if (age < MASTERNODE_MIN_CONFIRMATIONS)

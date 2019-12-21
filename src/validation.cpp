@@ -4906,12 +4906,13 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, const CTransact
 
     for (const auto& in : tx.vin)
     {
-        boost::optional<uint256> txHash = GetInstantSend().GetLockedTx(in.prevout);
-        if (txHash && txHash.get() != tx.GetHash())
-        {
-            return state.DoS(0, error("AcceptableInputs : conflicts with existing transaction lock: %s", reason),
-                             REJECT_INVALID, "tx-lock-conflict");
-        }
+        // TODO fix
+        //boost::optional<uint256> txHash = GetInstantSend().GetLockedTx(in.prevout);
+        //if (txHash && txHash.get() != tx.GetHash())
+        //{
+        //    return state.DoS(0, error("AcceptableInputs : conflicts with existing transaction lock: %s", reason),
+        //                     REJECT_INVALID, "tx-lock-conflict");
+        //}
     }
 
     // Check for conflicts with in-memory transactions

@@ -17,7 +17,7 @@ void CActiveSystemnode::ManageStatus()
 
     if(!fSystemNode) return;
 
-    if (fDebug) LogPrintf("CActiveSystemnode::ManageStatus() - Begin\n");
+    LogPrintf("CActiveSystemnode::ManageStatus() - Begin\n");
 
     //need correct blocks to send ping
     if(Params().NetworkID() != CBaseChainParams::REGTEST && !systemnodeSync.IsBlockchainSynced()) {
@@ -55,17 +55,17 @@ void CActiveSystemnode::ManageStatus()
         status = ACTIVE_SYSTEMNODE_NOT_CAPABLE;
         notCapableReason = "";
 
-        if(pwalletMain->IsLocked()){
-            notCapableReason = "Wallet is locked.";
-            LogPrintf("CActiveSystemnode::ManageStatus() - not capable: %s\n", notCapableReason);
-            return;
-        }
+        //if(pwalletMain->IsLocked()){
+        //    notCapableReason = "Wallet is locked.";
+        //    LogPrintf("CActiveSystemnode::ManageStatus() - not capable: %s\n", notCapableReason);
+        //    return;
+        //}
 
-        if(pwalletMain->GetBalance() == 0){
-            notCapableReason = "Hot node, waiting for remote activation.";
-            LogPrintf("CActiveSystemnode::ManageStatus() - not capable: %s\n", notCapableReason);
-            return;
-        }
+        //if(pwalletMain->GetBalance() == 0){
+        //    notCapableReason = "Hot node, waiting for remote activation.";
+        //    LogPrintf("CActiveSystemnode::ManageStatus() - not capable: %s\n", notCapableReason);
+        //    return;
+        //}
 
         if(strSystemNodeAddr.empty()) {
             if(!GetLocal(service)) {
@@ -91,64 +91,64 @@ void CActiveSystemnode::ManageStatus()
 
         LogPrintf("CActiveSystemnode::ManageStatus() - Checking inbound connection to '%s'\n", service.ToString());
 
-        if(!ConnectNode((CAddress)service, NULL, false, true)){
-            notCapableReason = "Could not connect to " + service.ToString();
-            LogPrintf("CActiveSystemnode::ManageStatus() - not capable: %s\n", notCapableReason);
-            return;
-        }
+        //if(!ConnectNode((CAddress)service, NULL, false, true)){
+        //    notCapableReason = "Could not connect to " + service.ToString();
+        //    LogPrintf("CActiveSystemnode::ManageStatus() - not capable: %s\n", notCapableReason);
+        //    return;
+        //}
 
         // Choose coins to use
         CPubKey pubKeyCollateralAddress;
         CKey keyCollateralAddress;
 
-        if(pwalletMain->GetSystemnodeVinAndKeys(vin, pubKeyCollateralAddress, keyCollateralAddress)) {
+        //if(pwalletMain->GetSystemnodeVinAndKeys(vin, pubKeyCollateralAddress, keyCollateralAddress)) {
 
-            if(GetInputAge(vin) < SYSTEMNODE_MIN_CONFIRMATIONS){
-                status = ACTIVE_SYSTEMNODE_INPUT_TOO_NEW;
-                notCapableReason = strprintf("%s - %d confirmations", GetStatus(), GetInputAge(vin));
-                LogPrintf("CActiveSystemnode::ManageStatus() - %s\n", notCapableReason);
-                return;
-            }
+        //    if(GetInputAge(vin) < SYSTEMNODE_MIN_CONFIRMATIONS){
+        //        status = ACTIVE_SYSTEMNODE_INPUT_TOO_NEW;
+        //        notCapableReason = strprintf("%s - %d confirmations", GetStatus(), GetInputAge(vin));
+        //        LogPrintf("CActiveSystemnode::ManageStatus() - %s\n", notCapableReason);
+        //        return;
+        //    }
 
-            LOCK(pwalletMain->cs_wallet);
-            pwalletMain->LockCoin(vin.prevout);
+        //    LOCK(pwalletMain->cs_wallet);
+        //    pwalletMain->LockCoin(vin.prevout);
 
-            // send to all nodes
-            CPubKey pubKeySystemnode;
-            CKey keySystemnode;
+        //    // send to all nodes
+        //    CPubKey pubKeySystemnode;
+        //    CKey keySystemnode;
 
-            if(!legacySigner.SetKey(strSystemNodePrivKey, errorMessage, keySystemnode, pubKeySystemnode))
-            {
-                notCapableReason = "Error upon calling SetKey: " + errorMessage;
-                LogPrintf("Register::ManageStatus() - %s\n", notCapableReason);
-                return;
-            }
+        //    if(!legacySigner.SetKey(strSystemNodePrivKey, errorMessage, keySystemnode, pubKeySystemnode))
+        //    {
+        //        notCapableReason = "Error upon calling SetKey: " + errorMessage;
+        //        LogPrintf("Register::ManageStatus() - %s\n", notCapableReason);
+        //        return;
+        //    }
 
-            CSystemnodeBroadcast mnb;
-            bool fSignOver = true;
-            if(!CSystemnodeBroadcast::Create(vin, service, keyCollateralAddress, pubKeyCollateralAddress, keySystemnode, pubKeySystemnode, fSignOver, errorMessage, mnb)) {
-                notCapableReason = "Error on CreateBroadcast: " + errorMessage;
-                LogPrintf("Register::ManageStatus() - %s\n", notCapableReason);
-                return;
-            }
+        //    CSystemnodeBroadcast mnb;
+        //    bool fSignOver = true;
+        //    if(!CSystemnodeBroadcast::Create(vin, service, keyCollateralAddress, pubKeyCollateralAddress, keySystemnode, pubKeySystemnode, fSignOver, errorMessage, mnb)) {
+        //        notCapableReason = "Error on CreateBroadcast: " + errorMessage;
+        //        LogPrintf("Register::ManageStatus() - %s\n", notCapableReason);
+        //        return;
+        //    }
 
-            //update to masternode list
-            LogPrintf("CActiveSystemnode::ManageStatus() - Update Systemnode List\n");
-            snodeman.UpdateSystemnodeList(mnb);
+        //    //update to masternode list
+        //    LogPrintf("CActiveSystemnode::ManageStatus() - Update Systemnode List\n");
+        //    snodeman.UpdateSystemnodeList(mnb);
 
-            //send to all peers
-            LogPrintf("CActiveSystemnode::ManageStatus() - Relay broadcast vin = %s\n", vin.ToString());
-            mnb.Relay();
+        //    //send to all peers
+        //    LogPrintf("CActiveSystemnode::ManageStatus() - Relay broadcast vin = %s\n", vin.ToString());
+        //    mnb.Relay();
 
-            LogPrintf("CActiveSystemnode::ManageStatus() - Is capable master node!\n");
-            status = ACTIVE_SYSTEMNODE_STARTED;
+        //    LogPrintf("CActiveSystemnode::ManageStatus() - Is capable master node!\n");
+        //    status = ACTIVE_SYSTEMNODE_STARTED;
 
-            return;
-        } else {
-            notCapableReason = "Could not find suitable coins!";
-            LogPrintf("CActiveSystemnode::ManageStatus() - %s\n", notCapableReason);
-            return;
-        }
+        //    return;
+        //} else {
+        //    notCapableReason = "Could not find suitable coins!";
+        //    LogPrintf("CActiveSystemnode::ManageStatus() - %s\n", notCapableReason);
+        //    return;
+        //}
     }
 
     //send to all peers

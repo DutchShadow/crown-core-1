@@ -10,6 +10,7 @@
 #include "sync.h"
 #include "spork.h"
 #include "addrman.h"
+#include "net_processing.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 
@@ -25,7 +26,7 @@ CCriticalSection cs_mapSystemnodePayeeVotes;
 bool SNIsBlockPayeeValid(const CAmount& nValueCreated, const CTransaction& txNew, int nBlockHeight, const uint32_t& nTime, const uint32_t& nTimePrevBlock)
 {
     if(!systemnodeSync.IsSynced()) { //there is no budget data to use to check anything -- find the longest chain
-        LogPrint("snpayments", "Client not synced, skipping block payee checks\n");
+        LogPrintf("snpayments", "Client not synced, skipping block payee checks\n");
         return true;
     }
 
@@ -47,21 +48,22 @@ bool SNIsBlockPayeeValid(const CAmount& nValueCreated, const CTransaction& txNew
     }
 
     //check for systemnode payee
-    if(systemnodePayments.IsTransactionValid(nValueCreated, txNew, nBlockHeight)) {
-        return true;
-    } else if (nTime - nTimePrevBlock > Params().ChainStallDuration()) {
-        // The chain has stalled, allow the first block to have no payment to winners
-        LogPrintf("%s: Chain stall, time between blocks=%d\n", __func__, nTime - nTimePrevBlock);
-        return true;
-    } else {
-        LogPrintf("Invalid mn payment detected %s\n", txNew.ToString().c_str());
-        if(IsSporkActive(SPORK_14_SYSTEMNODE_PAYMENT_ENFORCEMENT)){
-            return false;
-        } else {
-            LogPrintf("Systemnode payment enforcement is disabled, accepting block\n");
-            return true;
-        }
-    }
+    // TODO fix
+    //if(systemnodePayments.IsTransactionValid(nValueCreated, txNew, nBlockHeight)) {
+    //    return true;
+    //} else if (nTime - nTimePrevBlock > Params().ChainStallDuration()) {
+    //    // The chain has stalled, allow the first block to have no payment to winners
+    //    LogPrintf("%s: Chain stall, time between blocks=%d\n", __func__, nTime - nTimePrevBlock);
+    //    return true;
+    //} else {
+    //    LogPrintf("Invalid mn payment detected %s\n", txNew.ToString().c_str());
+    //    if(IsSporkActive(SPORK_14_SYSTEMNODE_PAYMENT_ENFORCEMENT)){
+    //        return false;
+    //    } else {
+    //        LogPrintf("Systemnode payment enforcement is disabled, accepting block\n");
+    //        return true;
+    //    }
+    //}
 
     return false;
 }
@@ -88,31 +90,37 @@ void CSystemnodePayments::ProcessMessageSystemnodePayments(CNode* pfrom, std::st
 {
     if(!systemnodeSync.IsBlockchainSynced()) return;
 
-    if(fLiteMode) return; //disable all Systemnode related functionality
+    // TODO fix 
+    //if(fLiteMode) return; //disable all Systemnode related functionality
 
 
     if (strCommand == "snget") { //Systemnode Payments Request Sync
-        if(fLiteMode) return; //disable all Systemnode related functionality
+        // TODO fix
+        //if(fLiteMode) return; //disable all Systemnode related functionality
 
         int nCountNeeded;
-        vRecv >> nCountNeeded;
+        // TODO fix
+        //vRecv >> nCountNeeded;
 
         if(Params().NetworkID() == CBaseChainParams::MAIN){
-            if(pfrom->HasFulfilledRequest("snget")) {
-                LogPrintf("snget - peer already asked me for the list\n");
-                Misbehaving(pfrom->GetId(), 20);
-                return;
-            }
+            // TODO fix
+            //if(pfrom->HasFulfilledRequest("snget")) {
+            //    LogPrintf("snget - peer already asked me for the list\n");
+            //    Misbehaving(pfrom->GetId(), 20);
+            //    return;
+            //}
         }
 
-        pfrom->FulfilledRequest("snget");
+        // TODO fix
+        //pfrom->FulfilledRequest("snget");
         systemnodePayments.Sync(pfrom, nCountNeeded);
         LogPrintf("snget - Sent Systemnode winners to %s\n", pfrom->addr.ToString().c_str());
     }
     else if (strCommand == "snw") { //Systemnode Payments Declare Winner
         //this is required in litemodef
         CSystemnodePaymentWinner winner;
-        vRecv >> winner;
+        // TODO fix
+        //vRecv >> winner;
 
         if(pfrom->nVersion < MIN_MNW_PEER_PROTO_VERSION) return;
 
@@ -124,14 +132,14 @@ void CSystemnodePayments::ProcessMessageSystemnodePayments(CNode* pfrom, std::st
         }
 
         if(systemnodePayments.mapSystemnodePayeeVotes.count(winner.GetHash())){
-            LogPrint("snpayments", "snw - Already seen - %s bestHeight %d\n", winner.GetHash().ToString().c_str(), nHeight);
+            LogPrintf("snpayments", "snw - Already seen - %s bestHeight %d\n", winner.GetHash().ToString().c_str(), nHeight);
             systemnodeSync.AddedSystemnodeWinner(winner.GetHash());
             return;
         }
 
         int nFirstBlock = nHeight - (snodeman.CountEnabled()*1.25);
         if(winner.nBlockHeight < nFirstBlock || winner.nBlockHeight > nHeight+20){
-            LogPrint("snpayments", "snw - winner out of range - FirstBlock %d Height %d bestHeight %d\n", nFirstBlock, winner.nBlockHeight, nHeight);
+            LogPrintf("snpayments", "snw - winner out of range - FirstBlock %d Height %d bestHeight %d\n", nFirstBlock, winner.nBlockHeight, nHeight);
             return;
         }
 
@@ -156,9 +164,10 @@ void CSystemnodePayments::ProcessMessageSystemnodePayments(CNode* pfrom, std::st
 
         CTxDestination address1;
         ExtractDestination(winner.payee, address1);
-        CBitcoinAddress address2(address1);
+        // TODO fix
+        //CBitcoinAddress address2(address1);
 
-        LogPrint("snpayments", "snw - winning vote - Addr %s Height %d bestHeight %d - %s\n", address2.ToString().c_str(), winner.nBlockHeight, nHeight, winner.vinSystemnode.prevout.ToStringShort());
+        //LogPrintf("snpayments", "snw - winning vote - Addr %s Height %d bestHeight %d - %s\n", address2.ToString().c_str(), winner.nBlockHeight, nHeight, winner.vinSystemnode.prevout.ToStringShort());
 
         if(systemnodePayments.AddWinningSystemnode(winner)){
             winner.Relay();
@@ -221,8 +230,9 @@ void CSystemnodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFe
         }
     }
 
-    CAmount blockValue = GetBlockValue(pindexPrev->nHeight, nFees);
-    CAmount systemnodePayment = GetSystemnodePayment(pindexPrev->nHeight+1, blockValue);
+    // TODO fix
+    CAmount blockValue;// = GetBlockValue(pindexPrev->nHeight, nFees);
+    CAmount systemnodePayment;// = GetSystemnodePayment(pindexPrev->nHeight+1, blockValue);
 
     // This is already done in masternode
     //txNew.vout[0].nValue = blockValue;
@@ -238,9 +248,10 @@ void CSystemnodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFe
 
         CTxDestination address1;
         ExtractDestination(payee, address1);
-        CBitcoinAddress address2(address1);
+        // TODO fix
+        //CBitcoinAddress address2(address1);
 
-        LogPrintf("Systemnode payment to %s\n", address2.ToString().c_str());
+        //LogPrintf("Systemnode payment to %s\n", address2.ToString().c_str());
     }
 }
 
@@ -250,17 +261,18 @@ std::string CSystemnodeBlockPayees::GetRequiredPaymentsString()
 
     std::string ret = "Unknown";
 
-    BOOST_FOREACH(CSystemnodePayee& payee, vecPayments)
+    for (auto& payee : vecPayments)
     {
         CTxDestination address1;
         ExtractDestination(payee.scriptPubKey, address1);
-        CBitcoinAddress address2(address1);
+        // TODO fix
+        //CBitcoinAddress address2(address1);
 
-        if(ret != "Unknown"){
-            ret += ", " + address2.ToString() + ":" + boost::lexical_cast<std::string>(payee.nVotes);
-        } else {
-            ret = address2.ToString() + ":" + boost::lexical_cast<std::string>(payee.nVotes);
-        }
+        //if(ret != "Unknown"){
+        //    ret += ", " + address2.ToString() + ":" + boost::lexical_cast<std::string>(payee.nVotes);
+        //} else {
+        //    ret = address2.ToString() + ":" + boost::lexical_cast<std::string>(payee.nVotes);
+        //}
     }
 
     return ret;
@@ -284,18 +296,19 @@ bool CSystemnodeBlockPayees::IsTransactionValid(const CTransaction& txNew, const
     int nMaxSignatures = 0;
     std::string strPayeesPossible = "";
 
-    CAmount systemnodePayment = GetSystemnodePayment(nBlockHeight, nValueCreated);
+    // TODO fix
+    CAmount systemnodePayment;// = GetSystemnodePayment(nBlockHeight, nValueCreated);
 
     //require at least 6 signatures
 
-    BOOST_FOREACH(CSystemnodePayee& payee, vecPayments)
+    for (auto& payee : vecPayments)
         if(payee.nVotes >= nMaxSignatures && payee.nVotes >= SNPAYMENTS_SIGNATURES_REQUIRED)
             nMaxSignatures = payee.nVotes;
 
     // if we don't have at least 6 signatures on a payee, approve whichever is the longest chain
     if(nMaxSignatures < SNPAYMENTS_SIGNATURES_REQUIRED) return true;
 
-    BOOST_FOREACH(CSystemnodePayee& payee, vecPayments)
+    for (auto& payee : vecPayments)
     {
         bool found = false;
         int pos = -1;
@@ -310,20 +323,22 @@ bool CSystemnodeBlockPayees::IsTransactionValid(const CTransaction& txNew, const
         if(payee.nVotes >= SNPAYMENTS_SIGNATURES_REQUIRED){
             if(found) {
                 //When proof of stake is active, enforce specific payment positions
-                if (nBlockHeight >= Params().PoSStartHeight() && pos != SN_PMT_SLOT)
-                    return error("%s: Systemnode payment is not in coinbase.vout[%d]", __func__, SN_PMT_SLOT);
+                // TODO fix
+                //if (nBlockHeight >= Params().PoSStartHeight() && pos != SN_PMT_SLOT)
+                //    return error("%s: Systemnode payment is not in coinbase.vout[%d]", __func__, SN_PMT_SLOT);
                 return true;
             }
 
             CTxDestination address1;
             ExtractDestination(payee.scriptPubKey, address1);
-            CBitcoinAddress address2(address1);
+            // TODO fix
+            //CBitcoinAddress address2(address1);
 
-            if(strPayeesPossible == ""){
-                strPayeesPossible += address2.ToString();
-            } else {
-                strPayeesPossible += "," + address2.ToString();
-            }
+            //if(strPayeesPossible == ""){
+            //    strPayeesPossible += address2.ToString();
+            //} else {
+            //    strPayeesPossible += "," + address2.ToString();
+            //}
         }
     }
 
@@ -360,7 +375,7 @@ void CSystemnodePayments::CheckAndRemove()
         CSystemnodePaymentWinner winner = (*it).second;
 
         if(nHeight - winner.nBlockHeight > nLimit){
-            LogPrint("snpayments", "CSystemnodePayments::CleanPaymentList - Removing old Systemnode payment - block %d\n", winner.nBlockHeight);
+            LogPrintf("snpayments", "CSystemnodePayments::CleanPaymentList - Removing old Systemnode payment - block %d\n", winner.nBlockHeight);
             systemnodeSync.mapSeenSyncSNW.erase((*it).first);
             mapSystemnodePayeeVotes.erase(it++);
             mapSystemnodeBlocks.erase(winner.nBlockHeight);
@@ -420,13 +435,13 @@ bool CSystemnodePayments::ProcessBlock(int nBlockHeight)
 
         if(n == -1)
         {
-            LogPrint("snpayments", "CSystemnodePayments::ProcessBlock - Unknown Systemnode\n");
+            LogPrintf("snpayments", "CSystemnodePayments::ProcessBlock - Unknown Systemnode\n");
             return false;
         }
 
         if(n > SNPAYMENTS_SIGNATURES_TOTAL)
         {
-            LogPrint("snpayments", "CSystemnodePayments::ProcessBlock - Systemnode not in the top %d (%d)\n", MNPAYMENTS_SIGNATURES_TOTAL, n);
+            LogPrintf("snpayments", "CSystemnodePayments::ProcessBlock - Systemnode not in the top %d (%d)\n", MNPAYMENTS_SIGNATURES_TOTAL, n);
             return false;
         }
     }
@@ -451,9 +466,10 @@ bool CSystemnodePayments::ProcessBlock(int nBlockHeight)
 
         CTxDestination address1;
         ExtractDestination(payee, address1);
-        CBitcoinAddress address2(address1);
+        // TODO fix
+        //CBitcoinAddress address2(address1);
 
-        LogPrintf("CSystemnodePayments::ProcessBlock() Winner payee %s nHeight %d. \n", address2.ToString().c_str(), newWinner.nBlockHeight);
+        //LogPrintf("CSystemnodePayments::ProcessBlock() Winner payee %s nHeight %d. \n", address2.ToString().c_str(), newWinner.nBlockHeight);
     } else {
         LogPrintf("CSystemnodePayments::ProcessBlock() Failed to find systemnode to pay\n");
     }
@@ -565,7 +581,8 @@ void CSystemnodePayments::Sync(CNode* node, int nCountNeeded)
         }
         ++it;
     }
-    node->PushMessage("snssc", SYSTEMNODE_SYNC_SNW, nInvCount);
+    // TODO fix
+    //node->PushMessage("snssc", SYSTEMNODE_SYNC_SNW, nInvCount);
 }
 
 // Is this systemnode scheduled to get paid soon? 

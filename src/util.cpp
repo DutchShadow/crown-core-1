@@ -83,6 +83,9 @@ bool fSystemNode = false;
 std::string strMasterNodePrivKey = "";
 std::string strSystemNodePrivKey = "";
 
+std::string strMasterNodeAddr = "";
+std::string strSystemNodeAddr = "";
+
 // Application startup time (used for uptime calculation)
 const int64_t nStartupTime = GetTime();
 
