@@ -164,7 +164,9 @@ QT_MOC_CPP = \
   qt/moc_walletview.cpp \
   qt/moc_masternodelist.cpp \
   qt/moc_systemnodelist.cpp \
-  qt/moc_privatekeywidget.cpp
+  qt/moc_privatekeywidget.cpp \
+  qt/moc_datetablewidgetitem.cpp \
+  qt/moc_createnodedialog.cpp
 
 BITCOIN_MM = \
   qt/macdockiconhandler.mm \
@@ -243,7 +245,9 @@ BITCOIN_QT_H = \
   qt/winshutdownmonitor.h \
   qt/masternodelist.h \
   qt/systemnodelist.h \
-  qt/privatekeywidget.h
+  qt/privatekeywidget.h \
+  qt/datetablewidgetitem.h \
+  qt/createnodedialog.h
 
 RES_ICONS = \
   qt/res/icons/add.png \
@@ -358,7 +362,9 @@ BITCOIN_QT_WALLET_CPP = \
   qt/walletview.cpp \
   qt/masternodelist.cpp \
   qt/systemnodelist.cpp \
-  qt/privatekeywidget.cpp 
+  qt/privatekeywidget.cpp \
+  qt/datetablewidgetitem.cpp \
+  qt/createnodedialog.cpp 
 
 BITCOIN_QT_CPP = $(BITCOIN_QT_BASE_CPP)
 if TARGET_WINDOWS

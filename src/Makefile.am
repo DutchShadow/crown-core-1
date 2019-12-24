@@ -283,11 +283,13 @@ libbitcoin_wallet_a_SOURCES = \
   masternode-budget.cpp \
   masternode-payments.cpp \
   activemasternode.cpp \
+  masternodeconfig.cpp \
   systemnode-sync.cpp \
   systemnodeman.cpp \
   systemnode-payments.cpp \
   systemnode.cpp \
   activesystemnode.cpp \
+  systemnodeconfig.cpp \
   interfaces/wallet.cpp \
   wallet/coincontrol.cpp \
   wallet/crypter.cpp \
