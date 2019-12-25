@@ -1,5 +1,5 @@
 #include "createnodedialog.h"
-#include "ui_createnodedialog.h"
+#include <qt/forms/ui_createnodedialog.h>
 #include "ui_interface.h"
 #include "net.h"
 #include <QMessageBox>

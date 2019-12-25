@@ -202,7 +202,8 @@ BITCOIN_CORE_H = \
   zmq/zmqconfig.h\
   zmq/zmqnotificationinterface.h \
   zmq/zmqpublishnotifier.h \
-  zmq/zmqrpc.h
+  zmq/zmqrpc.h \
+  nodeconfig.h
 
 
 obj/build.h: FORCE
@@ -290,6 +291,7 @@ libbitcoin_wallet_a_SOURCES = \
   systemnode.cpp \
   activesystemnode.cpp \
   systemnodeconfig.cpp \
+  nodeconfig.cpp \
   interfaces/wallet.cpp \
   wallet/coincontrol.cpp \
   wallet/crypter.cpp \

@@ -451,41 +451,42 @@ void SystemnodeList::on_startAllButton_clicked()
 
 void SystemnodeList::on_startMissingButton_clicked()
 {
-    if(systemnodeSync.RequestedSystemnodeAssets <= SYSTEMNODE_SYNC_LIST ||
-      systemnodeSync.RequestedSystemnodeAssets == SYSTEMNODE_SYNC_FAILED) {
-        QMessageBox::critical(this, tr("Command is not available right now"),
-            tr("You can't use this command until systemnode list is synced"));
-        return;
-    }
+    // TODO fix
+    //if(systemnodeSync.RequestedSystemnodeAssets <= SYSTEMNODE_SYNC_LIST ||
+    //  systemnodeSync.RequestedSystemnodeAssets == SYSTEMNODE_SYNC_FAILED) {
+    //    QMessageBox::critical(this, tr("Command is not available right now"),
+    //        tr("You can't use this command until systemnode list is synced"));
+    //    return;
+    //}
 
-    StartMissingDialog dg(this);
-    dg.setWindowTitle("Confirm missing systemnodes start");
-    dg.setText("Are you sure you want to start MISSING systemnodes?");
-    dg.setCheckboxText("Start all nodes");
-    dg.setWarningText(QString("<b>") + tr("WARNING!") + QString("</b>") +
-            " If checked all ACTIVE systemnodes will be reset.");
-    bool startAll = false;
+    //StartMissingDialog dg(this);
+    //dg.setWindowTitle("Confirm missing systemnodes start");
+    //dg.setText("Are you sure you want to start MISSING systemnodes?");
+    //dg.setCheckboxText("Start all nodes");
+    //dg.setWarningText(QString("<b>") + tr("WARNING!") + QString("</b>") +
+    //        " If checked all ACTIVE systemnodes will be reset.");
+    //bool startAll = false;
 
-    // Display message box
-    if (dg.exec()) {
-        if (dg.checkboxChecked()) {
-            startAll = true;
-        }
+    //// Display message box
+    //if (dg.exec()) {
+    //    if (dg.checkboxChecked()) {
+    //        startAll = true;
+    //    }
 
-        WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
-        if(encStatus == walletModel->Locked)
-        {
-            WalletModel::UnlockContext ctx(walletModel->requestUnlock());
-            if(!ctx.isValid())
-            {
-                // Unlock wallet was cancelled
-                return;
-            }
-            startAll ? StartAll() : StartAll("start-missing");
-            return;
-        }
-        startAll ? StartAll() : StartAll("start-missing");
-    }
+    //    WalletModel::EncryptionStatus encStatus = walletModel->getEncryptionStatus();
+    //    if(encStatus == walletModel->Locked)
+    //    {
+    //        WalletModel::UnlockContext ctx(walletModel->requestUnlock());
+    //        if(!ctx.isValid())
+    //        {
+    //            // Unlock wallet was cancelled
+    //            return;
+    //        }
+    //        startAll ? StartAll() : StartAll("start-missing");
+    //        return;
+    //    }
+    //    startAll ? StartAll() : StartAll("start-missing");
+    //}
 }
 
 void SystemnodeList::on_tableWidgetMySystemnodes_itemSelectionChanged()

@@ -111,9 +111,11 @@ QT_FORMS_UI = \
   qt/forms/sendcoinsdialog.ui \
   qt/forms/sendcoinsentry.ui \
   qt/forms/signverifymessagedialog.ui \
-  qt/forms/transactiondescdialog.ui \
   qt/forms/masternodelist.ui \
-  qt/forms/systemnodelist.ui
+  qt/forms/systemnodelist.ui \
+  qt/forms/transactiondescdialog.ui \
+  qt/forms/createnodedialog.ui \
+  qt/forms/startmissingdialog.ui
 
 QT_MOC_CPP = \
   qt/moc_addressbookpage.cpp \
@@ -149,9 +151,12 @@ QT_MOC_CPP = \
   qt/moc_recentrequeststablemodel.cpp \
   qt/moc_rpcconsole.cpp \
   qt/moc_sendcoinsdialog.cpp \
+  qt/moc_sendcollateraldialog.cpp \
   qt/moc_sendcoinsentry.cpp \
   qt/moc_signverifymessagedialog.cpp \
   qt/moc_splashscreen.cpp \
+  qt/moc_masternodelist.cpp \
+  qt/moc_systemnodelist.cpp \
   qt/moc_trafficgraphwidget.cpp \
   qt/moc_transactiondesc.cpp \
   qt/moc_transactiondescdialog.cpp \
@@ -160,13 +165,13 @@ QT_MOC_CPP = \
   qt/moc_transactionview.cpp \
   qt/moc_utilitydialog.cpp \
   qt/moc_walletframe.cpp \
-  qt/moc_walletmodel.cpp \
-  qt/moc_walletview.cpp \
-  qt/moc_masternodelist.cpp \
-  qt/moc_systemnodelist.cpp \
   qt/moc_privatekeywidget.cpp \
-  qt/moc_datetablewidgetitem.cpp \
-  qt/moc_createnodedialog.cpp
+  qt/moc_createsystemnodedialog.cpp \
+  qt/moc_createmasternodedialog.cpp \
+  qt/moc_createnodedialog.cpp \
+  qt/moc_startmissingdialog.cpp \
+  qt/moc_walletmodel.cpp \
+  qt/moc_walletview.cpp
 
 BITCOIN_MM = \
   qt/macdockiconhandler.mm \
@@ -227,9 +232,17 @@ BITCOIN_QT_H = \
   qt/recentrequeststablemodel.h \
   qt/rpcconsole.h \
   qt/sendcoinsdialog.h \
+  qt/sendcollateraldialog.h \
   qt/sendcoinsentry.h \
   qt/signverifymessagedialog.h \
   qt/splashscreen.h \
+  qt/masternodelist.h \
+  qt/systemnodelist.h \
+  qt/datetablewidgetitem.h \
+  qt/privatekeywidget.h \
+  qt/createsystemnodedialog.h \
+  qt/createmasternodedialog.h \
+  qt/createnodedialog.h \
   qt/trafficgraphwidget.h \
   qt/transactiondesc.h \
   qt/transactiondescdialog.h \
@@ -241,13 +254,9 @@ BITCOIN_QT_H = \
   qt/walletframe.h \
   qt/walletmodel.h \
   qt/walletmodeltransaction.h \
+  qt/startmissingdialog.h \
   qt/walletview.h \
-  qt/winshutdownmonitor.h \
-  qt/masternodelist.h \
-  qt/systemnodelist.h \
-  qt/privatekeywidget.h \
-  qt/datetablewidgetitem.h \
-  qt/createnodedialog.h
+  qt/winshutdownmonitor.h
 
 RES_ICONS = \
   qt/res/icons/add.png \
@@ -348,6 +357,7 @@ BITCOIN_QT_WALLET_CPP = \
   qt/receiverequestdialog.cpp \
   qt/recentrequeststablemodel.cpp \
   qt/sendcoinsdialog.cpp \
+  qt/sendcollateraldialog.cpp \
   qt/sendcoinsentry.cpp \
   qt/signverifymessagedialog.cpp \
   qt/transactiondesc.cpp \
@@ -360,9 +370,11 @@ BITCOIN_QT_WALLET_CPP = \
   qt/walletmodel.cpp \
   qt/walletmodeltransaction.cpp \
   qt/walletview.cpp \
-  qt/masternodelist.cpp \
   qt/systemnodelist.cpp \
+  qt/masternodelist.cpp \
   qt/privatekeywidget.cpp \
+  qt/createsystemnodedialog.h \
+  qt/createmasternodedialog.h \
   qt/datetablewidgetitem.cpp \
   qt/createnodedialog.cpp 
 
