@@ -1,6 +1,6 @@
 package=miniupnpc
 $(package)_version=1.9.20140701
-$(package)_download_path=http://miniupnp.free.fr/files
+$(package)_download_path=https://miniupnp.tuxfamily.org/files/
 $(package)_file_name=$(package)-$($(package)_version).tar.gz
 $(package)_sha256_hash=26f3985bad7768b8483b793448ae49414cdc4451d0ec83e7c1944367e15f9f07
 
