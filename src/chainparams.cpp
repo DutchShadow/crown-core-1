@@ -118,6 +118,7 @@ public:
         pchMessageStart[3] = 0xdf;
         nDefaultPort = 9340;
         nPruneAfterHeight = 100000;
+        nAuxpowChainId = 20;
 
         genesis = CreateGenesisBlock(1412760826, 1612467894, 0x1d00ffff, 1, 10 * COIN);
 
@@ -181,6 +182,11 @@ public:
         /* disable fallback fee on mainnet */
         m_fallback_fee_enabled = false;
         strLegacySignerDummyAddress = "18WTcWvwrNnfqeQAn6th9QQ2EpnXMq5Th8";
+    }
+
+    bool StrictChainId() const
+    {
+        return true;
     }
 };
 
@@ -278,6 +284,10 @@ public:
         /* enable fallback fee on testnet */
         m_fallback_fee_enabled = true;
     }
+    bool StrictChainId() const
+    {
+        return false;
+    }
 };
 
 /**
@@ -357,6 +367,10 @@ public:
 
         /* enable fallback fee on regtest */
         m_fallback_fee_enabled = true;
+    }
+    bool StrictChainId() const
+    {
+        return true;
     }
 };
 

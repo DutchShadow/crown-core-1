@@ -10,15 +10,15 @@
 #include "serialize.h"
 #include "uint256.h"
 
+#include "primitives/pureheader.h"
 #include "primitives/transaction.h"
-#include "primitives/block.h"
+#include <wallet/wallet.h>
 
 #include <vector>
 
 class CBlock;
 class CBlockIndex;
 class CReserveKey;
-class CBlockHeader;
 
 /** Header for merge-mining data in the coinbase.  */
 static const unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' };
@@ -28,64 +28,64 @@ static const unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' };
    not needed and stay in wallet.cpp.  */
 
 /** A transaction with a merkle branch linking it to the block chain. */
-class CMerkleTx : public CTransaction
-{
-private:
-    int GetDepthInMainChainINTERNAL(const CBlockIndex* &pindexRet) const;
-
-public:
-    uint256 hashBlock;
-    std::vector<uint256> vMerkleBranch;
-    int nIndex;
-
-    // memory only
-    mutable bool fMerkleVerified;
-
-
-    CMerkleTx()
-    {
-        Init();
-    }
-
-    CMerkleTx(const CTransaction& txIn) : CTransaction(txIn)
-    {
-        Init();
-    }
-
-    void Init()
-    {
-        hashBlock = uint256();
-        nIndex = -1;
-        fMerkleVerified = false;
-    }
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(*(CTransaction*)this);
-        READWRITE(hashBlock);
-        READWRITE(vMerkleBranch);
-        READWRITE(nIndex);
-    }
-
-    int SetMerkleBranch(const CBlock& block);
-
-
-    /**
-     * Return depth of transaction in blockchain:
-     * -1  : not in blockchain, and not in memory pool (conflicted transaction)
-     *  0  : in memory pool, waiting to be included in a block
-     * >=1 : this many blocks deep in the main chain
-     */
-    int GetDepthInMainChain(const CBlockIndex* &pindexRet, bool enableIX = true) const;
-    int GetDepthInMainChain(bool enableIX = true) const { const CBlockIndex *pindexRet; return GetDepthInMainChain(pindexRet, enableIX); }
-    bool IsInMainChain() const { const CBlockIndex *pindexRet; return GetDepthInMainChainINTERNAL(pindexRet) > 0; }
-    int GetBlocksToMaturity() const;
-    bool AcceptToMemoryPool(bool fLimitFree=true, bool fRejectInsaneFee=true, bool ignoreFees=false);
-    int GetTransactionLockSignatures() const;
-    bool IsTransactionLockTimedOut() const;
-};
+//class CMerkleTx : public CTransaction
+//{
+//private:
+//    int GetDepthInMainChainINTERNAL(const CBlockIndex* &pindexRet) const;
+//
+//public:
+//    uint256 hashBlock;
+//    std::vector<uint256> vMerkleBranch;
+//    int nIndex;
+//
+//    // memory only
+//    mutable bool fMerkleVerified;
+//
+//
+//    CMerkleTx()
+//    {
+//        Init();
+//    }
+//
+//    CMerkleTx(const CTransaction& txIn) : CTransaction(txIn)
+//    {
+//        Init();
+//    }
+//
+//    void Init()
+//    {
+//        hashBlock = uint256();
+//        nIndex = -1;
+//        fMerkleVerified = false;
+//    }
+//
+//    ADD_SERIALIZE_METHODS;
+//
+//    template <typename Stream, typename Operation>
+//    inline void SerializationOp(Stream& s, Operation ser_action) {
+//        READWRITE(*(CTransaction*)this);
+//        READWRITE(hashBlock);
+//        READWRITE(vMerkleBranch);
+//        READWRITE(nIndex);
+//    }
+//
+//    int SetMerkleBranch(const CBlock& block);
+//
+//
+//    /**
+//     * Return depth of transaction in blockchain:
+//     * -1  : not in blockchain, and not in memory pool (conflicted transaction)
+//     *  0  : in memory pool, waiting to be included in a block
+//     * >=1 : this many blocks deep in the main chain
+//     */
+//    int GetDepthInMainChain(const CBlockIndex* &pindexRet, bool enableIX = true) const;
+//    int GetDepthInMainChain(bool enableIX = true) const { const CBlockIndex *pindexRet; return GetDepthInMainChain(pindexRet, enableIX); }
+//    bool IsInMainChain() const { const CBlockIndex *pindexRet; return GetDepthInMainChainINTERNAL(pindexRet) > 0; }
+//    int GetBlocksToMaturity() const;
+//    bool AcceptToMemoryPool(bool fLimitFree=true, bool fRejectInsaneFee=true, bool ignoreFees=false);
+//    int GetTransactionLockSignatures() const;
+//    bool IsTransactionLockTimedOut() const;
+//};
 
 /**
  * Data for the merge-mining auxpow.  This is a merkle tx (the parent block's
@@ -105,16 +105,16 @@ public:
   int nChainIndex;
 
   /** Parent block header (on which the real PoW is done).  */
-  CBlockHeader parentBlock;
+  CPureBlockHeader parentBlock;
 
 public:
 
   inline explicit CAuxPow (const CTransaction& txIn)
-    : CMerkleTx (txIn)
+    //: CMerkleTx (txIn)
   {}
 
   inline CAuxPow ()
-    : CMerkleTx ()
+    //: CMerkleTx ()
   {}
 
   ADD_SERIALIZE_METHODS;
@@ -157,7 +157,7 @@ public:
    * @return The parent block.
    */
   /* FIXME: Remove after the hardfork.  */
-  inline const CBlockHeader&
+  inline const CPureBlockHeader&
   getParentBlock () const
   {
     return parentBlock;

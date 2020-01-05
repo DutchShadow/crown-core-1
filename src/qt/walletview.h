@@ -95,6 +95,11 @@ public Q_SLOTS:
     /** Show Sign/Verify Message dialog and switch to verify message tab */
     void gotoVerifyMessageTab(QString addr = "");
 
+    /** Switch to masternode page */
+    void gotoMasternodePage();
+    /** Switch to systemnode page */
+    void gotoSystemnodePage();
+
     /** Show incoming transaction notification for new transactions.
 
         The new items are those between start and end inclusive, under the given parent item.

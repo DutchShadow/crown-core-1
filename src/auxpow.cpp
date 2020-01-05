@@ -9,128 +9,128 @@
 
 #include "compat/endian.h"
 #include "instantx.h"
-#include "main.h"
 #include "util.h"
 
 #include "script/script.h"
 
 #include <algorithm>
 
+typedef std::vector<unsigned char> valtype;
+
 
 /* Moved from wallet.cpp.  CMerkleTx is necessary for auxpow, independent
    of an enabled (or disabled) wallet.  Always include the code.  */
 
-int CMerkleTx::SetMerkleBranch(const CBlock& block)
-{
-    AssertLockHeld(cs_main);
-    CBlock blockTmp;
+//int CMerkleTx::SetMerkleBranch(const CBlock& block)
+//{
+//    AssertLockHeld(cs_main);
+//    CBlock blockTmp;
+//
+//    // Update the tx's hashBlock
+//    hashBlock = block.GetHash();
+//
+//    // Locate the transaction
+//    for (nIndex = 0; nIndex < (int)block.vtx.size(); nIndex++)
+//        if (block.vtx[nIndex] == *(CTransaction*)this)
+//            break;
+//    if (nIndex == (int)block.vtx.size())
+//    {
+//        vMerkleBranch.clear();
+//        nIndex = -1;
+//        LogPrintf("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
+//        return 0;
+//    }
+//
+//    // Fill in merkle branch
+//    vMerkleBranch = block.GetMerkleBranch(nIndex);
+//
+//    // Is the tx in a block that's in the main chain
+//    BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
+//    if (mi == mapBlockIndex.end())
+//        return 0;
+//    const CBlockIndex* pindex = (*mi).second;
+//    if (!pindex || !chainActive.Contains(pindex))
+//        return 0;
+//
+//    return chainActive.Height() - pindex->nHeight + 1;
+//}
+//
+//int CMerkleTx::GetDepthInMainChainINTERNAL(const CBlockIndex* &pindexRet) const
+//{
+//    if (hashBlock.IsNull() || nIndex == -1)
+//        return 0;
+//    AssertLockHeld(cs_main);
+//
+//    // Find the block it claims to be in
+//    BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
+//    if (mi == mapBlockIndex.end())
+//        return 0;
+//    CBlockIndex* pindex = (*mi).second;
+//    if (!pindex || !chainActive.Contains(pindex))
+//        return 0;
+//
+//    // Make sure the merkle branch connects to this block
+//    if (!fMerkleVerified)
+//    {
+//        if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot)
+//            return 0;
+//        fMerkleVerified = true;
+//    }
+//
+//    pindexRet = pindex;
+//    return chainActive.Height() - pindex->nHeight + 1;
+//}
+//
+//int CMerkleTx::GetDepthInMainChain(const CBlockIndex* &pindexRet, bool enableIX) const
+//{
+//    AssertLockHeld(cs_main);
+//    int nResult = GetDepthInMainChainINTERNAL(pindexRet);
+//    if (nResult == 0 && !mempool.exists(GetHash()))
+//        return -1; // Not in chain, not in mempool
+//
+//    if(enableIX){
+//        if (nResult < 6){
+//            int signatures = GetTransactionLockSignatures();
+//            if(signatures >= INSTANTX_SIGNATURES_REQUIRED){
+//                return nInstantXDepth+nResult;
+//            }
+//        }
+//    }
+//
+//    return nResult;
+//}
+//
+//int CMerkleTx::GetBlocksToMaturity() const
+//{
+//    if (!IsCoinBase() && !IsCoinStake())
+//        return 0;
+//    return std::max(0, (COINBASE_MATURITY+1) - GetDepthInMainChain());
+//}
+//
+//
+//bool CMerkleTx::AcceptToMemoryPool(bool fLimitFree, bool fRejectInsaneFee, bool ignoreFees)
+//{
+//    CValidationState state;
+//    return ::AcceptToMemoryPool(mempool, state, *this, fLimitFree, NULL, fRejectInsaneFee, ignoreFees);
+//}
+//
+//int CMerkleTx::GetTransactionLockSignatures() const
+//{
+//    if(fLargeWorkForkFound || fLargeWorkInvalidChainFound) return -2;
+//    if(!IsSporkActive(SPORK_2_INSTANTX)) return -3;
+//    if(!fEnableInstantX) return -1;
+//
+//    return GetInstantSend().GetSignaturesCount(GetHash());
+//}
+//
+//bool CMerkleTx::IsTransactionLockTimedOut() const
+//{
+//    if(!fEnableInstantX) return 0;
+//
+//    return GetInstantSend().IsLockTimedOut(GetHash());
+//}
 
-    // Update the tx's hashBlock
-    hashBlock = block.GetHash();
-
-    // Locate the transaction
-    for (nIndex = 0; nIndex < (int)block.vtx.size(); nIndex++)
-        if (block.vtx[nIndex] == *(CTransaction*)this)
-            break;
-    if (nIndex == (int)block.vtx.size())
-    {
-        vMerkleBranch.clear();
-        nIndex = -1;
-        LogPrintf("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
-        return 0;
-    }
-
-    // Fill in merkle branch
-    vMerkleBranch = block.GetMerkleBranch(nIndex);
-
-    // Is the tx in a block that's in the main chain
-    BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
-    if (mi == mapBlockIndex.end())
-        return 0;
-    const CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !chainActive.Contains(pindex))
-        return 0;
-
-    return chainActive.Height() - pindex->nHeight + 1;
-}
-
-int CMerkleTx::GetDepthInMainChainINTERNAL(const CBlockIndex* &pindexRet) const
-{
-    if (hashBlock.IsNull() || nIndex == -1)
-        return 0;
-    AssertLockHeld(cs_main);
-
-    // Find the block it claims to be in
-    BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
-    if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !chainActive.Contains(pindex))
-        return 0;
-
-    // Make sure the merkle branch connects to this block
-    if (!fMerkleVerified)
-    {
-        if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot)
-            return 0;
-        fMerkleVerified = true;
-    }
-
-    pindexRet = pindex;
-    return chainActive.Height() - pindex->nHeight + 1;
-}
-
-int CMerkleTx::GetDepthInMainChain(const CBlockIndex* &pindexRet, bool enableIX) const
-{
-    AssertLockHeld(cs_main);
-    int nResult = GetDepthInMainChainINTERNAL(pindexRet);
-    if (nResult == 0 && !mempool.exists(GetHash()))
-        return -1; // Not in chain, not in mempool
-
-    if(enableIX){
-        if (nResult < 6){
-            int signatures = GetTransactionLockSignatures();
-            if(signatures >= INSTANTX_SIGNATURES_REQUIRED){
-                return nInstantXDepth+nResult;
-            }
-        }
-    }
-
-    return nResult;
-}
-
-int CMerkleTx::GetBlocksToMaturity() const
-{
-    if (!IsCoinBase() && !IsCoinStake())
-        return 0;
-    return std::max(0, (COINBASE_MATURITY+1) - GetDepthInMainChain());
-}
-
-
-bool CMerkleTx::AcceptToMemoryPool(bool fLimitFree, bool fRejectInsaneFee, bool ignoreFees)
-{
-    CValidationState state;
-    return ::AcceptToMemoryPool(mempool, state, *this, fLimitFree, NULL, fRejectInsaneFee, ignoreFees);
-}
-
-int CMerkleTx::GetTransactionLockSignatures() const
-{
-    if(fLargeWorkForkFound || fLargeWorkInvalidChainFound) return -2;
-    if(!IsSporkActive(SPORK_2_INSTANTX)) return -3;
-    if(!fEnableInstantX) return -1;
-
-    return GetInstantSend().GetSignaturesCount(GetHash());
-}
-
-bool CMerkleTx::IsTransactionLockTimedOut() const
-{
-    if(!fEnableInstantX) return 0;
-
-    return GetInstantSend().IsLockTimedOut(GetHash());
-}
-
-bool
-CAuxPow::check (const uint256& hashAuxBlock, int nChainId) const
+bool CAuxPow::check(const uint256& hashAuxBlock, int nChainId) const
 {
     if (nIndex != 0)
         return error("AuxPow is not a generate");
@@ -143,17 +143,16 @@ CAuxPow::check (const uint256& hashAuxBlock, int nChainId) const
         return error("Aux POW chain merkle branch too long");
 
     // Check that the chain merkle root is in the coinbase
-    const uint256 nRootHash
-      = CBlock::CheckMerkleBranch (hashAuxBlock, vChainMerkleBranch,
-                                   nChainIndex);
+    const uint256 nRootHash = CBlock::CheckMerkleBranch(hashAuxBlock, vChainMerkleBranch, nChainIndex);
     valtype vchRootHash(nRootHash.begin (), nRootHash.end ());
     std::reverse (vchRootHash.begin (), vchRootHash.end ()); // correct endian
 
     // Check that we are in the parent block merkle tree
-    if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != parentBlock.hashMerkleRoot)
-        return error("Aux POW merkle root incorrect");
+    // TODO fix
+    //if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != parentBlock.hashMerkleRoot)
+    //    return error("Aux POW merkle root incorrect");
 
-    const CScript script = vin[0].scriptSig;
+    const CScript script = tx->vin[0].scriptSig;
 
     // Check that the same work is not submitted twice to our chain.
     //

@@ -146,7 +146,7 @@ public:
     // int64_t StartMasternodePayments() const { return nStartMasternodePayments; }
     // CBaseChainParams::Network NetworkID() const { return networkID; }
     // /* Return the auxpow chain ID.  */
-    // inline int32_t AuxpowChainId () const { return nAuxpowChainId; }
+    inline int32_t AuxpowChainId () const { return nAuxpowChainId; }
     // int32_t PoSChainId () const { return nPoSChainId; }
     // int PoSStartHeight() const { return nBlockPoSStart; }
     // int ValidStakePointerDuration() const { return nStakePointerValidityPeriod; }
@@ -155,8 +155,8 @@ public:
     // int ChainStallDuration() const { return nChainStallDuration; }
     // /* Return start height of auxpow and the retarget interval change.  */
     // virtual int AuxpowStartHeight() const = 0;
-    // /* Return whether or not to enforce strict chain ID checks.  */
-    // virtual bool StrictChainId() const = 0;
+    /* Return whether or not to enforce strict chain ID checks.  */
+    virtual bool StrictChainId() const = 0;
     // /* Return whether to allow blocks with a "legacy" version.  */
     // virtual bool AllowLegacyBlocks(unsigned nHeight) const = 0;
 protected:
@@ -217,7 +217,7 @@ protected:
     // std::string strLegacySignerDummyAddress;
     // std::string strDevfundAddress;
     // int64_t nStartMasternodePayments;
-    // int32_t nAuxpowChainId;
+    int32_t nAuxpowChainId;
     // int32_t nPoSChainId;
     // int nBlockPoSStart;
     // int nStakePointerValidityPeriod;

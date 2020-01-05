@@ -6,15 +6,13 @@
 #ifndef BITCOIN_PRIMITIVES_BLOCK_H
 #define BITCOIN_PRIMITIVES_BLOCK_H
 
-//#include "auxpow.h"
+#include <auxpow.h>
 #include <primitives/transaction.h>
 #include <primitives/pureheader.h>
 #include <serialize.h>
 #include <uint256.h>
 #include <mn-pos/stakepointer.h>
 #include <iostream>
-
-class CAuxPow;
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -23,19 +21,11 @@ class CAuxPow;
  * in the block is a special one that creates a new coin owned by the creator
  * of the block.
  */
-class CBlockHeader
+class CBlockHeader : public CPureBlockHeader
 {
 public:
     // auxpow (if this is a merge-minded block)
     std::shared_ptr<CAuxPow> auxpow;
-
-    // header
-    CBlockVersion nVersion;
-    uint256 hashPrevBlock;
-    uint256 hashMerkleRoot;
-    uint32_t nTime;
-    uint32_t nBits;
-    uint32_t nNonce;
 
     CBlockHeader()
     {
@@ -45,28 +35,23 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(this->nVersion);
-        READWRITE(hashPrevBlock);
-        READWRITE(hashMerkleRoot);
-        READWRITE(nTime);
-        READWRITE(nBits);
-        READWRITE(nNonce);
-        //AuxPowReadWrite(ser_action);
-        //if (this->nVersion.IsAuxpow())
-        //{
-        //    if (ser_action.ForRead())
-        //        ResetAuxPow();
-        //    assert(auxpow);
-        //    READWRITE(*auxpow);
-        //} else if (ser_action.ForRead())
-        //    auxpow.reset();
+    inline void SerializationOp(Stream& s, Operation ser_action)
+    {
+        READWRITE(*(CPureBlockHeader*)this);
+        //nVersion = this->nVersion.GetBaseVersion();
+        if (this->nVersion.IsAuxpow())
+        {
+            if (ser_action.ForRead())
+                auxpow.reset (new CAuxPow());
+            assert(auxpow);
+            READWRITE(*auxpow);
+        } else if (ser_action.ForRead())
+            auxpow.reset();
     }
 
     void SetNull()
     {
-        //CPureBlockHeader::SetNull();
-        nVersion.SetNull();
+        CPureBlockHeader::SetNull();
         auxpow.reset();
         hashPrevBlock.SetNull();
         hashMerkleRoot.SetNull();
@@ -88,15 +73,6 @@ public:
     void SetAuxpow (CAuxPow* apow);
 
     void SetProofOfStake(bool fProofOfStake);
-    
-    uint256 GetHash() const;
-
-    int64_t GetBlockTime() const
-    {
-        return (int64_t)nTime;
-    }
-private:
-    void ResetAuxPow();
 };
 
 
@@ -165,6 +141,7 @@ public:
     bool IsProofOfWork() const;
     
     std::string ToString() const;
+    static uint256 CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMerkleBranch, int nIndex);
 };
 
 /** Describes a place in the block chain to another node such that if the

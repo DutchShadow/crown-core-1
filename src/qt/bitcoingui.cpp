@@ -426,7 +426,7 @@ void BitcoinGUI::createToolBars()
 #ifdef ENABLE_WALLET
         QWidget *spacer = new QWidget();
         spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        toolbar->addWidget(spacer);
+        //toolbar->addWidget(spacer);
 
         m_wallet_selector = new QComboBox();
         connect(m_wallet_selector, SIGNAL(currentIndexChanged(int)), this, SLOT(setCurrentWalletBySelectorIndex(int)));
@@ -708,6 +708,22 @@ void BitcoinGUI::gotoHistoryPage()
 {
     historyAction->setChecked(true);
     if (walletFrame) walletFrame->gotoHistoryPage();
+}
+
+void BitcoinGUI::gotoMasternodePage()
+{
+    if (clientModel->getOptionsModel()->getMasternodesEnabled()) {
+        masternodeAction->setChecked(true);
+        if (walletFrame) walletFrame->gotoMasternodePage();
+    }
+}
+
+void BitcoinGUI::gotoSystemnodePage()
+{
+    if (clientModel->getOptionsModel()->getSystemnodesEnabled()) {
+        systemnodeAction->setChecked(true);
+        if (walletFrame) walletFrame->gotoSystemnodePage();
+    }
 }
 
 void BitcoinGUI::gotoReceiveCoinsPage()

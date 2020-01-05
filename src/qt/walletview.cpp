@@ -223,6 +223,20 @@ void WalletView::gotoSendCoinsPage(QString addr)
         sendCoinsPage->setAddress(addr);
 }
 
+void WalletView::gotoMasternodePage()
+{
+    if (walletModel->getOptionsModel()->getMasternodesEnabled()) {
+        setCurrentWidget(masternodeListPage);
+    }
+}
+
+void WalletView::gotoSystemnodePage()
+{
+    if (walletModel->getOptionsModel()->getSystemnodesEnabled()) {
+        setCurrentWidget(systemnodeListPage);
+    }
+}
+
 void WalletView::gotoSignMessageTab(QString addr)
 {
     // calls show() in showTab_SM()

@@ -9,6 +9,9 @@
 #include <chain.h>
 #include <primitives/block.h>
 #include <uint256.h>
+#include <chainparams.h>
+#include <util.h>
+#include <auxpow.h>
 
 unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consensus::Params& params)
 {
@@ -73,37 +76,52 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consens
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
-    unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
+    unsigned int retarget = DIFF_DGW;
+    if (pindexLast->nHeight + 1 >= 1059780)
+        retarget = DIFF_DGW;
+    else retarget = DIFF_BTC;
 
-    // Only change once per difficulty adjustment interval
-    if ((pindexLast->nHeight+1) % params.DifficultyAdjustmentInterval() != 0)
+    if (retarget == DIFF_BTC)
     {
-        if (params.fPowAllowMinDifficultyBlocks)
+        unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
+
+        // Only change once per difficulty adjustment interval
+        if ((pindexLast->nHeight+1) % params.DifficultyAdjustmentInterval() != 0)
         {
-            // Special difficulty rule for testnet:
-            // If the new block's timestamp is more than 2* 10 minutes
-            // then allow mining of a min-difficulty block.
-            if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + params.nPowTargetSpacing*2)
-                return nProofOfWorkLimit;
-            else
+            if (params.fPowAllowMinDifficultyBlocks)
             {
-                // Return the last non-special-min-difficulty-rules-block
-                const CBlockIndex* pindex = pindexLast;
-                while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
-                    pindex = pindex->pprev;
-                return pindex->nBits;
+                // Special difficulty rule for testnet:
+                // If the new block's timestamp is more than 2* 10 minutes
+                // then allow mining of a min-difficulty block.
+                if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + params.nPowTargetSpacing*2)
+                    return nProofOfWorkLimit;
+                else
+                {
+                    // Return the last non-special-min-difficulty-rules-block
+                    const CBlockIndex* pindex = pindexLast;
+                    while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
+                        pindex = pindex->pprev;
+                    return pindex->nBits;
+                }
             }
+            return pindexLast->nBits;
         }
-        return pindexLast->nBits;
+
+        // Go back by what we want to be 14 days worth of blocks
+        int nHeightFirst = pindexLast->nHeight - (params.DifficultyAdjustmentInterval()-1);
+        assert(nHeightFirst >= 0);
+        const CBlockIndex* pindexFirst = pindexLast->GetAncestor(nHeightFirst);
+        assert(pindexFirst);
+
+        return CalculateNextWorkRequired(pindexLast, pindexFirst->GetBlockTime(), params);
+    }
+    // Retarget using Dark Gravity Wave 3
+    else if (retarget == DIFF_DGW)
+    {
+        return DarkGravityWave(pindexLast, params);
     }
 
-    // Go back by what we want to be 14 days worth of blocks
-    int nHeightFirst = pindexLast->nHeight - (params.DifficultyAdjustmentInterval()-1);
-    assert(nHeightFirst >= 0);
-    const CBlockIndex* pindexFirst = pindexLast->GetAncestor(nHeightFirst);
-    assert(pindexFirst);
-
-    return CalculateNextWorkRequired(pindexLast, pindexFirst->GetBlockTime(), params);
+    return DarkGravityWave(pindexLast, params);
 }
 
 unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nFirstBlockTime, const Consensus::Params& params)
@@ -146,6 +164,55 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
     // Check proof of work matches claimed amount
     if (UintToArith256(hash) > bnTarget)
         return false;
+
+    return true;
+}
+
+/**
+ * Check proof-of-work of a block header, taking auxpow into account.
+ * @param block The block header.
+ * @return True iff the PoW is correct.
+ */
+bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
+{
+    /* Except for legacy blocks with full version 1, ensure that
+       the chain ID is correct.  Legacy blocks are not allowed since
+       the merge-mining start, which is checked in AcceptBlockHeader
+       where the height is known.  */
+    if (!block.nVersion.IsLegacy() && Params().StrictChainId()
+            && block.nVersion.GetChainId() != Params().AuxpowChainId())
+        return error("%s : block does not have our chain ID"
+                " (got %d, expected %d, full nVersion %d)",
+                __func__, block.nVersion.GetChainId(),
+                Params().AuxpowChainId(), block.nVersion.GetFullVersion());
+
+    /* If there is no auxpow, just check the block hash.  */
+    if (!block.auxpow)
+    {
+        if (block.nVersion.IsAuxpow())
+            return error("%s : no auxpow on block with auxpow version",
+                    __func__);
+
+        if (!CheckProofOfWork(block.GetHash(), block.nBits, params))
+            return error("%s : non-AUX proof of work failed", __func__);
+
+        return true;
+    }
+
+    /* We have auxpow.  Check it.  */
+    if (!block.nVersion.IsAuxpow())
+        return error("%s : auxpow on block with non-auxpow version", __func__);
+
+    /* Temporary check:  Disallow parent blocks with auxpow version.  This is
+       for compatibility with the old client.  */
+    /* FIXME: Remove this check with a hardfork later on.  */
+    if (block.auxpow->getParentBlock().nVersion.IsAuxpow())
+        return error("%s : auxpow parent block has auxpow version", __func__);
+
+    if (!block.auxpow->check(block.GetHash(), block.nVersion.GetChainId()))
+        return error("%s : AUX POW is not valid", __func__);
+    if (!CheckProofOfWork(block.auxpow->getParentBlockHash(), block.nBits, params))
+        return error("%s : AUX proof of work failed", __func__);
 
     return true;
 }

@@ -29,9 +29,19 @@ void CBlockHeader::SetProofOfStake(bool fProofOfStake)
     nVersion.SetProofOfStake(fProofOfStake);
 }
 
-uint256 CBlockHeader::GetHash() const
+uint256 CBlock::CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMerkleBranch, int nIndex)
 {
-    return SerializeHash(*this);
+    if (nIndex == -1)
+        return uint256();
+    for (std::vector<uint256>::const_iterator it(vMerkleBranch.begin()); it != vMerkleBranch.end(); ++it)
+    {
+        if (nIndex & 1)
+            hash = Hash(BEGIN(*it), END(*it), BEGIN(hash), END(hash));
+        else
+            hash = Hash(BEGIN(hash), END(hash), BEGIN(*it), END(*it));
+        nIndex >>= 1;
+    }
+    return hash;
 }
 
 bool CBlock::IsProofOfStake() const
@@ -58,9 +68,4 @@ std::string CBlock::ToString() const
         s << "  " << tx->ToString() << "\n";
     }
     return s.str();
-}
-
-void CBlockHeader::ResetAuxPow()
-{
-    auxpow.reset(new CAuxPow());
 }
