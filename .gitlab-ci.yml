@@ -116,15 +116,15 @@ cache:
 #    - master
 #    - tags
 
-#.job_template: &snapshot_definition
-#  artifacts:
-#    name: "$OUTDIR"
-#    paths:
-#    - $OUTDIR
-#    expire_in: 2 weeks
-#  except:
-#    - master
-#    - tags
+.job_template: &snapshot_definition
+  artifacts:
+    name: "$OUTDIR"
+    paths:
+    - $OUTDIR
+    expire_in: 2 weeks
+  except:
+    - master
+    - tags
 
 #.job_template: &dmg_release_definition
 #  artifacts:
@@ -182,20 +182,20 @@ cache:
 #  <<: *dmg_release_definition
 
 # Job definitions for temporary builds (snapshots)
-#Win64-snapshot:
-##  <<: *win64_definition 
-#  <<: *job_definition 
-#  <<: *snapshot_definition 
+Win64-snapshot:
+  <<: *win64_definition 
+  <<: *job_definition 
+  <<: *snapshot_definition 
   
 #Win32-snapshot:
 #  <<: *win32_definition 
 #  <<: *job_definition
 #  <<: *snapshot_definition 
 
-#Linux64-snapshot:
-#  <<: *linux64_definition 
-#  <<: *job_definition
- # <<: *snapshot_definition 
+Linux64-snapshot:
+  <<: *linux64_definition 
+  <<: *job_definition
+  <<: *snapshot_definition 
 #
 #Linux32-snapshot:
 #  <<: *linux32_definition 
