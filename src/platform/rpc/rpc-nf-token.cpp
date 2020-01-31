@@ -208,7 +208,11 @@ List the most recent 20 NFT records
             filterKeyId = ParsePubKeyIDFromAddress(params[2].get_str(), "nfTokenOwnerAddr");
         }
 
-        int height = (params.size() > 3) ? ParseInt32V(params[3], "height") : chainActive.Height();
+        int height = chainActive.Height();
+        if (params.size() > 3 && params[3].get_str() != "*") 
+        { 
+            height = ParseInt32V(params[3], "height");
+        }
         if (height < 0 || height > chainActive.Height())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height is out of range");
 

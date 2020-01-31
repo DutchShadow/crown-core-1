@@ -141,7 +141,11 @@ Examples:
         if (fHelp || params.empty() || params.size() > 5)
             ListNftProtocolsHelp();
 
-        int height = (params.size() > 1) ? ParseInt32V(params[1], "height") : chainActive.Height();
+        int height = chainActive.Height();
+        if (params.size() > 1 && params[1].get_str() != "*") 
+        { 
+            height = ParseInt32V(params[1], "height");
+        }
         if (height < 0 || height > chainActive.Height())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height is out of range");
 
