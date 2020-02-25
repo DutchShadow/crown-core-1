@@ -512,7 +512,7 @@ public:
     int IsEstablished() const
     {
         //Proposals must be at least a day old to make it into a budget
-        if(Params().NetworkID() == CBaseChainParams::MAIN)
+        if((Params().NetworkID() == CBaseChainParams::MAIN) || (Params().NetworkID() == CBaseChainParams::TESTNET))
             return nTime < GetTime() - 24 * 60 * 60;
         else
             return nTime < GetTime() - 15 * 60; // 15 minutes for testing purposes
