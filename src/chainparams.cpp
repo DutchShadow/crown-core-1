@@ -117,6 +117,7 @@ public:
         pchMessageStart[2] = 0xb3;
         pchMessageStart[3] = 0xdf;
         nDefaultPort = 9340;
+        nBlockPoSStart = 2330000;
         nPruneAfterHeight = 100000;
         nAuxpowChainId = 20;
 
@@ -235,6 +236,7 @@ public:
         pchMessageStart[2] = 0x0e;
         pchMessageStart[3] = 0x06;
         nDefaultPort = 19340;
+        nBlockPoSStart = 141000;
         nPruneAfterHeight = 1000;
 
         //genesis = CreateGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, 50 * COIN);
@@ -376,7 +378,7 @@ public:
 
 static std::unique_ptr<CChainParams> globalChainParams;
 
-const CChainParams &Params() {
+CChainParams &Params() {
     assert(globalChainParams);
     return *globalChainParams;
 }

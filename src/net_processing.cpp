@@ -2732,7 +2732,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         bool fSentGetBlocks = false;
         if (pfrom->fSyncingWith && !mapBlockIndex.count(pblock->hashPrevBlock) && pblock->GetHash() == pairHighBlock.second) {
             //Signal sent from peer that they are ready for the next getblocks
-            std::cout << "getblocks3" << std::endl;
             connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETBLOCKS, chainActive.GetLocator(), uint256()));
             fSentGetBlocks = true;
         } else if (pblock->nTime > pairHighBlock.first) {

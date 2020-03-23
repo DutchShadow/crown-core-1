@@ -56,9 +56,9 @@ public:
         return fCoinBase;
     }
 
-    bool IsCoinStake() const {
-        return fCoinStake;
-    }
+    //bool IsCoinStake() const {
+    //    return fCoinStake;
+    //}
 
     template<typename Stream>
     void Serialize(Stream &s) const {

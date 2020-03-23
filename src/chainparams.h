@@ -64,6 +64,7 @@ public:
     };
 
     const Consensus::Params& GetConsensus() const { return consensus; }
+    Consensus::Params& GetConsensusNonConst() { return consensus; }
     const CMessageHeader::MessageStartChars& MessageStart() const { return pchMessageStart; }
     int GetDefaultPort() const { return nDefaultPort; }
 
@@ -97,8 +98,8 @@ public:
     // const CMessageHeader::MessageStartChars& MessageStart() const { return pchMessageStart; }
     // const std::vector<unsigned char>& AlertKey() const { return vAlertPubKey; }
     // int GetDefaultPort() const { return nDefaultPort; }
-    // const arith_uint256& ProofOfWorkLimit() const { return bnProofOfWorkLimit; }
-    // void SetProofOfWorkLimit(const arith_uint256& limit) { bnProofOfWorkLimit = limit; }
+    //const uint256& ProofOfWorkLimit() const { return bnProofOfWorkLimit; }
+    //void SetProofOfWorkLimit(const uint256& limit) { bnProofOfWorkLimit = limit; }
     // int SubsidyHalvingInterval() const { return nSubsidyHalvingInterval; }
     // /** Used to check majorities for block version upgrade */
     // int EnforceBlockUpgradeMajority() const { return nEnforceBlockUpgradeMajority; }
@@ -148,7 +149,7 @@ public:
     // /* Return the auxpow chain ID.  */
     inline int32_t AuxpowChainId () const { return nAuxpowChainId; }
     // int32_t PoSChainId () const { return nPoSChainId; }
-    // int PoSStartHeight() const { return nBlockPoSStart; }
+    int PoSStartHeight() const { return nBlockPoSStart; }
     // int ValidStakePointerDuration() const { return nStakePointerValidityPeriod; }
     // int MaxReorganizationDepth() const { return nMaxReorgDepth; }
     // int KernelModifierOffset() const { return nKernelModifierOffset; }
@@ -188,7 +189,7 @@ protected:
     // //! Raw pub key bytes for the broadcast alert signing key.
     // std::vector<unsigned char> vAlertPubKey;
     // int nDefaultPort;
-    // arith_uint256 bnProofOfWorkLimit;
+    //uint256 bnProofOfWorkLimit;
     // int nSubsidyHalvingInterval;
     // int nEnforceBlockUpgradeMajority;
     // int nRejectBlockOutdatedMajority;
@@ -219,7 +220,7 @@ protected:
     // int64_t nStartMasternodePayments;
     int32_t nAuxpowChainId;
     // int32_t nPoSChainId;
-    // int nBlockPoSStart;
+    int nBlockPoSStart;
     // int nStakePointerValidityPeriod;
     // int nMaxReorgDepth;
     // int nKernelModifierOffset;
@@ -237,7 +238,7 @@ std::unique_ptr<CChainParams> CreateChainParams(const std::string& chain);
  * Return the currently selected parameters. This won't change after app
  * startup, except for unit tests.
  */
-const CChainParams &Params();
+CChainParams &Params();
 
 /**
  * Sets the params returned by Params() to those for the given BIP70 chain name.

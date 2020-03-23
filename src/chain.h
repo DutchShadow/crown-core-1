@@ -11,6 +11,7 @@
 #include <primitives/block.h>
 #include <tinyformat.h>
 #include <uint256.h>
+#include <chainparams.h>
 
 #include <vector>
 
@@ -253,7 +254,7 @@ public:
         SetNull();
     }
 
-    explicit CBlockIndex(const CBlockHeader& block, bool fProofOfStakeIn)
+    explicit CBlockIndex(const CBlock& block, bool fProofOfStakeIn)
     {
         SetNull();
 
@@ -264,12 +265,11 @@ public:
         nNonce         = block.nNonce;
 
         //CBlockHeader may be passed in here, which will only have knowledge of PoS by looking at fProofOfStakeIn
-        // TODO
-        //fProofOfStake  = block.IsProofOfStake() || fProofOfStakeIn;
-        //if (fProofOfStake) {
-        //    stakeSource.first = block.stakePointer.txid;
-        //    stakeSource.second = block.stakePointer.nPos;
-        //}
+        fProofOfStake  = block.IsProofOfStake() || fProofOfStakeIn;
+        if (fProofOfStake) {
+            stakeSource.first = block.stakePointer.txid;
+            stakeSource.second = block.stakePointer.nPos;
+        }
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -420,15 +420,14 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
-        //TODO
-        //if (nHeight >= Params().PoSStartHeight())
-        //{
-        //    READWRITE(fProofOfStake);
-        //}
-        //if (fProofOfStake)
-        //{
-        //    READWRITE(stakeSource);
-        //}
+        if (nHeight >= Params().PoSStartHeight())
+        {
+            READWRITE(fProofOfStake);
+        }
+        if (fProofOfStake)
+        {
+            READWRITE(stakeSource);
+        }
     }
 
     uint256 GetBlockHash() const

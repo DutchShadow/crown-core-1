@@ -12,6 +12,7 @@
 #include <chainparams.h>
 #include <util.h>
 #include <auxpow.h>
+#include <validation.h>
 
 unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consensus::Params& params)
 {
@@ -27,7 +28,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consens
     arith_uint256 PastDifficultyAverage;
     arith_uint256 PastDifficultyAveragePrev;
 
-    bool isAdjustmentPeriod = false;//BlockLastSolved->nHeight >= params.PoSStartHeight() - 1 && BlockLastSolved->nHeight < params.PoSStartHeight() + PastBlocksMax;
+    bool isAdjustmentPeriod = BlockLastSolved->nHeight >= Params().PoSStartHeight() - 1 && BlockLastSolved->nHeight < Params().PoSStartHeight() + PastBlocksMax;
     if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || BlockLastSolved->nHeight < PastBlocksMin || isAdjustmentPeriod)
     {
         return nProofOfWorkLimit.GetCompact();
@@ -80,6 +81,24 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     if (pindexLast->nHeight + 1 >= 1059780)
         retarget = DIFF_DGW;
     else retarget = DIFF_BTC;
+
+    if (Params().NetworkID() == CBaseChainParams::TESTNET && pindexLast->nHeight >= 140400)
+    {
+        // Use Dark Gravity Wave like in mainnet
+        retarget = DIFF_DGW;
+    }
+
+    if (Params().NetworkID() == CBaseChainParams::TESTNET && pindexLast->nHeight >= 140394)
+    {
+        // Increase testnet difficulty
+        Params().GetConsensusNonConst().powLimit = uint256S("0003ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    }
+
+    if (Params().NetworkID() == CBaseChainParams::MAIN && pindexLast->nHeight >= Params().PoSStartHeight() - 1)
+    {
+        // Increase mainnet difficulty for POS
+        Params().GetConsensusNonConst().powLimit = uint256S("0000003fffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    }
 
     if (retarget == DIFF_BTC)
     {
@@ -156,6 +175,18 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
     arith_uint256 bnTarget;
 
     bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
+
+    if (Params().NetworkID() == CBaseChainParams::TESTNET && chainActive.Height() >= 140394)
+    {
+        // Increase testnet difficulty
+        Params().GetConsensusNonConst().powLimit = uint256S("0003ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    }
+
+    if (Params().NetworkID() == CBaseChainParams::MAIN && chainActive.Height() >= Params().PoSStartHeight() - 1)
+    {
+        // Increase mainnet difficulty for POS
+        Params().GetConsensusNonConst().powLimit = uint256S("000003ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    }
 
     // Check range
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))

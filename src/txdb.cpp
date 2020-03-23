@@ -246,7 +246,7 @@ bool CBlockTreeDB::ReadFlag(const std::string &name, bool &fValue) {
     return true;
 }
 
-bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, std::function<CBlockIndex*(const uint256&)> insertBlockIndex)
+bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, std::function<CBlockIndex*(const uint256&, bool)> insertBlockIndex)
 {
     std::unique_ptr<CDBIterator> pcursor(NewIterator());
 
@@ -260,8 +260,8 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
             CDiskBlockIndex diskindex;
             if (pcursor->GetValue(diskindex)) {
                 // Construct block index object
-                CBlockIndex* pindexNew = insertBlockIndex(diskindex.GetBlockHash());
-                pindexNew->pprev          = insertBlockIndex(diskindex.hashPrev);
+                CBlockIndex* pindexNew = insertBlockIndex(diskindex.GetBlockHash(), diskindex.fProofOfStake);
+                pindexNew->pprev          = insertBlockIndex(diskindex.hashPrev, diskindex.fProofOfStake);
                 pindexNew->nHeight        = diskindex.nHeight;
                 pindexNew->nFile          = diskindex.nFile;
                 pindexNew->nDataPos       = diskindex.nDataPos;
@@ -273,10 +273,18 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
+                pindexNew->fProofOfStake  = diskindex.fProofOfStake;
+                pindexNew->stakeSource    = diskindex.stakeSource;
 
-                // TODO fix
-                //if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, consensusParams))
-                //    return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
+                if (pindexNew->fProofOfStake) {
+                    //COutPoint stakeSource(diskindex.stakeSource.first, diskindex.stakeSource.second);
+                    //mapUsedStakePointers.emplace(stakeSource.GetHash(), diskindex.GetBlockHash());
+                }
+
+                /* Bitcoin checks the PoW here.  We don't do this because
+                   the CDiskBlockIndex does not contain the auxpow.
+                   This check isn't important, since the data on disk should
+                   already be valid and can be trusted. */
 
                 pcursor->Next();
             } else {

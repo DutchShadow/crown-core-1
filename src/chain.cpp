@@ -168,3 +168,8 @@ const CBlockIndex* LastCommonAncestor(const CBlockIndex* pa, const CBlockIndex* 
     assert(pa == pb);
     return pa;
 }
+
+bool CBlockIndex::IsProofOfStake() const
+{
+    return fProofOfStake;
+}
