@@ -75,7 +75,7 @@ SystemnodeList::SystemnodeList(QWidget *parent) :
 
     updateNodeList();
 
-    sendDialog = new SendCollateralDialog(SendCollateralDialog::SYSTEMNODE, this);
+    //sendDialog = new SendCollateralDialog(SendCollateralDialog::SYSTEMNODE, this);
 }
 
 SystemnodeList::~SystemnodeList()
@@ -98,7 +98,7 @@ void SystemnodeList::setClientModel(ClientModel *model)
 
 void SystemnodeList::setWalletModel(WalletModel *model)
 {
-    if (this->walletModel == NULL)
+    if (!this->walletModel)
     {
         this->walletModel = model;
     }

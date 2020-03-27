@@ -124,6 +124,18 @@ void WalletView::setClientModel(ClientModel *_clientModel)
 
     overviewPage->setClientModel(_clientModel);
     sendCoinsPage->setClientModel(_clientModel);
+
+    if (clientModel->getOptionsModel()->getSystemnodesEnabled())
+    {
+        enableSystemnodes();
+        systemnodeListPage->setClientModel(clientModel);
+    }
+
+    if (clientModel->getOptionsModel()->getMasternodesEnabled())
+    {
+        enableMasternodes();
+        masternodeListPage->setClientModel(clientModel);
+    }
 }
 
 void WalletView::setWalletModel(WalletModel *_walletModel)
@@ -159,6 +171,12 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
 
         // Show progress dialog
         connect(_walletModel, SIGNAL(showProgress(QString,int)), this, SLOT(showProgress(QString,int)));
+
+        // Enable systemnodes tab 
+        connect(_walletModel->getOptionsModel(), SIGNAL(enableSystemnodesChanged(bool)), this, SLOT(enableSystemnodesChanged(bool)));
+
+        // Enable masternodes tab 
+        connect(_walletModel->getOptionsModel(), SIGNAL(enableMasternodesChanged(bool)), this, SLOT(enableMasternodesChanged(bool)));
     }
 }
 
@@ -381,22 +399,22 @@ void WalletView::requestedSyncWarningInfo()
 
 void WalletView::enableSystemnodes()
 {
-    if (systemnodeListPage == NULL)
+    if (!systemnodeListPage)
     {
         systemnodeListPage = new SystemnodeList();
-        connect(systemnodeListPage->getSendCollateralDialog(), SIGNAL(message(QString,QString,unsigned int)),
-                this, SIGNAL(message(QString,QString,unsigned int)));
+        //connect(systemnodeListPage->getSendCollateralDialog(), SIGNAL(message(QString,QString,unsigned int)),
+        //        this, SIGNAL(message(QString,QString,unsigned int)));
         addWidget(systemnodeListPage);
     }
 }
 
 void WalletView::enableMasternodes()
 {
-    if (masternodeListPage == NULL)
+    if (!masternodeListPage)
     {
         masternodeListPage = new MasternodeList();
-        connect(masternodeListPage->getSendCollateralDialog(), SIGNAL(message(QString,QString,unsigned int)),
-                this, SIGNAL(message(QString,QString,unsigned int)));
+        //connect(masternodeListPage->getSendCollateralDialog(), SIGNAL(message(QString,QString,unsigned int)),
+        //        this, SIGNAL(message(QString,QString,unsigned int)));
         addWidget(masternodeListPage);
     }
 }

@@ -81,7 +81,7 @@ MasternodeList::MasternodeList(QWidget *parent) :
     updateVoteList();
     updateNextSuperblock();
 
-    sendDialog = new SendCollateralDialog(SendCollateralDialog::MASTERNODE, this);
+    //sendDialog = new SendCollateralDialog(SendCollateralDialog::MASTERNODE, this);
 }
 
 MasternodeList::~MasternodeList()
@@ -104,7 +104,7 @@ void MasternodeList::setClientModel(ClientModel *model)
 
 void MasternodeList::setWalletModel(WalletModel *model)
 {
-    if (this->walletModel == NULL)
+    if (!this->walletModel)
     {
         this->walletModel = model;
     }
