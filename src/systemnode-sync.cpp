@@ -9,6 +9,7 @@
 #include "spork.h"
 #include "util.h"
 #include "addrman.h"
+#include "netmessagemaker.h"
 
 class CSystemnodeSync;
 CSystemnodeSync systemnodeSync;
@@ -46,9 +47,8 @@ bool CSystemnodeSync::IsBlockchainSynced()
     if(pindex == NULL) return false;
 
 
-    // TODO fix
-    //if(!GetBoolArg("-jumpstart", false) && pindex->nTime + 60*60 < GetTime())
-    //    return false;
+    if(!gArgs.GetBoolArg("-jumpstart", false) && pindex->nTime + 60*60 < GetTime())
+        return false;
 
     fBlockchainSynced = true;
 
@@ -170,20 +170,20 @@ void CSystemnodeSync::ProcessMessage(CNode* pfrom, std::string& strCommand, CDat
 
 void CSystemnodeSync::ClearFulfilledRequest()
 {
-    // TODO fix
-    //TRY_LOCK(cs_vNodes, lockRecv);
-    //if(!lockRecv) return;
+    TRY_LOCK(g_connman->cs_vNodes, lockRecv);
+    if(!lockRecv) return;
 
-    //for (const auto& pnode : vNodes)
-    //{
-    //    pnode->ClearFulfilledRequest("sngetspork");
-    //    pnode->ClearFulfilledRequest("snsync");
-    //    pnode->ClearFulfilledRequest("snwsync");
-    //}
+    for (const auto& pnode : g_connman->GetNodes())
+    {
+        pnode->ClearFulfilledRequest("sngetspork");
+        pnode->ClearFulfilledRequest("snsync");
+        pnode->ClearFulfilledRequest("snwsync");
+    }
 }
 
 void CSystemnodeSync::Process()
 {
+    const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
     static int tick = 0;
 
     if(tick++ % SYSTEMNODE_SYNC_TIMEOUT != 0) return;
@@ -213,111 +213,109 @@ void CSystemnodeSync::Process()
     if(Params().NetworkID() != CBaseChainParams::REGTEST &&
             !IsBlockchainSynced() && RequestedSystemnodeAssets > SYSTEMNODE_SYNC_SPORKS) return;
 
-    // TODO fix
-    //TRY_LOCK(cs_vNodes, lockRecv);
-    //if(!lockRecv) return;
+    TRY_LOCK(g_connman->cs_vNodes, lockRecv);
+    if(!lockRecv) return;
 
-    // TODO fix
-    //for (auto& pnode : vNodes)
-    //{
-    //    if(Params().NetworkID() == CBaseChainParams::REGTEST){
-    //        if(RequestedSystemnodeAttempt <= 2) {
-    //            pnode->PushMessage("getsporks"); //get current network sporks
-    //        } else if(RequestedSystemnodeAttempt < 4) {
-    //            snodeman.DsegUpdate(pnode); 
-    //        } else if(RequestedSystemnodeAttempt < 6) {
-    //            int nMnCount = snodeman.CountEnabled();
-    //            pnode->PushMessage("snget", nMnCount); //sync payees
-    //            uint256 n = uint256();
-    //            pnode->PushMessage("snvs", n); //sync systemnode votes
-    //        } else {
-    //            RequestedSystemnodeAssets = SYSTEMNODE_SYNC_FINISHED;
-    //        }
-    //        RequestedSystemnodeAttempt++;
-    //        return;
-    //    }
+    for (auto& pnode : g_connman->GetNodes())
+    { 
+        if(Params().NetworkID() == CBaseChainParams::REGTEST){
+            if(RequestedSystemnodeAttempt <= 2) {
+                g_connman->PushMessage(pnode, msgMaker.Make("getsporks")); //get current network sporks
+            } else if(RequestedSystemnodeAttempt < 4) {
+                snodeman.DsegUpdate(pnode); 
+            } else if(RequestedSystemnodeAttempt < 6) {
+                int nMnCount = snodeman.CountEnabled();
+                g_connman->PushMessage(pnode, msgMaker.Make("snget", nMnCount)); //sync payees
+                uint256 n = uint256();
+                g_connman->PushMessage(pnode, msgMaker.Make("snvs", n)); //sync systemnode votes
+            } else {
+                RequestedSystemnodeAssets = SYSTEMNODE_SYNC_FINISHED;
+            }
+            RequestedSystemnodeAttempt++;
+            return;
+        }
 
-    //    //set to synced
-    //    if(RequestedSystemnodeAssets == SYSTEMNODE_SYNC_SPORKS){
-    //        if(pnode->HasFulfilledRequest("sngetspork")) continue;
-    //        pnode->FulfilledRequest("sngetspork");
+        //set to synced
+        if(RequestedSystemnodeAssets == SYSTEMNODE_SYNC_SPORKS){
+            if(pnode->HasFulfilledRequest("sngetspork")) continue;
+            pnode->FulfilledRequest("sngetspork");
 
-    //        pnode->PushMessage("getsporks"); //get current network sporks
-    //        if(RequestedSystemnodeAttempt >= 2) GetNextAsset();
-    //        RequestedSystemnodeAttempt++;
-    //        
-    //        return;
-    //    }
+            g_connman->PushMessage(pnode, msgMaker.Make("getsporks")); //get current network sporks
+            if(RequestedSystemnodeAttempt >= 2) GetNextAsset();
+            RequestedSystemnodeAttempt++;
+            
+            return;
+        }
 
-    //    if (pnode->nVersion >= systemnodePayments.GetMinSystemnodePaymentsProto()) {
+        if (pnode->nVersion >= systemnodePayments.GetMinSystemnodePaymentsProto()) {
 
-    //        if(RequestedSystemnodeAssets == SYSTEMNODE_SYNC_LIST) {
-    //            if(fDebug) LogPrintf("CSystemnodeSync::Process() - lastSystemnodeList %lld (GetTime() - SYSTEMNODE_SYNC_TIMEOUT) %lld\n", lastSystemnodeList, GetTime() - SYSTEMNODE_SYNC_TIMEOUT);
-    //            if(lastSystemnodeList > 0 && lastSystemnodeList < GetTime() - SYSTEMNODE_SYNC_TIMEOUT*2 && RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD){ //hasn't received a new item in the last five seconds, so we'll move to the
-    //                GetNextAsset();
-    //                return;
-    //            }
+            if(RequestedSystemnodeAssets == SYSTEMNODE_SYNC_LIST) {
+                LogPrintf("CSystemnodeSync::Process() - lastSystemnodeList %lld (GetTime() - SYSTEMNODE_SYNC_TIMEOUT) %lld\n", lastSystemnodeList, GetTime() - SYSTEMNODE_SYNC_TIMEOUT);
+                if(lastSystemnodeList > 0 && lastSystemnodeList < GetTime() - SYSTEMNODE_SYNC_TIMEOUT*2 && RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD){ //hasn't received a new item in the last five seconds, so we'll move to the
+                    GetNextAsset();
+                    return;
+                }
 
-    //            if(pnode->HasFulfilledRequest("snsync")) continue;
-    //            pnode->FulfilledRequest("snsync");
+                if(pnode->HasFulfilledRequest("snsync")) continue;
+                pnode->FulfilledRequest("snsync");
 
-    //            // timeout
-    //            if(lastSystemnodeList == 0 &&
-    //            (RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD*3 || GetTime() - nAssetSyncStarted > SYSTEMNODE_SYNC_TIMEOUT*5)) {
-    //                if(IsSporkActive(SPORK_14_SYSTEMNODE_PAYMENT_ENFORCEMENT)) {
-    //                    LogPrintf("CSystemnodeSync::Process - ERROR - Sync has failed, will retry later\n");
-    //                    RequestedSystemnodeAssets = SYSTEMNODE_SYNC_FAILED;
-    //                    RequestedSystemnodeAttempt = 0;
-    //                    lastFailure = GetTime();
-    //                    nCountFailures++;
-    //                } else {
-    //                    GetNextAsset();
-    //                }
-    //                return;
-    //            }
+                // timeout
+                if(lastSystemnodeList == 0 &&
+                (RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD*3 || GetTime() - nAssetSyncStarted > SYSTEMNODE_SYNC_TIMEOUT*5)) {
+                    if(IsSporkActive(SPORK_14_SYSTEMNODE_PAYMENT_ENFORCEMENT)) {
+                        LogPrintf("CSystemnodeSync::Process - ERROR - Sync has failed, will retry later\n");
+                        RequestedSystemnodeAssets = SYSTEMNODE_SYNC_FAILED;
+                        RequestedSystemnodeAttempt = 0;
+                        lastFailure = GetTime();
+                        nCountFailures++;
+                    } else {
+                        GetNextAsset();
+                    }
+                    return;
+                }
 
-    //            if(RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD*3) return;
+                if(RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD*3) return;
 
-    //            snodeman.DsegUpdate(pnode);
-    //            RequestedSystemnodeAttempt++;
-    //            return;
-    //        }
+                snodeman.DsegUpdate(pnode);
+                RequestedSystemnodeAttempt++;
+                return;
+            }
 
-    //        if(RequestedSystemnodeAssets == SYSTEMNODE_SYNC_SNW) {
-    //            if(lastSystemnodeWinner > 0 && lastSystemnodeWinner < GetTime() - SYSTEMNODE_SYNC_TIMEOUT*2 && RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD){ //hasn't received a new item in the last five seconds, so we'll move to the
-    //                GetNextAsset();
-    //                return;
-    //            }
+            if(RequestedSystemnodeAssets == SYSTEMNODE_SYNC_SNW) {
+                if(lastSystemnodeWinner > 0 && lastSystemnodeWinner < GetTime() - SYSTEMNODE_SYNC_TIMEOUT*2 && RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD){ //hasn't received a new item in the last five seconds, so we'll move to the
+                    GetNextAsset();
+                    return;
+                }
 
-    //            if(pnode->HasFulfilledRequest("snwsync")) continue;
-    //            pnode->FulfilledRequest("snwsync");
+                if(pnode->HasFulfilledRequest("snwsync")) continue;
+                pnode->FulfilledRequest("snwsync");
 
-    //            // timeout
-    //            if(lastSystemnodeWinner == 0 &&
-    //            (RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD*3 || GetTime() - nAssetSyncStarted > SYSTEMNODE_SYNC_TIMEOUT*5)) {
-    //                if(IsSporkActive(SPORK_14_SYSTEMNODE_PAYMENT_ENFORCEMENT)) {
-    //                    LogPrintf("CSystemnodeSync::Process - ERROR - Sync has failed, will retry later\n");
-    //                    RequestedSystemnodeAssets = SYSTEMNODE_SYNC_FAILED;
-    //                    RequestedSystemnodeAttempt = 0;
-    //                    lastFailure = GetTime();
-    //                    nCountFailures++;
-    //                } else {
-    //                    GetNextAsset();
-    //                }
-    //                return;
-    //            }
+                // timeout
+                if(lastSystemnodeWinner == 0 &&
+                (RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD*3 || GetTime() - nAssetSyncStarted > SYSTEMNODE_SYNC_TIMEOUT*5)) {
+                    if(IsSporkActive(SPORK_14_SYSTEMNODE_PAYMENT_ENFORCEMENT)) {
+                        LogPrintf("CSystemnodeSync::Process - ERROR - Sync has failed, will retry later\n");
+                        RequestedSystemnodeAssets = SYSTEMNODE_SYNC_FAILED;
+                        RequestedSystemnodeAttempt = 0;
+                        lastFailure = GetTime();
+                        nCountFailures++;
+                    } else {
+                        GetNextAsset();
+                    }
+                    return;
+                }
 
-    //            if(RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD*3) return;
+                if(RequestedSystemnodeAttempt >= SYSTEMNODE_SYNC_THRESHOLD*3) return;
 
-    //            CBlockIndex* pindexPrev = chainActive.Tip();
-    //            if(pindexPrev == NULL) return;
+                CBlockIndex* pindexPrev = chainActive.Tip();
+                if(pindexPrev == NULL) return;
 
-    //            int nSnCount = snodeman.CountEnabled();
-    //            pnode->PushMessage("snget", nSnCount); //sync payees
-    //            RequestedSystemnodeAttempt++;
+                int nSnCount = snodeman.CountEnabled();
+                g_connman->PushMessage(pnode, msgMaker.Make("snget", nSnCount)); //sync payees
+                RequestedSystemnodeAttempt++;
 
-    //            return;
-    //        }
-    //    }
-    //}
+                return;
+            }
+        }
+    }
 }

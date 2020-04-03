@@ -180,6 +180,8 @@ public:
 
     bool ForNode(NodeId id, std::function<bool(CNode* pnode)> func);
 
+    std::vector<CNode*> GetNodes();
+
     void PushMessage(CNode* pnode, CSerializedNetMsg&& msg);
 
     template<typename Callable>
@@ -318,6 +320,7 @@ public:
         Variable intervals will result in privacy decrease.
     */
     int64_t PoissonNextSendInbound(int64_t now, int average_interval_seconds);
+    mutable CCriticalSection cs_vNodes;
 
 private:
     struct ListenSocket {
@@ -404,7 +407,6 @@ private:
     CCriticalSection cs_vAddedNodes;
     std::vector<CNode*> vNodes;
     std::list<CNode*> vNodesDisconnected;
-    mutable CCriticalSection cs_vNodes;
     std::atomic<NodeId> nLastNodeId;
 
     /** Services this instance offers */
@@ -682,6 +684,8 @@ protected:
     mapMsgCmdSize mapSendBytesPerMsgCmd;
     mapMsgCmdSize mapRecvBytesPerMsgCmd;
 
+    std::vector<std::string> vecRequestsFulfilled; //keep track of what client has asked for
+
 public:
     uint256 hashContinue;
     std::atomic<int> nStartingHeight;
@@ -870,6 +874,33 @@ public:
     std::string GetAddrName() const;
     //! Sets the addrName only if it was not previously set
     void MaybeSetAddrName(const std::string& addrNameIn);
+
+    bool HasFulfilledRequest(std::string strRequest)
+    {
+        for (std::string& type : vecRequestsFulfilled)
+        {
+            if(type == strRequest) return true;
+        }
+        return false;
+    }
+
+    void ClearFulfilledRequest(std::string strRequest)
+    {
+        std::vector<std::string>::iterator it = vecRequestsFulfilled.begin();
+        while(it != vecRequestsFulfilled.end()){
+            if((*it) == strRequest) {
+                vecRequestsFulfilled.erase(it);
+                return;
+            }
+            ++it;
+        }
+    }
+
+    void FulfilledRequest(std::string strRequest)
+    {
+        if(HasFulfilledRequest(strRequest)) return;
+        vecRequestsFulfilled.push_back(strRequest);
+    }
 };
 
 

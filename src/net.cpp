@@ -341,6 +341,11 @@ CNode* CConnman::FindNode(const CService& addr)
     return nullptr;
 }
 
+std::vector<CNode*> CConnman::GetNodes()
+{
+    return vNodes;
+}
+
 bool CConnman::CheckIncomingNonce(uint64_t nonce)
 {
     LOCK(cs_vNodes);

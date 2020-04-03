@@ -46,6 +46,7 @@
 #include <validationinterface.h>
 #include <warnings.h>
 #include <walletinitinterface.h>
+#include <legacysigner.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -1659,6 +1660,7 @@ bool AppInitMain()
     }
 
     threadGroup.create_thread(boost::bind(&ThreadImport, vImportFiles));
+    threadGroup.create_thread(boost::bind(&ThreadCheckLegacySigner));
 
     // Wait for genesis block to be processed
     {
