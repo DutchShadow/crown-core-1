@@ -531,7 +531,7 @@ void CMasternodeMan::ProcessMasternodeConnections()
     //}
 }
 
-void CMasternodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
+void CMasternodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv)
 {
 
     // TODO fix

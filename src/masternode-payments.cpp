@@ -203,7 +203,7 @@ int CMasternodePayments::GetMinMasternodePaymentsProto() {
             : MIN_MASTERNODE_PAYMENT_PROTO_VERSION_PREV;
 }
 
-void CMasternodePayments::ProcessMessageMasternodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
+void CMasternodePayments::ProcessMessageMasternodePayments(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv)
 {
     if(!masternodeSync.IsBlockchainSynced()) return;
 

@@ -96,7 +96,7 @@ void CSystemnodeMan::ProcessSystemnodeConnections()
     //}
 }
 
-void CSystemnodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
+void CSystemnodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv)
 {
     // TODO fix
     //if(fLiteMode) return; //disable all Systemnode related functionality

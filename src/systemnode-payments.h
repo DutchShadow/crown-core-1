@@ -215,7 +215,7 @@ public:
 
     bool ProcessBlock(int nBlockHeight);
     int GetMinSystemnodePaymentsProto() const;
-    void ProcessMessageSystemnodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
+    void ProcessMessageSystemnodePayments(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv);
     void Sync(CNode* node, int nCountNeeded);
     void CheckAndRemove();
     bool IsTransactionValid(const CAmount& nValueCreated, const CTransaction& txNew, int nBlockHeight);

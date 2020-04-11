@@ -28,6 +28,13 @@
 #include <util.h>
 #include <utilmoneystr.h>
 #include <utilstrencodings.h>
+#include <masternodeman.h>
+#include <systemnodeman.h>
+#include <masternode-budget.h>
+#include <masternode-payments.h>
+#include <systemnode-payments.h>
+#include <instantx.h>
+#include <spork.h>
 
 #include <memory>
 
@@ -2968,6 +2975,18 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
     }
 
     else {
+
+        //probably one the extensions
+        mnodeman.ProcessMessage(pfrom, strCommand, vRecv);
+        snodeman.ProcessMessage(pfrom, strCommand, vRecv);
+        budget.ProcessMessage(pfrom, strCommand, vRecv);
+        masternodePayments.ProcessMessageMasternodePayments(pfrom, strCommand, vRecv);
+        systemnodePayments.ProcessMessageSystemnodePayments(pfrom, strCommand, vRecv);
+        GetInstantSend().ProcessMessage(pfrom, strCommand, vRecv);
+        ProcessSpork(pfrom, connman, strCommand, vRecv);
+        masternodeSync.ProcessMessage(pfrom, strCommand, vRecv);
+        systemnodeSync.ProcessMessage(pfrom, strCommand, vRecv);
+
         // Ignore unknown commands for extensibility
         LogPrint(BCLog::NET, "Unknown command \"%s\" from peer=%d\n", SanitizeString(strCommand), pfrom->GetId());
     }

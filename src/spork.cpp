@@ -24,7 +24,7 @@ std::map<uint256, CSporkMessage> mapSporks;
 std::map<int, CSporkMessage> mapSporksActive;
 
 
-void ProcessSpork(CNode* pfrom, CConnman* connman, std::string& strCommand, CDataStream& vRecv)
+void ProcessSpork(CNode* pfrom, CConnman* connman, const std::string& strCommand, CDataStream& vRecv)
 {
     // TODO fix
     //if(fLiteMode) return; //disable all masternode related functionality

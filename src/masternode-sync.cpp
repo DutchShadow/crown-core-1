@@ -34,32 +34,34 @@ bool CMasternodeSync::AreSporksSynced() const
 
 bool CMasternodeSync::IsBlockchainSynced()
 {
-    static bool fBlockchainSynced = false;
-    static int64_t lastProcess = GetTime();
-
-    // if the last call to this function was more than 60 minutes ago (client was in sleep mode) reset the sync process
-    if(GetTime() - lastProcess > 60*60) {
-        Reset();
-        fBlockchainSynced = false;
-    }
-    lastProcess = GetTime();
-
-    if(fBlockchainSynced) return true;
-
-    if (fImporting || fReindex) return false;
-
-    TRY_LOCK(cs_main, lockMain);
-    if(!lockMain) return false;
-
-    CBlockIndex* pindex = chainActive.Tip();
-    if(pindex == NULL) return false;
-
-    if (!gArgs.GetBoolArg("-jumpstart", false) && pindex->nTime + 60*60 < GetTime())
-        return false;
-
-    fBlockchainSynced = true;
-
     return true;
+    // TODO uncomment later
+    //static bool fBlockchainSynced = false;
+    //static int64_t lastProcess = GetTime();
+
+    //// if the last call to this function was more than 60 minutes ago (client was in sleep mode) reset the sync process
+    //if(GetTime() - lastProcess > 60*60) {
+    //    Reset();
+    //    fBlockchainSynced = false;
+    //}
+    //lastProcess = GetTime();
+
+    //if(fBlockchainSynced) return true;
+
+    //if (fImporting || fReindex) return false;
+
+    //TRY_LOCK(cs_main, lockMain);
+    //if(!lockMain) return false;
+
+    //CBlockIndex* pindex = chainActive.Tip();
+    //if(pindex == NULL) return false;
+
+    //if (!gArgs.GetBoolArg("-jumpstart", false) && pindex->nTime + 60*60 < GetTime())
+    //    return false;
+
+    //fBlockchainSynced = true;
+
+    //return true;
 }
 
 void CMasternodeSync::Reset()
@@ -175,7 +177,7 @@ std::string CMasternodeSync::GetSyncStatus()
     return "";
 }
 
-void CMasternodeSync::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
+void CMasternodeSync::ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv)
 {
     if (strCommand == "ssc") { //Sync status count
         int nItemID;

@@ -86,7 +86,7 @@ int CSystemnodePayments::GetMinSystemnodePaymentsProto() const
             : MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION_PREV;
 }
 
-void CSystemnodePayments::ProcessMessageSystemnodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
+void CSystemnodePayments::ProcessMessageSystemnodePayments(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv)
 {
     if(!systemnodeSync.IsBlockchainSynced()) return;
 

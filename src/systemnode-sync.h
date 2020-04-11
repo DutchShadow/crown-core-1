@@ -58,7 +58,7 @@ public:
     void AddedSystemnodeWinner(uint256 hash);
     void GetNextAsset();
     std::string GetSyncStatus();
-    void ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
+    void ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv);
 
     void Reset();
     void Process();
