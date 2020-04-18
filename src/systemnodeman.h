@@ -100,7 +100,7 @@ public:
 
     void ProcessSystemnodeConnections();
 
-    void ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv);
+    void ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, CConnman* connman);
 
     /// Return the number of (unique) Systemnodes
     int size() { return vSystemnodes.size(); }

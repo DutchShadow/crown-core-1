@@ -2538,23 +2538,93 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
 }
 
 /// Get 10000CRW input that can be used for the Masternode
-bool GetMasternodeVinAndKeys(CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash = "", std::string strOutputIndex = "")
+bool CWallet::GetMasternodeVinAndKeys(CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash, std::string strOutputIndex)
 {
-    //TODO
+    // wait for reindex and/or import to finish
+    if (fImporting || fReindex) return false;
+
+    // Find possible candidates
+    std::vector<COutput> vPossibleCoins;
+    AvailableCoins(vPossibleCoins, true, NULL, ONLY_10000);
+    if(vPossibleCoins.empty()) {
+        LogPrintf("CWallet::GetMasternodeVinAndKeys - Could not locate any valid masternode vin\n");
+        return false;
+    }
+
+    if(strTxHash.empty()) // No output specified, select the first one
+        return GetVinAndKeysFromOutput(vPossibleCoins[0], vinRet, pubKeyRet, keyRet);
+
+    // Find specific vin
+    uint256 txHash = uint256S(strTxHash);
+    int nOutputIndex = atoi(strOutputIndex.c_str());
+
+    for (const auto& out : vPossibleCoins)
+        if(out.tx->GetHash() == txHash && out.i == nOutputIndex) // found it!
+            return GetVinAndKeysFromOutput(out, vinRet, pubKeyRet, keyRet);
+
+    LogPrintf("CWallet::GetMasternodeVinAndKeys - Could not locate specified masternode vin\n");
+    return false;
 }
 
 /// Get 500CRW input that can be used for the Systemnode
-bool GetSystemnodeVinAndKeys(CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash = "", std::string strOutputIndex = "")
+bool CWallet::GetSystemnodeVinAndKeys(CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash, std::string strOutputIndex)
 {
-    //TODO
+    // wait for reindex and/or import to finish
+    if (fImporting || fReindex) return false;
+
+    // Find possible candidates
+    std::vector<COutput> vPossibleCoins;
+    AvailableCoins(vPossibleCoins, true, NULL, ONLY_500);
+    if(vPossibleCoins.empty()) {
+        LogPrintf("CWallet::GetSystemnodeVinAndKeys - Could not locate any valid servicenode vin\n");
+        return false;
+    }
+
+    if(strTxHash.empty()) // No output specified, select the first one
+        return GetVinAndKeysFromOutput(vPossibleCoins[0], vinRet, pubKeyRet, keyRet);
+
+    // Find specific vin
+    uint256 txHash = uint256S(strTxHash);
+    int nOutputIndex = atoi(strOutputIndex.c_str());
+
+    for (const auto& out : vPossibleCoins)
+        if(out.tx->GetHash() == txHash && out.i == nOutputIndex) // found it!
+            return GetVinAndKeysFromOutput(out, vinRet, pubKeyRet, keyRet);
+
+    LogPrintf("CWallet::GetSystemnodeVinAndKeys - Could not locate specified servicenode vin\n");
+    return false;
+
 }
 
 // Extract vin information from output
-bool GetVinAndKeysFromOutput(COutput out, CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet)
+bool CWallet::GetVinAndKeysFromOutput(COutput out, CTxIn& vinRet, CPubKey& pubKeyRet, CKey& keyRet)
 {
-    //TODO
-}
+    // wait for reindex and/or import to finish
+    if (fImporting || fReindex) return false;
 
+    CScript pubScript;
+
+    vinRet = CTxIn(out.tx->GetHash(),out.i);
+    pubScript = out.tx->tx->vout[out.i].scriptPubKey; // the inputs PubKey
+
+    CTxDestination address1;
+    ExtractDestination(pubScript, address1);
+    //CBitcoinAddress address2(address1);
+
+    //CKeyID keyID;
+    //if (!address2.GetKeyID(keyID)) {
+    //    LogPrintf("CWallet::GetVinAndKeysFromOutput - Address does not refer to a key\n");
+    //    return false;
+    //}
+
+    //if (!GetKey(keyID, keyRet)) {
+    //    LogPrintf ("CWallet::GetVinAndKeysFromOutput - Private key for address is not known\n");
+    //    return false;
+    //}
+
+    //pubKeyRet = keyRet.GetPubKey();
+    return true;
+}
 
 bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const
 {

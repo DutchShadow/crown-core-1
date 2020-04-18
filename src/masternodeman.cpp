@@ -12,6 +12,7 @@
 #include "addrman.h"
 #include "spork.h"
 #include "net_processing.h"
+#include "netmessagemaker.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 
@@ -69,6 +70,7 @@ bool CMasternodeMan::Add(const CMasternode &mn)
 
 void CMasternodeMan::AskForMN(CNode* pnode, const CTxIn &vin)
 {
+    const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
     std::map<COutPoint, int64_t>::iterator i = mWeAskedForMasternodeListEntry.find(vin.prevout);
     if (i != mWeAskedForMasternodeListEntry.end())
     {
@@ -79,8 +81,7 @@ void CMasternodeMan::AskForMN(CNode* pnode, const CTxIn &vin)
     // ask for the mnb info once from the node that sent mnp
 
     LogPrintf("CMasternodeMan::AskForMN - Asking node for missing entry, vin: %s\n", vin.ToString());
-    // TODO fix
-    //pnode->PushMessage("dseg", vin);
+    g_connman->PushMessage(pnode, msgMaker.Make("dseg", vin));
     int64_t askAgain = GetTime() + MASTERNODE_MIN_MNP_SECONDS;
     mWeAskedForMasternodeListEntry[vin.prevout] = askAgain;
 }
@@ -235,8 +236,8 @@ void CMasternodeMan::DsegUpdate(CNode* pnode)
         }
     }
     
-    // TODO fix
-    //pnode->PushMessage("dseg", CTxIn());
+    const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
+    g_connman->PushMessage(pnode, msgMaker.Make("dseg", CTxIn()));
     int64_t askAgain = GetTime() + MASTERNODES_DSEG_SECONDS;
     mWeAskedForMasternodeList[pnode->addr] = askAgain;
 }
@@ -519,27 +520,23 @@ void CMasternodeMan::ProcessMasternodeConnections()
     //we don't care about this for regtest
     if(Params().NetworkID() == CBaseChainParams::REGTEST) return;
 
-    // TODO fix
-    //LOCK(cs_vNodes);
-    //for (auto& pnode : vNodes) {
-    //    if(pnode->fMasternode){
-    //        if(legacySigner.pSubmittedToMasternode != NULL && pnode->addr == legacySigner.pSubmittedToMasternode->addr) continue;
-    //        LogPrintf("Closing Masternode connection %s \n", pnode->addr.ToString());
-    //        pnode->fMasternode = false;
-    //        pnode->Release();
-    //    }
-    //}
+    LOCK(g_connman->cs_vNodes);
+    for (const auto &pnode : g_connman->GetNodes()) {
+        if(pnode->fMasternode){
+            if(legacySigner.pSubmittedToMasternode != NULL && pnode->addr == legacySigner.pSubmittedToMasternode->addr) continue;
+            LogPrintf("Closing Masternode connection %s \n", pnode->addr.ToString());
+            pnode->fMasternode = false;
+            pnode->Release();
+        }
+    }
 }
 
-void CMasternodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv)
+void CMasternodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, CConnman* connman)
 {
-
-    // TODO fix
-    //if(fLiteMode) return; //disable all Masternode related functionality
-    //if (!GetBoolArg("-jumpstart", false))
-    //{
-    //    if(!masternodeSync.IsBlockchainSynced()) return;
-    //}
+    if (!gArgs.GetBoolArg("-jumpstart", false))
+    {
+        if(!masternodeSync.IsBlockchainSynced()) return;
+    }
 
     LOCK(cs_process_message);
 
@@ -551,14 +548,12 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
         } else {
             mnb.lastPing.nVersion = 2;
         }
-        // TODO fix
-        //vRecv >> mnb;
+        vRecv >> mnb;
 
         int nDoS = 0;
         if (CheckMnbAndUpdateMasternodeList(mnb, nDoS)) {
             // use announced Masternode as a peer
-            // TODO fix
-             //addrman.Add(CAddress(mnb.addr), pfrom->addr, 2*60*60);
+            connman->addrman.Add(CAddress(mnb.addr), pfrom->addr, 2*60*60);
         } else {
             if(nDoS > 0) Misbehaving(pfrom->GetId(), nDoS);
         }
@@ -570,8 +565,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
             //Set to old version for old serialization
             mnp.nVersion = 1;
         }
-        // TODO fix
-        //vRecv >> mnp;
+        vRecv >> mnp;
 
         LogPrintf("masternode", "mnp - Masternode ping, vin: %s\n", mnp.vin.ToString());
 
@@ -645,12 +639,11 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
         }
 
         if(vin == CTxIn()) {
-            // TODO fix
-            //pfrom->PushMessage("ssc", MASTERNODE_SYNC_LIST, nInvCount);
+            const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
+            g_connman->PushMessage(pfrom, msgMaker.Make("ssc", MASTERNODE_SYNC_LIST, nInvCount));
             LogPrintf("dseg - Sent %d Masternode entries to %s\n", nInvCount, pfrom->addr.ToString());
         }
     }
-
 }
 
 void CMasternodeMan::Remove(CTxIn vin)

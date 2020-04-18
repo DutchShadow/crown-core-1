@@ -226,9 +226,8 @@ void CMasternode::Check(bool forceCheck)
 
 bool CMasternode::IsValidNetAddr() const
 {
-    // TODO fix
-    //if (Params().NetworkID() == CBaseChainParams::DEVNET)
-    //    return true;
+    if (Params().NetworkID() == CBaseChainParams::DEVNET)
+        return true;
     // TODO: regtest is fine with any addresses for now,
     // should probably be a bit smarter if one day we start to implement tests for this
     return (addr.IsIPv4() && addr.IsRoutable());
@@ -418,12 +417,11 @@ bool CMasternodeBroadcast::Create(std::string strService, std::string strKeyMast
         return false;
     }
 
-    // TODO fix
-    //if(!GetWallets()[0]->GetMasternodeVinAndKeys(txin, pubKeyCollateralAddress, keyCollateralAddress, strTxHash, strOutputIndex)) {
-    //    strErrorMessage = strprintf("Could not allocate txin %s:%s for masternode %s", strTxHash, strOutputIndex, strService);
-    //    LogPrintf("CMasternodeBroadcast::Create -- %s\n", strErrorMessage);
-    //    return false;
-    //}
+    if(!GetWallets()[0]->GetMasternodeVinAndKeys(txin, pubKeyCollateralAddress, keyCollateralAddress, strTxHash, strOutputIndex)) {
+        strErrorMessage = strprintf("Could not allocate txin %s:%s for masternode %s", strTxHash, strOutputIndex, strService);
+        LogPrintf("CMasternodeBroadcast::Create -- %s\n", strErrorMessage);
+        return false;
+    }
 
     int age = GetInputAge(txin);
     if (age < MASTERNODE_MIN_CONFIRMATIONS)
@@ -434,19 +432,18 @@ bool CMasternodeBroadcast::Create(std::string strService, std::string strKeyMast
         return false;
     }
 
-    //TODO remove comments
-    //CService service = CService(strService);
-    //if(Params().NetworkID() == CBaseChainParams::MAIN) {
-    //    if(service.GetPort() != 9340) {
-    //        strErrorMessage = strprintf("Invalid port %u for masternode %s - only 9340 is supported on mainnet.", service.GetPort(), strService);
-    //        LogPrintf("CMasternodeBroadcast::Create -- %s\n", strErrorMessage);
-    //        return false;
-    //    }
-    //} else if(service.GetPort() == 9340) {
-    //    strErrorMessage = strprintf("Invalid port %u for masternode %s - 9340 is only supported on mainnet.", service.GetPort(), strService);
-    //    LogPrintf("CMasternodeBroadcast::Create -- %s\n", strErrorMessage);
-    //    return false;
-    //}
+    CService service = CService(strService);
+    if(Params().NetworkID() == CBaseChainParams::MAIN) {
+        if(service.GetPort() != 9340) {
+            strErrorMessage = strprintf("Invalid port %u for masternode %s - only 9340 is supported on mainnet.", service.GetPort(), strService);
+            LogPrintf("CMasternodeBroadcast::Create -- %s\n", strErrorMessage);
+            return false;
+        }
+    } else if(service.GetPort() == 9340) {
+        strErrorMessage = strprintf("Invalid port %u for masternode %s - 9340 is only supported on mainnet.", service.GetPort(), strService);
+        LogPrintf("CMasternodeBroadcast::Create -- %s\n", strErrorMessage);
+        return false;
+    }
 
     bool fSignOver = true;
     return Create(txin, CService(strService), keyCollateralAddress, pubKeyCollateralAddress, keyMasternodeNew, pubKeyMasternodeNew, fSignOver, strErrorMessage, mnb);
@@ -543,53 +540,50 @@ bool CMasternodeBroadcast::CheckAndUpdate(int& nDos) const
     if(protocolVersion <= 99999999) {
         std::string vchPubKey(pubkey.begin(), pubkey.end());
         std::string vchPubKey2(pubkey2.begin(), pubkey2.end());
-        //TODO fix
-        strMessage = "";//addr.ToString(false) + boost::lexical_cast<std::string>(sigTime) +
-                     //   vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
+        strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) +
+                     vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
 
         LogPrint(BCLog::NET, "masternode", "mnb - sanitized strMessage: %s, pubkey address: %s, sig: %s\n",
             SanitizeString(strMessage), EncodeDestination(pubkey.GetID()),
             EncodeBase64(&sig[0], sig.size()));
 
-        if(!legacySigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)){
-            // TODO fix
-            //if (addr.ToString() != addr.ToString(false))
-            //{
-            //    // maybe it's wrong format, try again with the old one
-            //    strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) +
-            //                    vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
+        if(!legacySigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)) {
+            if (addr.ToString() != addr.ToString())
+            {
+                // maybe it's wrong format, try again with the old one
+                strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) +
+                                vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
 
-            //    LogPrint(BCLog::NET, "masternode", "mnb - sanitized strMessage: %s, pubkey address: %s, sig: %s\n",
-            //        SanitizeString(strMessage), EncodeDestination(pubkey.GetID()),
-            //        EncodeBase64(&sig[0], sig.size()));
+                LogPrint(BCLog::NET, "masternode", "mnb - sanitized strMessage: %s, pubkey address: %s, sig: %s\n",
+                    SanitizeString(strMessage), EncodeDestination(pubkey.GetID()),
+                    EncodeBase64(&sig[0], sig.size()));
 
-            //    if(!legacySigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)){
-            //        // didn't work either
-            //        LogPrintf("mnb - Got bad Masternode address signature, sanitized error: %s\n", SanitizeString(errorMessage));
-            //        // there is a bug in old MN signatures, ignore such MN but do not ban the peer we got this from
-            //        return false;
-            //    }
-            //} else {
-            //    // nope, sig is actually wrong
-            //    LogPrintf("mnb - Got bad Masternode address signature, sanitized error: %s\n", SanitizeString(errorMessage));
-            //    // there is a bug in old MN signatures, ignore such MN but do not ban the peer we got this from
-            //    return false;
-            //}
+                if(!legacySigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)){
+                    // didn't work either
+                    LogPrintf("mnb - Got bad Masternode address signature, sanitized error: %s\n", SanitizeString(errorMessage));
+                    // there is a bug in old MN signatures, ignore such MN but do not ban the peer we got this from
+                    return false;
+                }
+            } else {
+                // nope, sig is actually wrong
+                LogPrintf("mnb - Got bad Masternode address signature, sanitized error: %s\n", SanitizeString(errorMessage));
+                // there is a bug in old MN signatures, ignore such MN but do not ban the peer we got this from
+                return false;
+            }
         }
     } else {
-        // TODO fix
-        //strMessage = addr.ToString(false) + boost::lexical_cast<std::string>(sigTime) +
-        //                pubkey.GetID().ToString() + pubkey2.GetID().ToString() +
-        //                boost::lexical_cast<std::string>(protocolVersion);
+        strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) +
+                        pubkey.GetID().ToString() + pubkey2.GetID().ToString() +
+                        boost::lexical_cast<std::string>(protocolVersion);
 
-        //LogPrint(BCLog::NET, "masternode", "mnb - strMessage: %s, pubkey address: %s, sig: %s\n",
-        //    strMessage, EncodeDestination(pubkey.GetID()), EncodeBase64(&sig[0], sig.size()));
+        LogPrint(BCLog::NET, "masternode", "mnb - strMessage: %s, pubkey address: %s, sig: %s\n",
+            strMessage, EncodeDestination(pubkey.GetID()), EncodeBase64(&sig[0], sig.size()));
 
-        //if(!legacySigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)){
-        //    LogPrintf("mnb - Got bad Masternode address signature, error: %s\n", errorMessage);
-        //    nDos = 100;
-        //    return false;
-        //}
+        if(!legacySigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)){
+            LogPrintf("mnb - Got bad Masternode address signature, error: %s\n", errorMessage);
+            nDos = 100;
+            return false;
+        }
     }
 
     if(Params().NetworkID() == CBaseChainParams::MAIN) {
@@ -743,13 +737,12 @@ bool CMasternodeBroadcast::Sign(const CKey& keyCollateralAddress)
 
     sigTime = GetAdjustedTime();
 
-    // TODO fix
-    //std::string strMessage = addr.ToString(false) + boost::lexical_cast<std::string>(sigTime) + vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
+    std::string strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) + vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
 
-    //if(!legacySigner.SignMessage(strMessage, errorMessage, sig, keyCollateralAddress)) {
-    //    LogPrintf("CMasternodeBroadcast::Sign() - Error: %s\n", errorMessage);
-    //    return false;
-    //}
+    if(!legacySigner.SignMessage(strMessage, errorMessage, sig, keyCollateralAddress)) {
+        LogPrintf("CMasternodeBroadcast::Sign() - Error: %s\n", errorMessage);
+        return false;
+    }
 
     return true;
 }

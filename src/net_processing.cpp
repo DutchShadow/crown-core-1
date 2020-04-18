@@ -2977,8 +2977,8 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
     else {
 
         //probably one the extensions
-        mnodeman.ProcessMessage(pfrom, strCommand, vRecv);
-        snodeman.ProcessMessage(pfrom, strCommand, vRecv);
+        mnodeman.ProcessMessage(pfrom, strCommand, vRecv, connman);
+        snodeman.ProcessMessage(pfrom, strCommand, vRecv, connman);
         budget.ProcessMessage(pfrom, strCommand, vRecv);
         masternodePayments.ProcessMessageMasternodePayments(pfrom, strCommand, vRecv);
         systemnodePayments.ProcessMessageSystemnodePayments(pfrom, strCommand, vRecv);

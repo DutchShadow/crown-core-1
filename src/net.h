@@ -321,6 +321,7 @@ public:
     */
     int64_t PoissonNextSendInbound(int64_t now, int average_interval_seconds);
     mutable CCriticalSection cs_vNodes;
+    CAddrMan addrman;
 
 private:
     struct ListenSocket {
@@ -400,7 +401,6 @@ private:
     CCriticalSection cs_setBanned;
     bool setBannedIsDirty;
     bool fAddressesInitialized;
-    CAddrMan addrman;
     std::deque<std::string> vOneShots;
     CCriticalSection cs_vOneShots;
     std::vector<std::string> vAddedNodes GUARDED_BY(cs_vAddedNodes);
@@ -679,6 +679,8 @@ public:
     const uint64_t nKeyedNetGroup;
     std::atomic_bool fPauseRecv;
     std::atomic_bool fPauseSend;
+    bool fMasternode;
+    bool fSystemnode;
 protected:
 
     mapMsgCmdSize mapSendBytesPerMsgCmd;

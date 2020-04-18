@@ -10,6 +10,7 @@
 #include "addrman.h"
 #include "spork.h"
 #include "net_processing.h"
+#include "netmessagemaker.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 
@@ -70,11 +71,10 @@ std::vector<pair<int, CSystemnode> > CSystemnodeMan::GetSystemnodeRanks(int64_t 
     sort(vecSystemnodeScores.rbegin(), vecSystemnodeScores.rend(), CompareScoreSN());
 
     int rank = 0;
-    // TODO fix
-    //BOOST_FOREACH (PAIRTYPE(int64_t, CSystemnode)& s, vecSystemnodeScores){
-    //    rank++;
-    //    vecSystemnodeRanks.push_back(make_pair(rank, s.second));
-    //}
+     for (const auto& s : vecSystemnodeScores) {
+        rank++;
+        vecSystemnodeRanks.push_back(make_pair(rank, s.second));
+    }
 
     return vecSystemnodeRanks;
 }
@@ -84,47 +84,41 @@ void CSystemnodeMan::ProcessSystemnodeConnections()
     //we don't care about this for regtest
     if(Params().NetworkID() == CBaseChainParams::REGTEST) return;
 
-    //LOCK(cs_vNodes);
-    // TODO fix
-    //BOOST_FOREACH(CNode* pnode, vNodes) {
-    //    if(pnode->fSystemnode){
-    //        if(legacySigner.pSubmittedToSystemnode != NULL && pnode->addr == legacySigner.pSubmittedToSystemnode->addr) continue;
-    //        LogPrintf("Closing Systemnode connection %s \n", pnode->addr.ToString());
-    //        pnode->fSystemnode = false;
-    //        pnode->Release();
-    //    }
-    //}
+    LOCK(g_connman->cs_vNodes);
+    for (const auto &pnode : g_connman->GetNodes()) {
+        if(pnode->fSystemnode) {
+            if(legacySigner.pSubmittedToSystemnode != NULL && pnode->addr == legacySigner.pSubmittedToSystemnode->addr) continue;
+            LogPrintf("Closing Systemnode connection %s \n", pnode->addr.ToString());
+            pnode->fSystemnode = false;
+            pnode->Release();
+        }
+    }
 }
 
-void CSystemnodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv)
+void CSystemnodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv, CConnman* connman)
 {
-    // TODO fix
-    //if(fLiteMode) return; //disable all Systemnode related functionality
-    //if (!GetBoolArg("-jumpstart", false))
-    //{
-    //    if(!systemnodeSync.IsBlockchainSynced()) return;
-    //}
+    if (!gArgs.GetBoolArg("-jumpstart", false))
+    {
+        if(!systemnodeSync.IsBlockchainSynced()) return;
+    }
 
     LOCK(cs_process_message);
 
     if (strCommand == "snb") { //Systemnode Broadcast
         LogPrintf("systemnode", "CSystemnodeMan::ProcessMessage - snb");
         CSystemnodeBroadcast snb;
-        // TODO fix
-        //vRecv >> snb;
+        vRecv >> snb;
 
         int nDoS = 0;
         if (CheckSnbAndUpdateSystemnodeList(snb, nDoS)) {
             // use announced Systemnode as a peer
-            // TODO fix
-            //addrman.Add(CAddress(snb.addr), pfrom->addr, 2*60*60);
+            connman->addrman.Add(CAddress(snb.addr), pfrom->addr, 2*60*60);
         } else {
             if(nDoS > 0) Misbehaving(pfrom->GetId(), nDoS);
         }
     } else if (strCommand == "snp") { //Systemnode Ping
         CSystemnodePing snp;
-        // TODO fix
-        //vRecv >> snp;
+        vRecv >> snp;
 
         LogPrintf("systemnode", "snp - Systemnode ping, vin: %s\n", snp.vin.ToString());
 
@@ -198,8 +192,8 @@ void CSystemnodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
         }
 
         if(vin == CTxIn()) {
-            // TODO fix
-            //pfrom->PushMessage("snssc", SYSTEMNODE_SYNC_LIST, nInvCount);
+            const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
+            g_connman->PushMessage(pfrom, msgMaker.Make("snssc", SYSTEMNODE_SYNC_LIST, nInvCount));
             LogPrintf("sndseg - Sent %d Systemnode entries to %s\n", nInvCount, pfrom->addr.ToString());
         }
     }
@@ -218,8 +212,8 @@ void CSystemnodeMan::AskForSN(CNode* pnode, CTxIn &vin)
     // ask for the snb info once from the node that sent snp
 
     LogPrintf("CSystemnodeMan::AskForSN - Asking node for missing entry, vin: %s\n", vin.ToString());
-    // TODO fix
-    //pnode->PushMessage("sndseg", vin);
+    const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
+    g_connman->PushMessage(pnode, msgMaker.Make("sndseg", vin));
     int64_t askAgain = GetTime() + SYSTEMNODE_MIN_SNP_SECONDS;
     mWeAskedForSystemnodeListEntry[vin.prevout] = askAgain;
 }
@@ -456,8 +450,8 @@ void CSystemnodeMan::DsegUpdate(CNode* pnode)
         }
     }
     
-    // TODO fix
-    //pnode->PushMessage("sndseg", CTxIn());
+    const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
+    g_connman->PushMessage(pnode, msgMaker.Make("sndseg", CTxIn()));
     int64_t askAgain = GetTime() + SYSTEMNODES_DSEG_SECONDS;
     mWeAskedForSystemnodeList[pnode->addr] = askAgain;
 }
