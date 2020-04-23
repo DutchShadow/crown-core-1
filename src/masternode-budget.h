@@ -218,7 +218,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template<typename Stream, typename Operation>
-    inline void SerializationOp(Stream &s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream &s, Operation ser_action)
     {
         READWRITE(mapSeenMasternodeBudgetProposals);
         READWRITE(mapSeenMasternodeBudgetVotes);
@@ -258,7 +258,7 @@ public:
 
     //for saving to the serialized db
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+    inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(*(CScriptBase*)(&payee));
         READWRITE(nAmount);
         READWRITE(nProposalHash);
@@ -339,7 +339,7 @@ public:
 
     //for saving to the serialized db
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(m_blockStart);
         READWRITE(m_payments);
@@ -409,7 +409,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         std::string dummy = ""; // for backwards compatibility
         READWRITE(LIMITED_STRING(dummy, 20));
@@ -459,7 +459,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+    inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(vin);
         READWRITE(nBudgetHash);
         READWRITE(nTime);
@@ -554,7 +554,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+    inline void SerializationOp(Stream& s, Operation ser_action) {
         //for syncing with other clients
         READWRITE(LIMITED_STRING(strProposalName, 20));
         READWRITE(LIMITED_STRING(strURL, 64));
@@ -609,7 +609,7 @@ class CBudgetProposalBroadcast : public CBudgetProposal
         ADD_SERIALIZE_METHODS;
 
         template <typename Stream, typename Operation>
-            inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+            inline void SerializationOp(Stream& s, Operation ser_action) {
                 //for syncing with other clients
 
                 READWRITE(LIMITED_STRING(strProposalName, 20));

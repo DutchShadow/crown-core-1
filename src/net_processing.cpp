@@ -1059,6 +1059,64 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
     case MSG_BLOCK:
     case MSG_WITNESS_BLOCK:
         return LookupBlockIndex(inv.hash) != nullptr;
+    case MSG_TXLOCK_REQUEST:
+        return GetInstantSend().TxLockRequested(inv.hash);
+    case MSG_TXLOCK_VOTE:
+        return GetInstantSend().AlreadyHave(inv.hash);
+    case MSG_SPORK:
+        return mapSporks.count(inv.hash);
+    case MSG_MASTERNODE_WINNER:
+        if(masternodePayments.mapMasternodePayeeVotes.count(inv.hash)) {
+            masternodeSync.AddedMasternodeWinner(inv.hash);
+            return true;
+        }
+        return false;
+    case MSG_BUDGET_VOTE:
+        if(budget.HasItem(inv.hash)) {
+            masternodeSync.AddedBudgetItem(inv.hash);
+            return true;
+        }
+        return false;
+    case MSG_BUDGET_PROPOSAL:
+        if(budget.HasItem(inv.hash)) {
+            masternodeSync.AddedBudgetItem(inv.hash);
+            return true;
+        }
+        return false;
+    case MSG_BUDGET_FINALIZED_VOTE:
+        if(budget.HasItem(inv.hash)) {
+            masternodeSync.AddedBudgetItem(inv.hash);
+            return true;
+        }
+        return false;
+    case MSG_BUDGET_FINALIZED:
+        if(budget.HasItem(inv.hash)) {
+            masternodeSync.AddedBudgetItem(inv.hash);
+            return true;
+        }
+        return false;
+    case MSG_MASTERNODE_ANNOUNCE:
+        if(mnodeman.mapSeenMasternodeBroadcast.count(inv.hash)) {
+            masternodeSync.AddedMasternodeList(inv.hash);
+            return true;
+        }
+        return false;
+    case MSG_MASTERNODE_PING:
+        return mnodeman.mapSeenMasternodePing.count(inv.hash);
+    case MSG_SYSTEMNODE_WINNER:
+        if(systemnodePayments.mapSystemnodePayeeVotes.count(inv.hash)) {
+            systemnodeSync.AddedSystemnodeWinner(inv.hash);
+            return true;
+        }
+        return false;
+    case MSG_SYSTEMNODE_ANNOUNCE:
+        if(snodeman.mapSeenSystemnodeBroadcast.count(inv.hash)) {
+            systemnodeSync.AddedSystemnodeList(inv.hash);
+            return true;
+        }
+        return false;
+    case MSG_SYSTEMNODE_PING:
+        return snodeman.mapSeenSystemnodePing.count(inv.hash);
     }
     // Don't know what it is, just say we already got one
     return true;
@@ -1283,34 +1341,194 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
     {
         LOCK(cs_main);
 
-        while (it != pfrom->vRecvGetData.end() && (it->type == MSG_TX || it->type == MSG_WITNESS_TX)) {
-            if (interruptMsgProc)
-                return;
-            // Don't bother if send buffer is too full to respond anyway
-            if (pfrom->fPauseSend)
-                break;
-
+        while (it != pfrom->vRecvGetData.end()) {
             const CInv &inv = *it;
             it++;
 
-            // Send stream from relay memory
-            bool push = false;
-            auto mi = mapRelay.find(inv.hash);
-            int nSendFlags = (inv.type == MSG_TX ? SERIALIZE_TRANSACTION_NO_WITNESS : 0);
-            if (mi != mapRelay.end()) {
-                connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::TX, *mi->second));
-                push = true;
-            } else if (pfrom->timeLastMempoolReq) {
-                auto txinfo = mempool.info(inv.hash);
-                // To protect privacy, do not answer getdata using the mempool when
-                // that TX couldn't have been INVed in reply to a MEMPOOL request.
-                if (txinfo.tx && txinfo.nTime <= pfrom->timeLastMempoolReq) {
-                    connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::TX, *txinfo.tx));
+            if (inv.type == MSG_TX || inv.type == MSG_WITNESS_TX)
+            {
+                if (interruptMsgProc)
+                    return;
+                // Don't bother if send buffer is too full to respond anyway
+                if (pfrom->fPauseSend)
+                    break;
+
+                // Send stream from relay memory
+                bool push = false;
+                auto mi = mapRelay.find(inv.hash);
+                int nSendFlags = (inv.type == MSG_TX ? SERIALIZE_TRANSACTION_NO_WITNESS : 0);
+                if (mi != mapRelay.end()) {
+                    connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::TX, *mi->second));
                     push = true;
+                } else if (pfrom->timeLastMempoolReq) {
+                    auto txinfo = mempool.info(inv.hash);
+                    // To protect privacy, do not answer getdata using the mempool when
+                    // that TX couldn't have been INVed in reply to a MEMPOOL request.
+                    if (txinfo.tx && txinfo.nTime <= pfrom->timeLastMempoolReq) {
+                        connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::TX, *txinfo.tx));
+                        push = true;
+                    }
+                }
+                if (!push) {
+                    vNotFound.push_back(inv);
                 }
             }
-            if (!push) {
-                vNotFound.push_back(inv);
+            else
+            {
+                // Send stream from relay memory
+                bool pushed = false;
+                if (!pushed && inv.type == MSG_TXLOCK_VOTE) {
+                    boost::optional<CConsensusVote> vote = GetInstantSend().GetLockVote(inv.hash);
+                    if (vote)
+                    {
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << vote.get();
+                        g_connman->PushMessage(pfrom, msgMaker.Make("txlvote", ss));
+                        pushed = true;
+                    }
+                }
+                if (!pushed && inv.type == MSG_TXLOCK_REQUEST) {
+                    boost::optional<CTransaction> lockedTx = GetInstantSend().GetLockReq(inv.hash);
+                    if (lockedTx)
+                    {
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << lockedTx.get();
+                        g_connman->PushMessage(pfrom, msgMaker.Make("ix", ss));
+                        pushed = true;
+                    }
+                }
+                if (!pushed && inv.type == MSG_SPORK) {
+                    if(mapSporks.count(inv.hash)){
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << mapSporks[inv.hash];
+                        g_connman->PushMessage(pfrom, msgMaker.Make("spork", ss));
+                        pushed = true;
+                    }
+                }
+                if (!pushed && inv.type == MSG_MASTERNODE_WINNER) {
+                    if(masternodePayments.mapMasternodePayeeVotes.count(inv.hash)){
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << masternodePayments.mapMasternodePayeeVotes[inv.hash];
+                        g_connman->PushMessage(pfrom, msgMaker.Make("mnw", ss));
+                        pushed = true;
+                    }
+                }
+                if (!pushed && inv.type == MSG_BUDGET_VOTE) {
+                    const CBudgetVote* item = budget.GetSeenVote(inv.hash);
+                    if(item){
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << *item;
+                        g_connman->PushMessage(pfrom, msgMaker.Make("mvote", ss));
+                        pushed = true;
+                    }
+                }
+
+                if (!pushed && inv.type == MSG_BUDGET_PROPOSAL) {
+                    const CBudgetProposalBroadcast* item = budget.GetSeenProposal(inv.hash);
+                    if(item){
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << *item;
+                        g_connman->PushMessage(pfrom, msgMaker.Make("mprop", ss));
+                        pushed = true;
+                    }
+                }
+
+                if (!pushed && inv.type == MSG_BUDGET_FINALIZED_VOTE) {
+                    const BudgetDraftVote* item = budget.GetSeenBudgetDraftVote(inv.hash);
+                    if(item){
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << *item;
+                        g_connman->PushMessage(pfrom, msgMaker.Make("fbvote", ss));
+                        pushed = true;
+                    }
+                }
+
+                if (!pushed && inv.type == MSG_BUDGET_FINALIZED) {
+                    const BudgetDraftBroadcast* item = budget.GetSeenBudgetDraft(inv.hash);
+                    if(item){
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << *item;
+                        g_connman->PushMessage(pfrom, msgMaker.Make("fbs", ss));
+                        pushed = true;
+                    }
+                }
+
+                if (!pushed && inv.type == MSG_MASTERNODE_ANNOUNCE) {
+                    if(mnodeman.mapSeenMasternodeBroadcast.count(inv.hash)) {
+                        auto mnb = mnodeman.mapSeenMasternodeBroadcast[inv.hash];
+                        std::string strCommand = "mnb_new";
+                        if (pfrom->nVersion < MIN_MNW_PING_VERSION) {
+                            //Make sure this serializes to a format that is readable by the peer we are sending to
+                            mnb.lastPing.nVersion = 1;
+                        }
+                        if (mnb.lastPing.nVersion == 1)
+                            strCommand = "mnb";
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << mnb;
+                        g_connman->PushMessage(pfrom, msgMaker.Make(strCommand.c_str(), ss));
+                        pushed = true;
+                    }
+                }
+
+                if (!pushed && inv.type == MSG_MASTERNODE_PING) {
+                    if(mnodeman.mapSeenMasternodePing.count(inv.hash)){
+                        auto mnp = mnodeman.mapSeenMasternodePing[inv.hash];
+                        std::string strCommand = "mnp_new";
+                        if (pfrom->nVersion < MIN_MNW_PING_VERSION) {
+                            //Make sure this serializes to a format that is readable by the peer we are sending to
+                            mnp.nVersion = 1;
+                        }
+                        if (mnp.nVersion == 1)
+                            strCommand = "mnp";
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << mnp;
+                        g_connman->PushMessage(pfrom, msgMaker.Make(strCommand.c_str(), ss));
+                        pushed = true;
+                    }
+                }
+                if (!pushed && inv.type == MSG_SYSTEMNODE_WINNER) {
+                    if(systemnodePayments.mapSystemnodePayeeVotes.count(inv.hash)){
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << systemnodePayments.mapSystemnodePayeeVotes[inv.hash];
+                        g_connman->PushMessage(pfrom, msgMaker.Make("snw", ss));
+                        pushed = true;
+                    }
+                }
+                if (!pushed && inv.type == MSG_SYSTEMNODE_ANNOUNCE) {
+                    if(snodeman.mapSeenSystemnodeBroadcast.count(inv.hash)){
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << snodeman.mapSeenSystemnodeBroadcast[inv.hash];
+                        g_connman->PushMessage(pfrom, msgMaker.Make("snb", ss));
+                        pushed = true;
+                    }
+                }
+
+                if (!pushed && inv.type == MSG_SYSTEMNODE_PING) {
+                    if(snodeman.mapSeenSystemnodePing.count(inv.hash)){
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << snodeman.mapSeenSystemnodePing[inv.hash];
+                        g_connman->PushMessage(pfrom, msgMaker.Make("snp", ss));
+                        pushed = true;
+                    }
+                }
+
+                if (!pushed) {
+                    vNotFound.push_back(inv);
+                }
+
             }
         }
     } // release cs_main
