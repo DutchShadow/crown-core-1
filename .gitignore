@@ -121,3 +121,11 @@ qa/pull-tester/test.*/*
 wallet-utility
 
 /depends/x86_64-*
+
+.idea/
+cmake-build-*/
+.vscode/
+
+scripts/*.json
+scripts/sb.sh
+scripts/sb-wallet.sh
