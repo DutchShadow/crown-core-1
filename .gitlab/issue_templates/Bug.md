@@ -20,7 +20,7 @@
 (Paste any relevant logs - please use code blocks (```) to format console output,
 logs, and code; it's very hard to read otherwise.)
 
-Drop full logs & dumps here: https://nextcloud.crown.tech/nextcloud/s/znd8HiiAsRX3C6B
+Drop full logs & dumps here: https://nextcloud.crownplatform.com/index.php/s/Q6H8enXNmJsQYCD
 
 ### Possible fixes
 (Any comments on what you think might be responsible for the problem, if you have particular insight.)

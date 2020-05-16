@@ -85,7 +85,7 @@ public:
     const std::vector<unsigned char>& Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
     const std::string& Bech32HRP() const { return bech32_hrp; }
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
-    const CCheckpointData& Checkpoints() const { return checkpointData; }
+    //const CCheckpointData& Checkpoints() const { return checkpointData; }
     const ChainTxData& TxData() const { return chainTxData; }
     const std::string NetworkID() const { return strNetworkID; }
     void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
@@ -180,48 +180,12 @@ protected:
     ChainTxData chainTxData;
     bool m_fallback_fee_enabled;
     std::string strLegacySignerDummyAddress;
-    int nStakePointerValidityPeriod;
-
-    //TODO old values
-    // uint256 hashGenesisBlock;
-    // uint256 hashDevnetGenesisBlock;
-    // CMessageHeader::MessageStartChars pchMessageStart;
-    // //! Raw pub key bytes for the broadcast alert signing key.
-    // std::vector<unsigned char> vAlertPubKey;
-    // int nDefaultPort;
-    //uint256 bnProofOfWorkLimit;
-    // int nSubsidyHalvingInterval;
-    // int nEnforceBlockUpgradeMajority;
-    // int nRejectBlockOutdatedMajority;
-    // int nToCheckBlockUpgradeMajority;
-    // int64_t nTargetTimespan;
-    // int64_t nTargetSpacing;
-    // int nMinerThreads;
-    // long nMaxTipAge;
-    // std::vector<CDNSSeedData> vSeeds;
-    // std::vector<unsigned char> base58Prefixes[MAX_BASE58_TYPES];
-    // std::vector<unsigned char> base58PrefixesOld[MAX_BASE58_TYPES];
-    // CBaseChainParams::Network networkID;
-    // std::string strNetworkID;
-    // CBlock genesis;
-    // CBlock devnetGenesis;
-    // std::vector<CAddress> vFixedSeeds;
-    // bool fRequireRPCPassword;
-    // bool fMiningRequiresPeers;
-    // bool fAllowMinDifficultyBlocks;
-    // bool fDefaultConsistencyChecks;
-    // bool fRequireStandard;
-    // bool fMineBlocksOnDemand;
-    // bool fTestnetToBeDeprecatedFieldRPC;
-    // int nPoolMaxTransactions;
-    // std::string strSporkKey;
-    // std::string strLegacySignerDummyAddress;
-    // std::string strDevfundAddress;
-    // int64_t nStartMasternodePayments;
+    std::string strDevfundAddress;
+    int64_t nStartMasternodePayments{0};
     int32_t nAuxpowChainId;
     // int32_t nPoSChainId;
     int nBlockPoSStart;
-    // int nStakePointerValidityPeriod;
+    int nStakePointerValidityPeriod;
     // int nMaxReorgDepth;
     // int nKernelModifierOffset;
     // int nChainStallDuration;

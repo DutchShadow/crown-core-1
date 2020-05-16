@@ -75,10 +75,11 @@ int main(int argc, char** argv)
     bool is_list_only = gArgs.GetBoolArg("-list", false);
 
     double scaling_factor;
-    if (!ParseDouble(scaling_str, &scaling_factor)) {
-        fprintf(stderr, "Error parsing scaling factor as double: %s\n", scaling_str.c_str());
-        return EXIT_FAILURE;
-    }
+    // TODO fix
+    //if (!ParseDouble(scaling_str, &scaling_factor)) {
+    //    fprintf(stderr, "Error parsing scaling factor as double: %s\n", scaling_str.c_str());
+    //    return EXIT_FAILURE;
+    //}
 
     std::unique_ptr<benchmark::Printer> printer(new benchmark::ConsolePrinter());
     std::string printer_arg = gArgs.GetArg("-printer", DEFAULT_BENCH_PRINTER);

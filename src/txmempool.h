@@ -27,6 +27,8 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/signals2/signal.hpp>
 
+#include "platform/specialtx-common.h"
+
 class CBlockIndex;
 
 /** Fake height value used in Coin to signify they are only in the memory pool (since 0.8) */
@@ -437,7 +439,7 @@ public:
  * prevent these calculations from being too CPU intensive.
  *
  */
-class CTxMemPool
+class CTxMemPool : public SpecTxMemPoolHandlerRegistrator
 {
 private:
     uint32_t nCheckFrequency GUARDED_BY(cs); //!< Value n means that n times in 2^32 we check.
@@ -625,6 +627,8 @@ public:
      * The counts include the transaction itself.
      */
     void GetTransactionAncestry(const uint256& txid, size_t& ancestors, size_t& descendants) const;
+    bool ExistsSpecTxConflict(const CTransaction & tx) const;
+    void RemoveSpecTxConflicts(const CTransaction &tx, std::list<CTransaction>& removed);
 
     unsigned long size()
     {
@@ -690,6 +694,14 @@ private:
      *  removal.
      */
     void removeUnchecked(txiter entry, MemPoolRemovalReason reason = MemPoolRemovalReason::UNKNOWN) EXCLUSIVE_LOCKS_REQUIRED(cs);
+
+public:
+    // SpecTxMemPoolHandlerRegistrator i-face
+    bool RegisterHandler(TxType specialTxType, SpecTxMemPoolHandler * handler) override;
+    void UnregisterHandler(TxType specialTxType) override;
+
+private:
+    std::map<TxType, SpecTxMemPoolHandler *> m_specTxHandlers;
 };
 
 /**

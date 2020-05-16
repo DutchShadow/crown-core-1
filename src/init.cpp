@@ -50,6 +50,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "platform/platform-db.h"
+
 #ifndef WIN32
 #include <signal.h>
 #endif
@@ -199,6 +201,11 @@ void Shutdown()
     RenameThread("bitcoin-shutoff");
     mempool.AddTransactionsUpdated(1);
 
+    // TODO Fix
+    // Unregister NFT special transaction mempool handler
+    //g_nfTokenTxMemPoolHandler.UnregisterSelf(mempool);
+    //g_nftProtoTxMemPoolHandler.UnregisterSelf(mempool);
+
     StopHTTPRPC();
     StopREST();
     StopRPC();
@@ -289,6 +296,7 @@ void Shutdown()
     g_wallet_init_interface.Close();
     globalVerifyHandle.reset();
     ECC_Stop();
+    Platform::PlatformDb::DestroyInstance();
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -1000,6 +1008,11 @@ bool AppInitParameterInteraction()
     if (gArgs.IsArgSet("-blockminsize"))
         InitWarning("Unsupported argument -blockminsize ignored.");
 
+    // TODO fix
+    // Register NFT special transaction mempool handler
+    //g_nftProtoTxMemPoolHandler.RegisterSelf(mempool);
+    //g_nfTokenTxMemPoolHandler.RegisterSelf(mempool);
+
     // Checkmempool and checkblockindex default to true in regtest mode
     int ratio = std::min<int>(std::max<int>(gArgs.GetArg("-checkmempool", chainparams.DefaultConsistencyChecks() ? 1 : 0), 0), 1000000);
     if (ratio != 0) {
@@ -1152,12 +1165,13 @@ bool AppInitParameterInteraction()
                 return InitError("Version bits parameters malformed, expecting deployment:start:end");
             }
             int64_t nStartTime, nTimeout;
-            if (!ParseInt64(vDeploymentParams[1], &nStartTime)) {
-                return InitError(strprintf("Invalid nStartTime (%s)", vDeploymentParams[1]));
-            }
-            if (!ParseInt64(vDeploymentParams[2], &nTimeout)) {
-                return InitError(strprintf("Invalid nTimeout (%s)", vDeploymentParams[2]));
-            }
+            // TODO fix
+            //if (!ParseInt64(vDeploymentParams[1], &nStartTime)) {
+            //    return InitError(strprintf("Invalid nStartTime (%s)", vDeploymentParams[1]));
+            //}
+            //if (!ParseInt64(vDeploymentParams[2], &nTimeout)) {
+            //    return InitError(strprintf("Invalid nTimeout (%s)", vDeploymentParams[2]));
+            //}
             bool found = false;
             for (int j=0; j<(int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; ++j)
             {
@@ -1415,6 +1429,9 @@ bool AppInitMain()
     fReindex = gArgs.GetBoolArg("-reindex", false);
     bool fReindexChainState = gArgs.GetBoolArg("-reindex-chainstate", false);
 
+    bool platformOptRam = gArgs.GetBoolArg("-platformoptram", false);
+    Platform::PlatformOpt opt = platformOptRam ? Platform::PlatformOpt::OptRam : Platform::PlatformOpt::OptSpeed;
+
     // cache size calculations
     int64_t nTotalCache = (gArgs.GetArg("-dbcache", nDefaultDbCache) << 20);
     nTotalCache = std::max(nTotalCache, nMinDbCache << 20); // total cache cannot be less than nMinDbCache
@@ -1428,6 +1445,7 @@ bool AppInitMain()
     nTotalCache -= nCoinDBCache;
     nCoinCacheUsage = nTotalCache; // the rest goes to in-memory cache
     int64_t nMempoolSizeMax = gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000;
+    int64_t nPlatformDbCache = 1024 * 1024 * 10; //TODO: set appropriate platform db cache size
     LogPrintf("Cache configuration:\n");
     LogPrintf("* Using %.1fMiB for block index database\n", nBlockTreeDBCache * (1.0 / 1024 / 1024));
     if (gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
@@ -1456,6 +1474,9 @@ bool AppInitMain()
                 // fails if it's still open from the previous loop. Close it first:
                 pblocktree.reset();
                 pblocktree.reset(new CBlockTreeDB(nBlockTreeDBCache, false, fReset));
+
+                Platform::PlatformDb::DestroyInstance();
+                Platform::PlatformDb::CreateInstance(nPlatformDbCache, opt, false, fReindex);
 
                 if (fReset) {
                     pblocktree->WriteReindexing(true);

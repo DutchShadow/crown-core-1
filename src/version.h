@@ -9,7 +9,6 @@
 /**
  * network protocol versioning
  */
-
 static const int PROTOCOL_VERSION = 70058;
 static const int PROTOCOL_POS_START = 70057;
 
@@ -43,12 +42,6 @@ static const int MIN_MASTERNODE_PAYMENT_PROTO_VERSION_CURR = 70058;
 // V2 - Newest protocol version
 static const int MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION_PREV = 70057;
 static const int MIN_SYSTEMNODE_PAYMENT_PROTO_VERSION_CURR = 70058;
-
-//! In this version, 'getheaders' was introduced.
-static const int GETHEADERS_VERSION = 31800;
-
-//! disconnect from peers older than this proto version
-static const int MIN_PEER_PROTO_VERSION = GETHEADERS_VERSION;
 
 //! nTime field added to CAddress, starting with this version;
 //! if possible, avoid requesting addresses nodes older than this

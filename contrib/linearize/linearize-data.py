@@ -7,7 +7,6 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
 
-from __future__ import print_function, division
 import struct
 import re
 import os
@@ -17,7 +16,7 @@ import hashlib
 import datetime
 import time
 from collections import namedtuple
-from binascii import hexlify, unhexlify
+from binascii import unhexlify
 
 settings = {}
 
@@ -62,7 +61,7 @@ def calc_hash_str(blk_hdr):
     hash = calc_hdr_hash(blk_hdr)
     hash = bufreverse(hash)
     hash = wordreverse(hash)
-    hash_str = hexlify(hash).decode('utf-8')
+    hash_str = hash.hex()
     return hash_str
 
 def get_blk_dt(blk_hdr):
@@ -214,7 +213,7 @@ class BlockDataCopier:
 
             inMagic = inhdr[:4]
             if (inMagic != self.settings['netmagic']):
-                print("Invalid magic: " + hexlify(inMagic).decode('utf-8'))
+                print("Invalid magic: " + inMagic.hex())
                 return
             inLenLE = inhdr[4:]
             su = struct.unpack("<I", inLenLE)
@@ -282,9 +281,9 @@ if __name__ == '__main__':
     settings['rev_hash_bytes'] = settings['rev_hash_bytes'].lower()
 
     if 'netmagic' not in settings:
-        settings['netmagic'] = 'f9beb4d9'
+        settings['netmagic'] = 'b8ebb3df'
     if 'genesis' not in settings:
-        settings['genesis'] = '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f'
+        settings['genesis'] = '0000000085370d5e122f64f4ab19c68614ff3df78c8d13cb814fd7e69a1dc6da'
     if 'input' not in settings:
         settings['input'] = 'input'
     if 'hashlist' not in settings:

@@ -78,6 +78,8 @@ constexpr bool IsDigit(char c)
  *   false if not the entire string could be parsed or when overflow or underflow occurred.
  */
 bool ParseInt32(const std::string& str, int32_t *out);
+bool ParseUInt32(const std::string& str, uint32_t *out);
+bool ParseUInt8(const std::string& str, uint8_t *out);
 
 /**
  * Convert string to signed 64-bit integer with strict parse error feedback.

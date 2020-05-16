@@ -114,5 +114,10 @@ test/cache/*
 
 /doc/doxygen/
 
-libbitcoinconsensus.pc
-contrib/devtools/split-debug.sh
+.idea/
+cmake-build-*/
+.vscode/
+
+scripts/*.json
+scripts/sb.sh
+scripts/sb-wallet.sh

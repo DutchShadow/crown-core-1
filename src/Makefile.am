@@ -154,7 +154,6 @@ BITCOIN_CORE_H = \
   rpc/mining.h \
   rpc/protocol.h \
   rpc/server.h \
-  rpc/rawtransaction.h \
   rpc/register.h \
   rpc/util.h \
   scheduler.h \
@@ -171,6 +170,23 @@ BITCOIN_CORE_H = \
   support/events.h \
   support/lockedpool.h \
   sync.h \
+  platform/specialtx-common.h \
+  platform/specialtx.h \
+  platform/platform-db.h \
+  platform/platform-utils.h \
+  platform/nf-token/nf-token-index.h \
+  platform/nf-token/nf-token-multiindex-utils.h \
+  platform/nf-token/nf-token-protocol-index.h \
+  platform/nf-token/nf-token-protocol-reg-tx.h \
+  platform/nf-token/nf-token-protocol-tx-mem-pool-handler.h \
+  platform/nf-token/nf-token-protocol.h \
+  platform/nf-token/nf-token-reg-tx-builder.h \
+  platform/nf-token/nf-token-reg-tx.h \
+  platform/nf-token/nf-token-tx-mem-pool-handler.h \
+  platform/nf-token/nf-token.h \
+  platform/nf-token/nf-tokens-manager.h \
+  platform/nf-token/nft-protocol-reg-tx-builder.h \
+  platform/nf-token/nft-protocols-manager.h \
   threadsafety.h \
   threadinterrupt.h \
   timedata.h \
@@ -244,15 +260,34 @@ libbitcoin_server_a_SOURCES = \
   rpc/mining.cpp \
   rpc/misc.cpp \
   rpc/net.cpp \
-  rpc/rawtransaction.cpp \
   rpc/server.cpp \
   rpc/util.cpp \
+  rpc/rawtransaction.cpp \
   script/sigcache.cpp \
   shutdown.cpp \
   timedata.cpp \
   torcontrol.cpp \
   txdb.cpp \
   txmempool.cpp \
+  leveldbwrapper.cpp \
+  platform/agent.cpp \
+  platform/agent.h \
+  platform/governance.cpp \
+  platform/governance.h \
+  platform/governance-approval-voting.h \
+  platform/governance-approval-voting.cpp \
+  platform/governance-vote.cpp \
+  platform/governance-vote.h \
+  platform/specialtx.cpp \
+  platform/platform-db.cpp \
+  platform/nf-token/nf-token-multiindex-utils.cpp \
+  platform/nf-token/nf-token-protocol-reg-tx.cpp \
+  platform/nf-token/nf-token-protocol-tx-mem-pool-handler.cpp \
+  platform/nf-token/nf-token-protocol.cpp \
+  platform/nf-token/nf-token-reg-tx.cpp \
+  platform/nf-token/nf-token-tx-mem-pool-handler.cpp \
+  platform/nf-token/nf-tokens-manager.cpp \
+  platform/nf-token/nft-protocols-manager.cpp \
   ui_interface.cpp \
   validation.cpp \
   validationinterface.cpp \

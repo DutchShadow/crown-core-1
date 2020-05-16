@@ -127,30 +127,47 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("0x0000000085370d5e122f64f4ab19c68614ff3df78c8d13cb814fd7e69a1dc6da"));
         assert(genesis.hashMerkleRoot == uint256S("0x80ad356118a9ab8db192db66ef77146cc36d958f959251feace550e4ca3d1446"));
 
-        // Note that of those which support the service bits prefix, most only support a subset of
-        // possible options.
-        // This is fine at runtime as we'll fall back to using them as a oneshot if they don't support the
-        // service bits we want, but we should get them updated to support all service bits wanted by any
-        // release ASAP to avoid it where possible.
-        vSeeds.emplace_back("fra-crwdns.crowndns.info");
-        vSeeds.emplace_back("blr-crwdns.crowndns.info");
-        vSeeds.emplace_back("sgp-crwdns.crowndns.info");
-        vSeeds.emplace_back("lon-crwdns.crowndns.info");
-        vSeeds.emplace_back("nyc-crwdns.crowndns.info");
-        vSeeds.emplace_back("tor-crwdns.crowndns.info");
-        vSeeds.emplace_back("sfo-crwdns.crowndns.info");
-        vSeeds.emplace_back("ams-crwdns.crowndns.info");
+/** Main net nameservers defined here, they are geographic strategic and redundant through 2 domains.
+* The nameservers are location-XXseedNS.crownplatform. net/org they will point to main net dns seed VPS's
+* through location-XX.seeder.crowncoin.net which can be set up by community members, and also wil be set up by the infra team.
+* Community members wanting to contribute a VPS will request (outside of public view) for a DNS entry to be made to the main nameservers for their dns seed's IP,
+* getting help setting it up from the infra team.
+*/
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,128);
-        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
-        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
 
-        bech32_hrp = "bc";
+        //vSeeds.push_back(CDNSSeedData("eur1-crwdns", "europe-01seedns.crowncoin.org"));
+        vSeeds.emplace_back("europe-01seedns.crowncoin.org");
+        vSeeds.emplace_back("europe-02seedns.crowncoin.net");
+        vSeeds.emplace_back("canada-01seedns.crowncoin.org");
+        vSeeds.emplace_back("latam-01seedns.crowncoin.net");
+        vSeeds.emplace_back("SEAsia-01seedns.crowncoin.org");
+        vSeeds.emplace_back("pacific-01seedns.crowncoin.net");
 
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
 
+        // TODO fix
+        //// Crown addresses start with 'CRW'
+        //base58Prefixes[PUBKEY_ADDRESS] = list_of(0x01)(0x75)(0x07).convert_to_container<std::vector<unsigned char> >();
+        //base58PrefixesOld[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
+        //// Crown script addresses start with 'CRM'
+        //base58Prefixes[SCRIPT_ADDRESS] = list_of(0x01)(0x74)(0xF1).convert_to_container<std::vector<unsigned char> >();
+        //base58PrefixesOld[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,28);                   // Crown script addresses start with 'C'
+        //base58Prefixes[SECRET_KEY]     = std::vector<unsigned char>(1,128);                  // Crown private keys start with '5'
+        //base58Prefixes[EXT_PUBLIC_KEY] = list_of(0x04)(0x88)(0xB2)(0x1E).convert_to_container<std::vector<unsigned char> >();
+        //base58Prefixes[EXT_SECRET_KEY] = list_of(0x04)(0x88)(0xAD)(0xE4).convert_to_container<std::vector<unsigned char> >();
+        //base58Prefixes[EXT_COIN_TYPE]  = list_of(0x80000048).convert_to_container<std::vector<unsigned char> >();             // Crown BIP44 coin type is '72'
+
+        //// Identity addresses start with 'CRP'
+        //base58Prefixes[IDENTITY_ADDRESS] = list_of(0x01)(0x74)(0xF6).convert_to_container<std::vector<unsigned char> >();
+        //// App service addresses start with 'CRA'
+        //base58Prefixes[APP_SERVICE_ADDRESS] = list_of(0x01)(0x74)(0xD5).convert_to_container<std::vector<unsigned char> >();
+        //// Title addresses start with 'CRT'
+        //base58Prefixes[TITLE_ADDRESS] = list_of(0x01)(0x75)(0x00).convert_to_container<std::vector<unsigned char> >();
+
+        //convertSeed6(vFixedSeeds, pnSeed6_main, ARRAYLEN(pnSeed6_main));
+
+        //fRequireRPCPassword = true;
+        //fMiningRequiresPeers = true;
+        //fAllowMinDifficultyBlocks = false;
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
         fMineBlocksOnDemand = false;
@@ -249,43 +266,145 @@ public:
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        // nodes with support for servicebits filtering should be at the top
-        vSeeds.emplace_back("testnet-seed.bitcoin.jonasschnelli.ch");
-        vSeeds.emplace_back("seed.tbtc.petertodd.org");
-        vSeeds.emplace_back("seed.testnet.bitcoin.sprovoost.nl");
-        vSeeds.emplace_back("testnet-seed.bluematt.me"); // Just a static list of stable node(s), only supports x9
+// Testnet seeders update is outside of current hotfix scope
+        vSeeds.emplace_back("fra-testnet-crwdns.crowndns.info");
+        vSeeds.emplace_back("blr-testnet-crwdns.crowndns.info");
+        vSeeds.emplace_back("sgp-testnet-crwdns.crowndns.info");
+        vSeeds.emplace_back("lon-testnet-crwdns.crowndns.info");
+        vSeeds.emplace_back("nyc-testnet-crwdns.crowndns.info");
+        vSeeds.emplace_back("tor-testnet-crwdns.crowndns.info");
+        vSeeds.emplace_back("sfo-testnet-crwdns.crowndns.info");
+        vSeeds.emplace_back("ams-testnet-crwdns.crowndns.info");
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
-        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
-        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
+        // TODO fix
+        //// Testnet crown addresses start with 'tCRW'
+        //base58Prefixes[PUBKEY_ADDRESS] = list_of(0x01)(0x7A)(0xCD)(0x67).convert_to_container<std::vector<unsigned char> >();
+        //base58PrefixesOld[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
+        //// Testnet crown script addresses start with 'tCRM'
+        //base58Prefixes[SCRIPT_ADDRESS] = list_of(0x01)(0x7A)(0xCD)(0x51).convert_to_container<std::vector<unsigned char> >();
+        //base58PrefixesOld[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);                    // Testnet crown script addresses start with '8' or '9'
+        //base58Prefixes[SECRET_KEY]     = std::vector<unsigned char>(1,239);                    // Testnet private keys start with '9' or 'c' (Bitcoin defaults)
+        //base58Prefixes[EXT_PUBLIC_KEY] = list_of(0x04)(0x35)(0x87)(0xCF).convert_to_container<std::vector<unsigned char> >();
+        //base58Prefixes[EXT_SECRET_KEY] = list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
+        //base58Prefixes[EXT_COIN_TYPE]  = list_of(0x80000001).convert_to_container<std::vector<unsigned char> >();             // Testnet crown BIP44 coin type is '5' (All coin's testnet default)
+
+        //// Identity addresses start with 'tCRP'
+        //base58Prefixes[IDENTITY_ADDRESS] = list_of(0x01)(0x7A)(0xCD)(0x56).convert_to_container<std::vector<unsigned char> >();
+        //// App service addresses start with 'tCRA'
+        //base58Prefixes[APP_SERVICE_ADDRESS] = list_of(0x01)(0x7A)(0xCD)(0x35).convert_to_container<std::vector<unsigned char> >();
+        //// Title addresses start with 'tCRT'
+        //base58Prefixes[TITLE_ADDRESS] = list_of(0x01)(0x7A)(0xCD)(0x60).convert_to_container<std::vector<unsigned char> >();
+
+        //convertSeed6(vFixedSeeds, pnSeed6_test, ARRAYLEN(pnSeed6_test));
+
+        //fRequireRPCPassword = true;
+        //fMiningRequiresPeers = true;
+        //fAllowMinDifficultyBlocks = true;
+        fDefaultConsistencyChecks = false;
+        fRequireStandard = true;
+        fMineBlocksOnDemand = false;
+        //fTestnetToBeDeprecatedFieldRPC = true;
+
+        //nPoolMaxTransactions = 2;
+        //strSporkKey = "04EA9AF53E4F12CE41F78B666EBDBE96C966ABDD8832979228BD3299E13089F117936EF97B7B9D4644B8B9D2BC7A30029BD7FDDCAC36E40AAC0E03891E493CF197";
+        strDevfundAddress = "mr59c3aniaN3qHXej5L8UBsssRZbiUUMnz";
+        strLegacySignerDummyAddress = "mr59c3aniaN3qHXej5L8UBsssRZbiUUMnz";
+        nStartMasternodePayments = 1420837558; //Fri, 09 Jan 2015 21:05:58 GMT
+
+        nStakePointerValidityPeriod = 3000;
+    }
+    //const Checkpoints::CCheckpointData& Checkpoints() const 
+    //{
+    //    return dataTestnet;
+    //}
+    int AuxpowStartHeight() const
+    {
+        return 0;
+    }
+
+    bool StrictChainId() const
+    {
+        return false;
+    }
+
+    bool AllowLegacyBlocks(unsigned) const
+    {
+        return true;
+    }
+};
+static CTestNetParams testNetParams;
+
+/**
+ * Devnet
+ */
+class CDevNetParams : public CChainParams {
+public:
+    CDevNetParams() {
+        // TODO fix
+        //networkID = CBaseChainParams::DEVNET;
+        strNetworkID = "dev";
+        //nSubsidyHalvingInterval = 210240;
+        //bnProofOfWorkLimit = ~arith_uint256(0) >> 8;
+        //nMaxTipAge = 6 * 60 * 60;
+
+        //nTargetTimespan = 2 * 60 * 60;  // 2 hours
+        //nTargetSpacing = 30;      // 30 seconds
+
+        //nEnforceBlockUpgradeMajority = 51;
+        //nRejectBlockOutdatedMajority = 75;
+        //nToCheckBlockUpgradeMajority = 100;
+
+        pchMessageStart[0] = 0x0f;
+        pchMessageStart[1] = 0x18;
+        pchMessageStart[2] = 0x0e;
+        pchMessageStart[3] = 0x06;
+        //vAlertPubKey = ParseHex("04977aae0411f4e1757e8682c87ee79180ad577ef0351054e6cda5c9381fcd8c7333e88ac250d3ab3e3aafd5d1c1d946f2ca62372db7f35c84398a878aa145f09a");
+        nDefaultPort = 19342;
+
+        //genesis = CreateGenesisBlock(1412760826, 175963287, bnProofOfWorkLimit.GetCompact(), 4, 10 * COIN);
+        //hashGenesisBlock = genesis.GetHash();
+        
+        //assert(hashGenesisBlock == uint256S("0x0055024546d26a67e2b0a13c86bc841efeeadb7b16155d5ea9a192cf6eeb56e6"));
+        assert(genesis.hashMerkleRoot == uint256S("0x80ad356118a9ab8db192db66ef77146cc36d958f959251feace550e4ca3d1446"));
 
         bech32_hrp = "tb";
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
 
         fDefaultConsistencyChecks = false;
-        fRequireStandard = false;
+        fRequireStandard = true;
         fMineBlocksOnDemand = false;
 
+        //nPoolMaxTransactions = 3;
 
-        checkpointData = {
-            {
-                {546, uint256S("000000002a936ca763904c3c35fce2f3556c559c0214345d31b1bcebf76acb70")},
-            }
-        };
+        nBlockPoSStart = 500;
+        nAuxpowChainId = 20;
+        //nPoSChainId = 22;
+        nStakePointerValidityPeriod = 10080; // Valid for 7 days, to make sure they are valid after downtime
+        //nMaxReorgDepth = 100;
+        //nKernelModifierOffset = 10;
+        //nChainStallDuration = 60*60;
 
-        chainTxData = ChainTxData{
-            // Data from rpc: getchaintxstats 4096 0000000000000037a8cd3e06cd5edbfe9dd1dbcc5dacab279376ef7cfc2b4c75
-            /* nTime    */ 1531929919,
-            /* nTxCount */ 19438708,
-            /* dTxRate  */ 0.626
-        };
+        nStartMasternodePayments = 1420837558; //Fri, 09 Jan 2015 21:05:58 GMT
+    }
+
+    // TODO fix
+        //checkpointData = {
+        //    {
+        //        {546, uint256S("000000002a936ca763904c3c35fce2f3556c559c0214345d31b1bcebf76acb70")},
+        //    }
+        //};
+
+        //chainTxData = ChainTxData{
+        //    // Data from rpc: getchaintxstats 4096 0000000000000037a8cd3e06cd5edbfe9dd1dbcc5dacab279376ef7cfc2b4c75
+        //    /* nTime    */ 1531929919,
+        //    /* nTxCount */ 19438708,
+        //    /* dTxRate  */ 0.626
+        //};
 
         /* enable fallback fee on testnet */
-        m_fallback_fee_enabled = true;
-    }
+        //m_fallback_fee_enabled = true;
+    //}
     bool StrictChainId() const
     {
         return false;
@@ -368,7 +487,7 @@ public:
         bech32_hrp = "bcrt";
 
         /* enable fallback fee on regtest */
-        m_fallback_fee_enabled = true;
+        //m_fallback_fee_enabled = true;
     }
     bool StrictChainId() const
     {

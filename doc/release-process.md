@@ -273,10 +273,10 @@ people without access to `crown.org` to download the binary distribution.
 Also put it into the `optional_magnetlink:` slot in the YAML file for
 crown.org (see below for crown.org update instructions).
 
-- Update crown.org version
+- Update crownplatform.com version ***TODO***
 
-  - First, check to see if the Crown.org maintainers have prepared a
-    release: https://github.com/crown-dot-org/crown.org/labels/Core
+  - First, check to see if the crownplatform.com maintainers have prepared a
+    release: https://github.com/bitcoin/bitcoin.org/labels/Releases
 
       - If they have, it will have previously failed their Travis CI
         checks because the final release files weren't uploaded.

@@ -6,7 +6,25 @@
 #define BITCOIN_CLIENTVERSION_H
 
 #if defined(HAVE_CONFIG_H)
-#include <config/crown-config.h>
+#include "config/crown-config.h"
+#else
+
+/**
+ * client versioning and copyright year
+ */
+
+//! These need to be macros, as clientversion.cpp's and crown*-res.rc's voodoo requires it
+#define CLIENT_VERSION_MAJOR 0
+#define CLIENT_VERSION_MINOR 14
+#define CLIENT_VERSION_REVISION 0
+#define CLIENT_VERSION_BUILD 1
+
+/**
+ * Copyright year (2009-this)
+ * Todo: update this when changing our copyright comments in the source
+ */
+#define COPYRIGHT_YEAR 2019
+
 #endif //HAVE_CONFIG_H
 
 // Check that required client information is defined
