@@ -11,7 +11,6 @@
 #include <script/script.h>
 #include <serialize.h>
 #include <uint256.h>
-#include <policy/feerate.h>
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
 
@@ -30,9 +29,9 @@ enum TxType : int16_t
     //TRANSACTION_NF_TOKEN_DESTROY = 1116
 
     TRANSACTION_NF_TOKEN_PROTOCOL_REGISTER = 1200
-    //TRANSACTION_NF_TOKEN_PROTOCOL_TRANSFER = 1201,
-    //TRANSACTION_NF_TOKEN_PROTOCOL_UPDATE = 1202,
-    //TRANSACTION_NF_TOKEN_PROTOCOL_REVOKE = 1203
+        //TRANSACTION_NF_TOKEN_PROTOCOL_TRANSFER = 1201,
+        //TRANSACTION_NF_TOKEN_PROTOCOL_UPDATE = 1202,
+        //TRANSACTION_NF_TOKEN_PROTOCOL_REVOKE = 1203
 };
 
 /** An outpoint - a combination of a transaction hash and an index n into its vout */
@@ -187,29 +186,6 @@ public:
         return (nValue == -1);
     }
 
-    uint256 GetHash() const;
-
-    CAmount GetDustThreshold(const CFeeRate &minRelayTxFee) const
-    {
-        // "Dust" is defined in terms of CTransaction::minRelayTxFee, which has units duffs-per-kilobyte.
-        // If you'd pay more than 1/3 in fees to spend something, then we consider it dust.
-        // A typical spendable txout is 34 bytes big, and will need a CTxIn of at least 148 bytes to spend
-        // i.e. total is 148 + 32 = 182 bytes. Default -minrelaytxfee is 1000 duffs per kB
-        // and that means that fee per spendable txout is 182 * 1000 / 1000 = 182 duffs.
-        // So dust is a spendable txout less than 546 * minRelayTxFee / 1000 (in duffs)
-        // i.e. 182 * 3 = 546 duffs with default -minrelaytxfee = minRelayTxFee = 1000 duffs per kB.
-        if (scriptPubKey.IsUnspendable())
-            return 0;
-
-        size_t nSize = ::GetSerializeSize((int)SER_DISK, 0) + 148u;
-        return 3*minRelayTxFee.GetFee(nSize);
-    }
-
-    bool IsDust(const CFeeRate &minRelayTxFee) const
-    {
-        return (nValue < GetDustThreshold(minRelayTxFee));
-    }
-
     friend bool operator==(const CTxOut& a, const CTxOut& b)
     {
         return (a.nValue       == b.nValue &&
@@ -315,7 +291,7 @@ class CTransaction
 {
 public:
     // Default transaction version.
-    static const int32_t CURRENT_VERSION=1;
+    static const int32_t CURRENT_VERSION=2;
 
     // Changing the default transaction version requires a two step process: first
     // adapting relay policy by bumping MAX_STANDARD_VERSION, and then later date
@@ -328,19 +304,19 @@ public:
     // actually immutable; deserialization and assignment are implemented,
     // and bypass the constness. This is safe, as they update the entire
     // structure, including the hash.
-    const int16_t nType;
     const std::vector<CTxIn> vin;
     const std::vector<CTxOut> vout;
     const int32_t nVersion;
+    const int16_t nType;
     const uint32_t nLockTime;
     const std::vector<uint8_t> extraPayload; // only available for special transaction types
 
 private:
     /** Memory only. */
     const uint256 hash;
-    void UpdateHash() const;
     const uint256 m_witness_hash;
 
+    uint256 ComputeHash() const;
     uint256 ComputeWitnessHash() const;
 
 public:
@@ -351,26 +327,9 @@ public:
     CTransaction(const CMutableTransaction &tx);
     CTransaction(CMutableTransaction &&tx);
 
-    CTransaction& operator=(const CTransaction& tx);
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        int32_t n32bitVersion = this->nVersion | (this->nType << 16);
-        READWRITE(n32bitVersion);
-        if (ser_action.ForRead()) {
-            *const_cast<int32_t*>(&this->nVersion) = (int32_t) (n32bitVersion & 0xffff);
-            *const_cast<int16_t*>(&this->nType) = (int16_t) ((n32bitVersion >> 16) & 0xffff);
-        }
-        READWRITE(*const_cast<std::vector<CTxIn>*>(&vin));
-        READWRITE(*const_cast<std::vector<CTxOut>*>(&vout));
-        READWRITE(*const_cast<uint32_t*>(&nLockTime));
-        if (this->nVersion >= 3 && this->nType != TRANSACTION_NORMAL) {
-            READWRITE(*const_cast<std::vector<uint8_t>*>(&extraPayload));
-        }
-        if (ser_action.ForRead())
-            UpdateHash();
+    template <typename Stream>
+    inline void Serialize(Stream& s) const {
+        SerializeTransaction(*this, s);
     }
 
     /** This deserializing constructor is provided instead of an Unserialize method.
@@ -429,10 +388,10 @@ public:
 /** A mutable version of CTransaction. */
 struct CMutableTransaction
 {
-    int16_t nVersion;
-    int16_t nType;
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
+    int32_t nVersion;
+    int16_t nType;
     uint32_t nLockTime;
     std::vector<uint8_t> extraPayload; // only available for special transaction types
 
@@ -444,30 +403,15 @@ struct CMutableTransaction
         SerializeTransaction(*this, s);
     }
 
+
     template <typename Stream>
-        inline void Unserialize(Stream& s) {
-            UnserializeTransaction(*this, s);
+    inline void Unserialize(Stream& s) {
+        UnserializeTransaction(*this, s);
     }
 
     template <typename Stream>
-        CMutableTransaction(deserialize_type, Stream& s) {
-            Unserialize(s);
-    }
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        int32_t n32bitVersion = this->nVersion | (this->nType << 16);
-        READWRITE(n32bitVersion);
-        if (ser_action.ForRead()) {
-            *const_cast<int16_t*>(&this->nVersion) = (int16_t) (n32bitVersion & 0xffff);
-            *const_cast<int16_t*>(&this->nType) = (int16_t) ((n32bitVersion >> 16) & 0xffff);
-        }
-        READWRITE(vin);
-        READWRITE(vout);
-        READWRITE(nLockTime);
-        if (this->nVersion >= 3 && this->nType != TRANSACTION_NORMAL) {
-            READWRITE(extraPayload);
-        }
+    CMutableTransaction(deserialize_type, Stream& s) {
+        Unserialize(s);
     }
 
     /** Compute the hash of this CMutableTransaction. This is computed on the

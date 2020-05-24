@@ -7,6 +7,7 @@
 
 #include "primitives/transaction.h"
 #include "script/standard.h"
+#include "policy/feerate.h"
 
 /** Coin Control Features. */
 class CCoinControl
