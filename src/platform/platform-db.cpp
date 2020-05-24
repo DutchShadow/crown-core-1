@@ -101,7 +101,7 @@ namespace Platform
         if (dbIt.key().starts_with(std::string(1, DB_NFT)))
         {
             leveldb::Slice sliceValue = dbIt.value();
-            CDataStream streamValue(sliceValue.data(), sliceValue.data() + sliceValue.size(), SER_DISK, CLIENT_VERSION);
+            CDataStream streamValue(sliceValue.data(),  sliceValue.data() + sliceValue.size(), SER_DISK, CLIENT_VERSION);
             NfTokenDiskIndex nftDiskIndex;
 
             try
@@ -275,7 +275,8 @@ namespace Platform
         {
             LogPrintf("%s: Block index for NFT transaction cannot be found, block hash: %s, tx hash: %s",
                       __func__, nftDiskIndex.BlockHash().ToString(), nftDiskIndex.RegTxHash().ToString());
-            return NfTokenIndex();
+            //hotfix of an NFT hang issue.
+            //return NfTokenIndex();
         }
 
         /// Not sure if this case is even possible
