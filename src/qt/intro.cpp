@@ -22,16 +22,12 @@
 #include <cmath>
 
 static const uint64_t GB_BYTES = 1000000000LL;
-<<<<<<< HEAD
 /* Minimum free space (in GB) needed for data directory */
 constexpr uint64_t BLOCK_CHAIN_SIZE = 220;
 /* Minimum free space (in GB) needed for data directory when pruned; Does not include prune target */
 static const uint64_t CHAIN_STATE_SIZE = 3;
 /* Total required space (in GB) depending on user choice (prune, not prune) */
 static uint64_t requiredSpace;
-=======
-static const uint64_t BLOCK_CHAIN_SIZE = 6LL * GB_BYTES;
->>>>>>> origin
 
 /* Check free space asynchronously to prevent hanging the UI thread.
 

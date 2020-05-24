@@ -126,11 +126,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     CAmount total = 0;
     bool fSubtractFeeFromAmount = false;
     QList<SendCoinsRecipient> recipients = transaction.getRecipients();
-<<<<<<< HEAD
     std::vector<CRecipient> vecSend;
-=======
-    std::vector<CRecipient > vecSend;
->>>>>>> origin
 
     if(recipients.empty())
     {
@@ -157,13 +153,9 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 subtotal += out.amount();
                 const unsigned char* scriptStr = (const unsigned char*)out.script().data();
                 CScript scriptPubKey(scriptStr, scriptStr+out.script().size());
-<<<<<<< HEAD
                 CAmount nAmount = out.amount();
                 CRecipient recipient = {scriptPubKey, nAmount, rcp.fSubtractFeeFromAmount};
                 vecSend.push_back(recipient);
-=======
-                vecSend.push_back(CRecipient(scriptPubKey, out.amount(), false));
->>>>>>> origin
             }
             if (subtotal <= 0)
             {
@@ -184,14 +176,9 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             setAddress.insert(rcp.address);
             ++nAddresses;
 
-<<<<<<< HEAD
             CScript scriptPubKey = GetScriptForDestination(DecodeDestination(rcp.address.toStdString()));
             CRecipient recipient = {scriptPubKey, rcp.amount, rcp.fSubtractFeeFromAmount};
             vecSend.push_back(recipient);
-=======
-            CScript scriptPubKey = GetScriptForDestination(CBitcoinAddress(rcp.address.toStdString()).Get());
-            vecSend.push_back(CRecipient(scriptPubKey, rcp.amount, false));
->>>>>>> origin
 
             total += rcp.amount;
         }
@@ -213,16 +200,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         int nChangePosRet = -1;
         std::string strFailReason;
 
-<<<<<<< HEAD
         auto& newTx = transaction.getWtx();
         newTx = m_wallet->createTransaction(vecSend, coinControl, true /* sign */, nChangePosRet, nFeeRequired, strFailReason);
-=======
-        CWalletTx *newTx = transaction.getTransaction();
-        CReserveKey *keyChange = transaction.getPossibleKeyChange();
-
-        int nChangePosRet = -1;
-        bool fCreated = wallet->CreateTransaction(vecSend, *newTx, *keyChange, nFeeRequired, nChangePosRet, strFailReason, coinControl, true, recipients[0].inputType);
->>>>>>> origin
         transaction.setTransactionFee(nFeeRequired);
         if (fSubtractFeeFromAmount && newTx)
             transaction.reassignAmounts(nChangePosRet);
