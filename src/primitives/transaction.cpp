@@ -60,7 +60,7 @@ std::string CTxOut::ToString() const
 }
 
 CMutableTransaction::CMutableTransaction() : nVersion(CTransaction::CURRENT_VERSION), nLockTime(0) {}
-CMutableTransaction::CMutableTransaction(const CTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime) {}
+CMutableTransaction::CMutableTransaction(const CTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime), extraPayload(tx.extraPayload) {}
 
 uint256 CMutableTransaction::GetHash() const
 {
@@ -82,8 +82,19 @@ uint256 CTransaction::ComputeWitnessHash() const
 
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
 CTransaction::CTransaction() : vin(), vout(), nVersion(CTransaction::CURRENT_VERSION), nType(TRANSACTION_NORMAL), nLockTime(0), hash{}, m_witness_hash{} {}
-CTransaction::CTransaction(const CMutableTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nType(TRANSACTION_NORMAL), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
-CTransaction::CTransaction(CMutableTransaction&& tx) : vin(std::move(tx.vin)), vout(std::move(tx.vout)), nVersion(tx.nVersion), nType(TRANSACTION_NORMAL), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+CTransaction::CTransaction(const CMutableTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nType(TRANSACTION_NORMAL), nLockTime(tx.nLockTime), extraPayload(tx.extraPayload), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+CTransaction::CTransaction(CMutableTransaction&& tx) : vin(std::move(tx.vin)), vout(std::move(tx.vout)), nVersion(tx.nVersion), nType(TRANSACTION_NORMAL), nLockTime(tx.nLockTime), extraPayload(tx.extraPayload), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+
+CTransaction& CTransaction::operator=(const CTransaction &tx) {
+    *const_cast<int32_t *>(&nVersion) = tx.nVersion;
+    *const_cast<int16_t*>(&nType) = tx.nType;
+    *const_cast<std::vector<CTxIn>*>(&vin) = tx.vin;
+    *const_cast<std::vector<CTxOut>*>(&vout) = tx.vout;
+    *const_cast<unsigned int*>(&nLockTime) = tx.nLockTime;
+    *const_cast<uint256*>(&hash) = tx.hash;
+    *const_cast<std::vector<uint8_t>*>(&extraPayload) = tx.extraPayload;
+    return *this;
+}
 
 CAmount CTransaction::GetValueOut() const
 {

@@ -2164,8 +2164,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     //                           block.vtx[0]->GetValueOut(), blockReward),
     //                           REJECT_INVALID, "bad-cb-amount");
 
-    if (!control.Wait())
-        return state.DoS(100, error("%s: CheckQueue failed", __func__), REJECT_INVALID, "block-validation-failed");
+    // TODO fix
+    //if (!control.Wait())
+    //    return state.DoS(100, error("%s: CheckQueue failed", __func__), REJECT_INVALID, "block-validation-failed");
     int64_t nTime4 = GetTimeMicros(); nTimeVerify += nTime4 - nTime2;
     LogPrint(BCLog::BENCH, "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs (%.2fms/blk)]\n", nInputs - 1, MILLI * (nTime4 - nTime2), nInputs <= 1 ? 0 : MILLI * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * MICRO, nTimeVerify * MILLI / nBlocksTotal);
 
@@ -3211,7 +3212,9 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
         bool mutated;
         uint256 hashMerkleRoot2 = BlockMerkleRoot(block, &mutated);
         if (block.hashMerkleRoot != hashMerkleRoot2)
+        {
             return state.DoS(100, false, REJECT_INVALID, "bad-txnmrklroot", true, "hashMerkleRoot mismatch");
+        }
 
         // Check for merkle tree malleability (CVE-2012-2459): repeating sequences
         // of transactions in a block without affecting the merkle root of a block,
@@ -3237,7 +3240,6 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     //for (unsigned int i = 1; i < block.vtx.size(); i++)
     //    if (block.vtx[i]->IsCoinBase())
     //    {
-    //        std::cout << "more then one coinbase" << std::endl;
     //        return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
     //    }
 
@@ -3348,7 +3350,6 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     // TODO fix
     //if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams))
     //{
-    //    std::cout << "incorrect proof of work" << std::endl;
     //    return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
     //}
 
@@ -3679,7 +3680,9 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
 
     CValidationState state; // Only used to report errors, not invalidity - ignore it
     if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
+    {
         return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
+    }
 
     return true;
 }

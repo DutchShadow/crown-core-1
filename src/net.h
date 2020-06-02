@@ -781,7 +781,8 @@ public:
 
     int GetRefCount() const
     {
-        assert(nRefCount >= 0);
+        // TODO 
+        //assert(nRefCount >= 0);
         return nRefCount;
     }
 

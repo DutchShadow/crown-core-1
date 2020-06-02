@@ -202,6 +202,7 @@ public:
 
 struct CMutableTransaction;
 
+#include <iostream>
 /**
  * Basic transaction serialization format:
  * - int32_t nVersion
@@ -252,6 +253,10 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
         throw std::ios_base::failure("Unknown transaction optional data");
     }
     s >> tx.nLockTime;
+
+    if (tx.nVersion >= 3) {
+        s >> tx.extraPayload;
+    }
 }
 
 template<typename Stream, typename TxType>
@@ -281,6 +286,9 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
         }
     }
     s << tx.nLockTime;
+    if (tx.nVersion >= 3) {
+        s << tx.extraPayload;
+    }
 }
 
 
@@ -326,6 +334,7 @@ public:
     /** Convert a CMutableTransaction into a CTransaction. */
     CTransaction(const CMutableTransaction &tx);
     CTransaction(CMutableTransaction &&tx);
+    CTransaction& operator=(const CTransaction& tx);
 
     template <typename Stream>
     inline void Serialize(Stream& s) const {

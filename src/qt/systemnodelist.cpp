@@ -85,7 +85,7 @@ SystemnodeList::~SystemnodeList()
 
 void SystemnodeList::setClientModel(ClientModel *model)
 {
-    if (this->clientModel == NULL)
+    if (!this->clientModel)
     {
         this->clientModel = model;
         if(model)

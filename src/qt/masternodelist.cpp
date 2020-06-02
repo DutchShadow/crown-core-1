@@ -91,7 +91,7 @@ MasternodeList::~MasternodeList()
 
 void MasternodeList::setClientModel(ClientModel *model)
 {
-    if (this->clientModel == NULL)
+    if (!this->clientModel)
     {
         this->clientModel = model;
         if(model)
