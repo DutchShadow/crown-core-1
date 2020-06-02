@@ -88,6 +88,11 @@ bool CLevelDBWrapper::WriteBatch(CLevelDBBatch& batch, bool fSync) // throw(leve
     return true;
 }
 
+CLevelDBIterator::~CLevelDBIterator() { delete piter; }
+bool CLevelDBIterator::Valid() { return piter->Valid(); }
+void CLevelDBIterator::SeekToFirst() { piter->SeekToFirst(); }
+void CLevelDBIterator::Next() { piter->Next(); }
+
 TransactionLevelDBWrapper::TransactionLevelDBWrapper(const std::string & dbName, size_t nCacheSize, bool fMemory, bool fWipe)
 : m_db(GetDataDir() / dbName, nCacheSize, fMemory, fWipe)
 , m_dbTransaction(m_db)
