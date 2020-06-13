@@ -143,17 +143,21 @@ public:
         vSeeds.emplace_back("SEAsia-01seedns.crowncoin.org");
         vSeeds.emplace_back("pacific-01seedns.crowncoin.net");
 
+        //base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
+        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,128);
+        base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
+        base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
 
         // TODO fix
-        //// Crown addresses start with 'CRW'
-        //base58Prefixes[PUBKEY_ADDRESS] = list_of(0x01)(0x75)(0x07).convert_to_container<std::vector<unsigned char> >();
-        //base58PrefixesOld[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
-        //// Crown script addresses start with 'CRM'
-        //base58Prefixes[SCRIPT_ADDRESS] = list_of(0x01)(0x74)(0xF1).convert_to_container<std::vector<unsigned char> >();
+        // Crown addresses start with 'CRW'
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>{0x01, 0x75, 0x07}; //list_of(0x01)(0x75)(0x07).convert_to_container<std::vector<unsigned char> >();
+        // Crown script addresses start with 'CRM'
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>{0x01, 0x74, 0xF1}; //list_of(0x01)(0x74)(0xF1).convert_to_container<std::vector<unsigned char> >();
         //base58PrefixesOld[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,28);                   // Crown script addresses start with 'C'
-        //base58Prefixes[SECRET_KEY]     = std::vector<unsigned char>(1,128);                  // Crown private keys start with '5'
-        //base58Prefixes[EXT_PUBLIC_KEY] = list_of(0x04)(0x88)(0xB2)(0x1E).convert_to_container<std::vector<unsigned char> >();
-        //base58Prefixes[EXT_SECRET_KEY] = list_of(0x04)(0x88)(0xAD)(0xE4).convert_to_container<std::vector<unsigned char> >();
+        base58Prefixes[SECRET_KEY]     = std::vector<unsigned char>(1,128);                  // Crown private keys start with '5'
+        base58Prefixes[EXT_PUBLIC_KEY] = std::vector<unsigned char>{0x04, 0x88, 0xB2, 0x1E}; //list_of(0x04)(0x88)(0xB2)(0x1E).convert_to_container<std::vector<unsigned char> >();
+        base58Prefixes[EXT_SECRET_KEY] = std::vector<unsigned char>{0x04, 0x88, 0xAD, 0xE4}; //list_of(0x04)(0x88)(0xAD)(0xE4).convert_to_container<std::vector<unsigned char> >();
         //base58Prefixes[EXT_COIN_TYPE]  = list_of(0x80000048).convert_to_container<std::vector<unsigned char> >();             // Crown BIP44 coin type is '72'
 
         //// Identity addresses start with 'CRP'
@@ -215,15 +219,15 @@ class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
         strNetworkID = "test";
-        consensus.nSubsidyHalvingInterval = 210000;
+        consensus.nSubsidyHalvingInterval = 130000;
         consensus.BIP16Exception = uint256S("0x00000000dd30457c001f4095d208cc1296b0eed002427aa599874af7a432b105");
         consensus.BIP34Height = 21111;
         consensus.BIP34Hash = uint256S("0x0000000023b3a96d3484e5abb3755c413e7d41500f8e2a5c3f0dd01299cd8ef8");
         consensus.BIP65Height = 581885; // 00000000007f6655f22f98e72ed80d8b06dc761d5da09df0fa1dc4be4f861eb6
         consensus.BIP66Height = 330776; // 000000002104c8c45e99a8853285a3b592602a3ccde2b832481da85e9e4ba182
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
-        consensus.nPowTargetSpacing = 10 * 60;
+        consensus.nPowTargetTimespan = 2 * 24 * 60 * 60; // two weeks
+        consensus.nPowTargetSpacing = 1.5 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
@@ -257,12 +261,14 @@ public:
         nPruneAfterHeight = 1000;
 
         //genesis = CreateGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, 50 * COIN);
-        genesis.nTime    = 1412760826;
-        genesis.nNonce   = 1612467894;
+        genesis = CreateGenesisBlock(1412760826, 1612467894, 0x1d00ffff, 1, 10 * COIN);
+        //genesis.nTime    = 1412760826;
+        //genesis.nNonce   = 1612467894;
 
         consensus.hashGenesisBlock = genesis.GetHash();
-        //assert(consensus.hashGenesisBlock == uint256S("0x000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"));
-        //assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
+        std::cout << "hash " << consensus.hashGenesisBlock.ToString() << std::endl;
+        assert(consensus.hashGenesisBlock == uint256S("0x0000000085370d5e122f64f4ab19c68614ff3df78c8d13cb814fd7e69a1dc6da"));
+        assert(genesis.hashMerkleRoot == uint256S("0x80ad356118a9ab8db192db66ef77146cc36d958f959251feace550e4ca3d1446"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
