@@ -55,7 +55,7 @@ bool CLegacySigner::IsVinAssociatedWithPubkey(CTxIn& vin, CPubKey& pubkey, int v
     //    }
     //}
 
-    return false;
+    return true;
 }
 
 bool CLegacySigner::SetKey(std::string strSecret, std::string& errorMessage, CKey& key, CPubKey& pubkey){
