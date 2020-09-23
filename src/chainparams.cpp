@@ -283,23 +283,23 @@ public:
         vSeeds.emplace_back("ams-testnet-crwdns.crowndns.info");
 
         // TODO fix
-        //// Testnet crown addresses start with 'tCRW'
-        //base58Prefixes[PUBKEY_ADDRESS] = list_of(0x01)(0x7A)(0xCD)(0x67).convert_to_container<std::vector<unsigned char> >();
+        // Testnet crown addresses start with 'tCRW'
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char> {0x01, 0x7A, 0xCD, 0x67};
         //base58PrefixesOld[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
-        //// Testnet crown script addresses start with 'tCRM'
-        //base58Prefixes[SCRIPT_ADDRESS] = list_of(0x01)(0x7A)(0xCD)(0x51).convert_to_container<std::vector<unsigned char> >();
+        // Testnet crown script addresses start with 'tCRM'
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char> {0x01, 0x7A, 0xCD, 0x51};
         //base58PrefixesOld[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);                    // Testnet crown script addresses start with '8' or '9'
-        //base58Prefixes[SECRET_KEY]     = std::vector<unsigned char>(1,239);                    // Testnet private keys start with '9' or 'c' (Bitcoin defaults)
-        //base58Prefixes[EXT_PUBLIC_KEY] = list_of(0x04)(0x35)(0x87)(0xCF).convert_to_container<std::vector<unsigned char> >();
-        //base58Prefixes[EXT_SECRET_KEY] = list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
-        //base58Prefixes[EXT_COIN_TYPE]  = list_of(0x80000001).convert_to_container<std::vector<unsigned char> >();             // Testnet crown BIP44 coin type is '5' (All coin's testnet default)
+        base58Prefixes[SECRET_KEY]     = std::vector<unsigned char>(1,239);                    // Testnet private keys start with '9' or 'c' (Bitcoin defaults)
+        base58Prefixes[EXT_PUBLIC_KEY] = std::vector<unsigned char> {0x04, 0x35, 0x87, 0xCF};
+        base58Prefixes[EXT_SECRET_KEY] = std::vector<unsigned char> {0x04, 0x35, 0x83, 0x94};
+        //base58Prefixes[EXT_COIN_TYPE]  = std::vector<unsigned char> (0x80000001).convert_to_container<std::vector<unsigned char> >();             // Testnet crown BIP44 coin type is '5' (All coin's testnet default)
 
-        //// Identity addresses start with 'tCRP'
-        //base58Prefixes[IDENTITY_ADDRESS] = list_of(0x01)(0x7A)(0xCD)(0x56).convert_to_container<std::vector<unsigned char> >();
-        //// App service addresses start with 'tCRA'
-        //base58Prefixes[APP_SERVICE_ADDRESS] = list_of(0x01)(0x7A)(0xCD)(0x35).convert_to_container<std::vector<unsigned char> >();
-        //// Title addresses start with 'tCRT'
-        //base58Prefixes[TITLE_ADDRESS] = list_of(0x01)(0x7A)(0xCD)(0x60).convert_to_container<std::vector<unsigned char> >();
+        // Identity addresses start with 'tCRP'
+        //base58Prefixes[IDENTITY_ADDRESS] = std::vector<unsigned char> {0x01, 0x7A, 0xCD, 0x56};
+        // App service addresses start with 'tCRA'
+        //base58Prefixes[APP_SERVICE_ADDRESS] = std::vector<unsigned char> {0x01, 0x7A, 0xCD, 0x35};
+        // Title addresses start with 'tCRT'
+        //base58Prefixes[TITLE_ADDRESS] = std::vector<unsigned char> {0x01, 0x7A, 0xCD, 0x60};
 
         //convertSeed6(vFixedSeeds, pnSeed6_test, ARRAYLEN(pnSeed6_test));
 
