@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <chainparams.h>
 #include <qt/bitcoinunits.h>
 
 #include <primitives/transaction.h>
@@ -40,13 +41,27 @@ bool BitcoinUnits::valid(int unit)
 
 QString BitcoinUnits::longName(int unit)
 {
-    switch(unit)
+    if(Params().NetworkID() == CBaseChainParams::MAIN)
     {
-    case CRW: return QString("CRW");
-    case mCRW: return QString("mCRW");
-    case uCRW: return QString::fromUtf8("µCRW (bits)");
-    case cSats: return QString("Satoshi (sat)");
-    default: return QString("???");
+        switch(unit)
+        {
+            case CRW: return QString("CRW");
+            case mCRW: return QString("mCRW");
+            case uCRW: return QString::fromUtf8("µCRW (bits)");
+            case cSats: return QString("cSats");
+            default: return QString("???");
+        }
+    }
+    else
+    {
+        switch(unit)
+        {
+            case CRW: return QString("tCRW");
+            case mCRW: return QString("mtCRW");
+            case uCRW: return QString::fromUtf8("µtCRW (bits)");
+            case cSats: return QString("tcSats");
+            default: return QString("???");
+        }
     }
 }
 
@@ -62,13 +77,27 @@ QString BitcoinUnits::shortName(int unit)
 
 QString BitcoinUnits::description(int unit)
 {
-    switch(unit)
+    if(Params().NetworkID() == CBaseChainParams::MAIN)
     {
-    case CRW: return QString("Bitcoins");
-    case mCRW: return QString("Milli-Bitcoins (1 / 1" THIN_SP_UTF8 "000)");
-    case uCRW: return QString("Micro-Bitcoins (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
-    case cSats: return QString("Satoshi (sat) (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
-    default: return QString("???");
+        switch(unit)
+        {
+            case CRW: return QString("Crowns");
+            case mCRW: return QString("Milli-Crowns (1 / 1" THIN_SP_UTF8 "000)");
+            case uCRW: return QString("Micro-Crowns (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+            case cSats: return QString("Ten Crown-Satoshi (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+            default: return QString("???");
+        }
+    }
+    else
+    {
+        switch(unit)
+        {
+            case CRW: return QString("TestCrowns");
+            case mCRW: return QString("Milli-TestCrowns (1 / 1" THIN_SP_UTF8 "000)");
+            case uCRW: return QString("Micro-TestCrowns (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+            case cSats: return QString("Ten TestCrown-Satoshi (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+            default: return QString("???");
+        }
     }
 }
 
