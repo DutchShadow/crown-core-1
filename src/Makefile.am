@@ -90,6 +90,8 @@ endif
 .PHONY: FORCE check-symbols check-security
 # bitcoin core #
 BITCOIN_CORE_H = \
+  activemasternode.h \
+  activesystemnode.h \
   addrdb.h \
   addrman.h \
   base58.h \
@@ -171,6 +173,17 @@ BITCOIN_CORE_H = \
   support/events.h \
   support/lockedpool.h \
   sync.h \
+  masternode.h \
+  masternode-payments.h \
+  masternode-budget.h \
+  masternode-sync.h \
+  masternodeman.h \
+  masternodeconfig.h \
+  systemnode.h \
+  systemnode-payments.h \
+  systemnode-sync.h \
+  systemnodeman.h \
+  systemnodeconfig.h \
   mn-pos/blockwitness.h \
   mn-pos/kernel.h \
   mn-pos/prooftracker.h \
