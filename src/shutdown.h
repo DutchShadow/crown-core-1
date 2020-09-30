@@ -7,6 +7,7 @@
 #define BITCOIN_SHUTDOWN_H
 
 void StartShutdown();
+void StartRestart();
 void AbortShutdown();
 bool ShutdownRequested();
 

@@ -8,12 +8,8 @@
 #include <iostream>
 #define CURL_STATICLIB
 #include "curl/curl.h"
-
-#include "json/json_spirit_reader_template.h"
-#include "json/json_spirit_utils.h"
-#include "json/json_spirit_writer_template.h"
-#include "json/json_spirit_reader.h"
-using namespace json_spirit;
+#include <boost/optional.hpp>
+#include <univalue.h>
 
 class UpdateInfo;
 class Updater;
@@ -57,18 +53,18 @@ private:
     bool status;
     int version;
     bool stopDownload;
-    Value jsonData;
+    UniValue jsonData;
     const std::string url;
 
 private:
     void LoadUpdateInfo();
-    Value ParseJson(std::string info);
+    UniValue ParseJson(std::string info);
     void SetJsonPath();
     static OS DetectOS();
     bool NeedToBeUpdated();
     int GetVersionFromJson();
-    std::string GetUrl(const Value& value);
-    std::string GetSha256sum(Value value);
+    std::string GetUrl(const UniValue& value);
+    std::string GetSha256sum(UniValue value);
     void SetCAPath(CURL* curl);
     void CheckAndUpdateStatus(const std::string& updateData);
 };

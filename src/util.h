@@ -43,8 +43,8 @@ extern std::string strSystemNodePrivKey;
 //extern bool fLiteMode;
 //extern bool fEnableInstantX;
 //extern int nInstantXDepth;
-//extern int64_t enforceMasternodePaymentsTime;
-//extern int64_t enforceSystemnodePaymentsTime;
+extern int64_t enforceMasternodePaymentsTime;
+extern int64_t enforceSystemnodePaymentsTime;
 extern std::string strMasterNodeAddr;
 extern std::string strSystemNodeAddr;
 //extern std::string strSystemNodePrivKey;
@@ -57,7 +57,7 @@ extern std::string strSystemNodeAddr;
 //extern bool fDebug;
 //extern bool fPrintToConsole;
 //extern bool fPrintToDebugLog;
-//extern bool fServer;
+extern bool fServer;
 //extern std::string strMiscWarning;
 //extern bool fLogTimestamps;
 //extern bool fLogIPs;
@@ -129,7 +129,9 @@ void CreatePidFile(const fs::path &path, pid_t pid);
 #ifdef WIN32
 fs::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
 #endif
+boost::filesystem::path GetTempPath();
 void runCommand(const std::string& strCommand);
+std::string Sha256Sum(const std::string& filename);
 
 /**
  * Most paths passed as configuration arguments are treated as relative to

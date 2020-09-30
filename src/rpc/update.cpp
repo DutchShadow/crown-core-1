@@ -2,21 +2,21 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "rpcupdate.h"
+#include "rpc/update.h"
 
 #include "init.h"
 #include "clientversion.h"
-#include "rpcserver.h"
+#include "rpc/server.h"
 #include "util.h"
+#include "shutdown.h"
 
 #include <boost/thread.hpp>
 
-using namespace json_spirit;
 using namespace std;
 using namespace boost::filesystem;
 
 bool RPCUpdate::started = false;
-Object RPCUpdate::statusObj;
+UniValue RPCUpdate::statusObj;
 
 std::string RPCUpdate::GetArchivePath() const
 {
@@ -29,7 +29,7 @@ bool RPCUpdate::Download()
     statusObj.clear();
     // Create temporary directory
     tempDir = GetTempPath() / unique_path();
-    bool result = TryCreateDirectory(tempDir);
+    bool result = TryCreateDirectories(tempDir);
     if (!result) {
         throw runtime_error("Failed to create directory" + tempDir.string());
     }
@@ -40,17 +40,19 @@ bool RPCUpdate::Download()
     if (updater.GetStopDownload())
     {
         started = false;
-        statusObj[0] = Pair("Download", "Stopped");
+        statusObj.push_back(Pair("Download", "Stopped"));
         remove_all(tempDir);
         return false;
     }
     if (CheckSha(archivePath))
     {
-        statusObj[0] = Pair("Download", "Done - " + archivePath);
+        statusObj.clear();
+        statusObj.push_back(Pair("Download", "Done - " + archivePath));
     }
     else
     {
-        statusObj[0] = Pair("Download", "Error. SHA-256 verification failed.");
+        statusObj.clear();
+        statusObj.push_back(Pair("Download", "Error. SHA-256 verification failed."));
         remove_all(tempDir);
         return false;
     }
@@ -65,7 +67,7 @@ void RPCUpdate::Install()
         return;
     }
     // Extract archive
-    bool result = TryCreateDirectory(tempDir / "archive");
+    bool result = TryCreateDirectories(tempDir / "archive");
     if (!result) {
         throw runtime_error(strprintf("Failed to create directory %s", (tempDir / "archive").string()));
     }
@@ -107,13 +109,13 @@ void RPCUpdate::ProgressFunction(curl_off_t now, curl_off_t total)
     }
     if ((now == total) && now != 0) {
         started = false;
-        statusObj[0] = Pair("Download", "Done");
+        statusObj.push_back(Pair("Download", "Done"));
     } else if (now != total) {
         started = true;
-        statusObj[0] = Pair("Download", strprintf("%0.1f/%0.1fMB, %d%%",
+        statusObj.push_back(Pair("Download", strprintf("%0.1f/%0.1fMB, %d%%",
                                         static_cast<double>(now) / 1024 / 1024,
                                         static_cast<double>(total) / 1024 / 1024,
-                                        percent));
+                                        percent)));
     }
 }
 
@@ -122,7 +124,7 @@ bool RPCUpdate::IsStarted() const
     return started;
 }
 
-Object RPCUpdate::GetStatusObject() const
+UniValue RPCUpdate::GetStatusObject() const
 {
     return statusObj;
 }
@@ -149,14 +151,14 @@ bool RPCUpdate::CheckSha(const std::string& fileName) const
     return result;
 }
 
-Value update(const Array& params, bool fHelp)
+UniValue update(const JSONRPCRequest& request)
 {
     RPCUpdate rpcUpdate;
     string strCommand;
-    if (params.size() >= 1)
-        strCommand = params[0].get_str();
+    if (request.params.size() >= 1)
+        strCommand = request.params[0].get_str();
 
-    if (fHelp  || (strCommand != "check" && strCommand != "download" && strCommand != "status" && 
+    if (request.fHelp  || (strCommand != "check" && strCommand != "download" && strCommand != "status" && 
                    strCommand != "install" && strCommand != "stop"))
         throw runtime_error(
                 "update \"command\"... ( \"passphrase\" )\n"
@@ -174,14 +176,14 @@ Value update(const Array& params, bool fHelp)
 
     if (strCommand == "check")
     {
-        if (params.size() > 1) {
+        if (request.params.size() > 1) {
             throw runtime_error("Too many parameters\n");
         }
 
         if (updater.GetStatus())
         {
             // There is an update
-            Object obj;
+            UniValue obj(UniValue::VOBJ);
             obj.push_back(Pair("Current Version", FormatVersion(CLIENT_VERSION)));
             obj.push_back(Pair("Update Version", FormatVersion(updater.GetVersion())));
             obj.push_back(Pair("OS", updater.GetOsString()));

@@ -8,10 +8,15 @@
 #include <atomic>
 
 static std::atomic<bool> fRequestShutdown(false);
+static std::atomic<bool> fRestartRequested(false);
 
 void StartShutdown()
 {
     fRequestShutdown = true;
+}
+void StartRestart()
+{
+    fRestartRequested = true;
 }
 void AbortShutdown()
 {
@@ -20,4 +25,8 @@ void AbortShutdown()
 bool ShutdownRequested()
 {
     return fRequestShutdown;
+}
+bool RestartRequested()
+{
+    return fRestartRequested;
 }

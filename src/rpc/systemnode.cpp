@@ -3,43 +3,46 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "main.h"
 #include "db.h"
 #include "init.h"
 #include "systemnodeconfig.h"
 #include "systemnode.h"
 #include "systemnodeman.h"
 #include "activesystemnode.h"
-#include "rpcserver.h"
+#include <rpc/server.h>
 #include "utilmoneystr.h"
-#include "wallet.h"
+#include "wallet/wallet.h"
 #include "key.h"
 #include "base58.h"
+#include <net.h>
+#include "key_io.h"
+#include "legacysigner.h"
 
 #include <fstream>
+#include <iomanip>
 #include <string>
 using namespace std;
-using namespace json_spirit;
 
-Value sngetpoolinfo(const Array& params, bool fHelp)
+UniValue sngetpoolinfo(const JSONRPCRequest& request)
 {
-    if (fHelp || params.size() != 0)
+    if (request.fHelp || request.params.size() != 0)
         throw runtime_error(
             "getpoolinfo\n"
             "Returns an object containing systemnode pool-related information.");
 
-    Object obj;
+    UniValue obj(UniValue::VOBJ);
     obj.push_back(Pair("current_systemnode",        snodeman.GetCurrentSystemNode()->addr.ToString()));
     return obj;
 }
 
-Value systemnode(const Array& params, bool fHelp)
+UniValue systemnodelist(const JSONRPCRequest& request);
+UniValue systemnode(const JSONRPCRequest& request)
 {
     string strCommand;
-    if (params.size() >= 1)
-        strCommand = params[0].get_str();
+    if (request.params.size() >= 1)
+        strCommand = request.params[0].get_str();
 
-    if (fHelp  ||
+    if (request.fHelp  ||
         (strCommand != "start" && strCommand != "start-alias" && strCommand != "start-many" && strCommand != "start-all" && 
          strCommand != "start-missing" && strCommand != "start-disabled" && strCommand != "list" && strCommand != "list-conf" && 
          strCommand != "count"  && strCommand != "enforce" && strCommand != "debug" && strCommand != "current" && 
@@ -68,9 +71,11 @@ Value systemnode(const Array& params, bool fHelp)
 
     if (strCommand == "list")
     {
-        Array newParams(params.size() - 1);
-        std::copy(params.begin() + 1, params.end(), newParams.begin());
-        return systemnodelist(newParams, fHelp);
+        JSONRPCRequest newParams;
+        for (int i = 1; i < request.params.size(); i++) {
+            newParams.params.push_back(request.params[i]);
+        }
+        return systemnodelist(newParams);
     }
 
     if (strCommand == "budget")
@@ -81,15 +86,15 @@ Value systemnode(const Array& params, bool fHelp)
     if(strCommand == "connect")
     {
         std::string strAddress = "";
-        if (params.size() == 2) {
-            strAddress = params[1].get_str();
+        if (request.params.size() == 2) {
+            strAddress = request.params[1].get_str();
         } else {
             throw runtime_error("Systemnode address required\n");
         }
 
         CService addr = CService(strAddress);
 
-        CNode *pnode = ConnectNode((CAddress)addr, NULL, false);
+        CNode *pnode = g_connman->ConnectNode((CAddress)addr, NULL, false, false);
         if(pnode){
             pnode->Release();
             return "successfully connected";
@@ -100,20 +105,20 @@ Value systemnode(const Array& params, bool fHelp)
 
     if (strCommand == "count")
     {
-        if (params.size() > 2){
+        if (request.params.size() > 2){
             throw runtime_error("too many parameters\n");
         }
-        if (params.size() == 2)
+        if (request.params.size() == 2)
         {
             int nCount = 0;
 
             if(chainActive.Tip())
                 snodeman.GetNextSystemnodeInQueueForPayment(chainActive.Tip()->nHeight, true, nCount);
 
-            if(params[1] == "ls") return snodeman.CountEnabled(MIN_POOL_PEER_PROTO_VERSION);
-            if(params[1] == "enabled") return snodeman.CountEnabled();
-            if(params[1] == "qualify") return nCount;
-            if(params[1] == "all") return strprintf("Total: %d (LS Compatible: %d / Enabled: %d / Qualify: %d)",
+            if(request.params[1].get_str() == "ls") return snodeman.CountEnabled(MIN_POOL_PEER_PROTO_VERSION);
+            if(request.params[1].get_str() == "enabled") return snodeman.CountEnabled();
+            if(request.params[1].get_str() == "qualify") return nCount;
+            if(request.params[1].get_str() == "all") return strprintf("Total: %d (LS Compatible: %d / Enabled: %d / Qualify: %d)",
                                                     snodeman.size(),
                                                     snodeman.CountEnabled(MIN_POOL_PEER_PROTO_VERSION),
                                                     snodeman.CountEnabled(),
@@ -126,12 +131,12 @@ Value systemnode(const Array& params, bool fHelp)
     {
         CSystemnode* winner = snodeman.GetCurrentSystemNode(1);
         if(winner) {
-            Object obj;
+            UniValue obj(UniValue::VOBJ);
 
             obj.push_back(Pair("IP:port",       winner->addr.ToString()));
             obj.push_back(Pair("protocol",      (int64_t)winner->protocolVersion));
             obj.push_back(Pair("vin",           winner->vin.prevout.hash.ToString()));
-            obj.push_back(Pair("pubkey",        CBitcoinAddress(winner->pubkey.GetID()).ToString()));
+            obj.push_back(Pair("pubkey",        EncodeDestination(winner->pubkey.GetID())));
             obj.push_back(Pair("lastseen",      (winner->lastPing == CSystemnodePing()) ? winner->sigTime :
                                                         (int64_t)winner->lastPing.sigTime));
             obj.push_back(Pair("activeseconds", (winner->lastPing == CSystemnodePing()) ? 0 :
@@ -150,7 +155,7 @@ Value systemnode(const Array& params, bool fHelp)
         CTxIn vin = CTxIn();
         CPubKey pubkey;
         CKey key;
-        if(!pwalletMain || !pwalletMain->GetSystemnodeVinAndKeys(vin, pubkey, key))
+        if(!GetWallets()[0] || !GetWallets()[0]->GetSystemnodeVinAndKeys(vin, pubkey, key))
             throw runtime_error("Missing systemnode input, please look at the documentation for instructions on systemnode creation\n");
         return activeSystemnode.GetStatus();
     }
@@ -165,8 +170,8 @@ Value systemnode(const Array& params, bool fHelp)
         if(!fSystemNode) throw runtime_error("you must set systemnode=1 in the configuration\n");
 
         {
-            LOCK(pwalletMain->cs_wallet);
-            EnsureWalletIsUnlocked();
+            LOCK(GetWallets()[0]->cs_wallet);
+            EnsureWalletIsUnlocked(GetWallets()[0].get());
         }
 
         if(activeSystemnode.status != ACTIVE_SYSTEMNODE_STARTED){
@@ -179,23 +184,24 @@ Value systemnode(const Array& params, bool fHelp)
 
     if (strCommand == "start-alias")
     {
-        if (params.size() < 2){
+        if (request.params.size() < 2){
             throw runtime_error("command needs at least 2 parameters\n");
         }
 
         {
-            LOCK(pwalletMain->cs_wallet);
-            EnsureWalletIsUnlocked();
+            LOCK(GetWallets()[0]->cs_wallet);
+            EnsureWalletIsUnlocked(GetWallets()[0].get());
         }
 
-        std::string alias = params[1].get_str();
+        std::string alias = request.params[1].get_str();
 
         bool found = false;
 
-        Object statusObj;
+        UniValue statusObj(UniValue::VOBJ);
         statusObj.push_back(Pair("alias", alias));
 
-        BOOST_FOREACH(CNodeEntry mne, systemnodeConfig.getEntries()) {
+        for (auto& mne : systemnodeConfig.getEntries()) {
+        //BOOST_FOREACH(CNodeEntry mne, systemnodeConfig.getEntries()) {
             if(mne.getAlias() == alias) {
                 found = true;
                 std::string errorMessage;
@@ -234,15 +240,16 @@ Value systemnode(const Array& params, bool fHelp)
         std::vector<CNodeEntry> mnEntries;
         mnEntries = systemnodeConfig.getEntries();
 
-        Object resultObj;
+        UniValue resultObj(UniValue::VOBJ);
 
-        BOOST_FOREACH(CNodeEntry mne, systemnodeConfig.getEntries()) {
+        for (auto mne : systemnodeConfig.getEntries()) {
+        //BOOST_FOREACH(CNodeEntry mne, systemnodeConfig.getEntries()) {
             CTxIn vin = CTxIn(uint256S(mne.getTxHash()), uint32_t(atoi(mne.getOutputIndex().c_str())));
             CSystemnode *pmn = snodeman.Find(vin);
 
             std::string strStatus = pmn ? pmn->Status() : "MISSING";
 
-            Object mnObj;
+            UniValue mnObj(UniValue::VOBJ);
             mnObj.push_back(Pair("alias", mne.getAlias()));
             mnObj.push_back(Pair("address", mne.getIp()));
             mnObj.push_back(Pair("privateKey", mne.getPrivKey()));
@@ -258,10 +265,11 @@ Value systemnode(const Array& params, bool fHelp)
     if (strCommand == "outputs"){
         // Find possible candidates
         std::vector<COutput> vPossibleCoins;
-        pwalletMain->AvailableCoins(vPossibleCoins, true, NULL, ONLY_500);
+        GetWallets()[0]->AvailableCoins(vPossibleCoins, true, NULL, ONLY_500);
 
-        Object obj;
-        BOOST_FOREACH(COutput& out, vPossibleCoins)
+        UniValue obj(UniValue::VOBJ);
+        for (auto& out : vPossibleCoins)
+        //BOOST_FOREACH(COutput& out, vPossibleCoins)
             obj.push_back(Pair(out.tx->GetHash().ToString(), strprintf("%d", out.i)));
 
         return obj;
@@ -270,8 +278,8 @@ Value systemnode(const Array& params, bool fHelp)
     if (strCommand == "start-many" || strCommand == "start-all" || strCommand == "start-missing" || strCommand == "start-disabled")
     {
         {
-            LOCK(pwalletMain->cs_wallet);
-            EnsureWalletIsUnlocked();
+            LOCK(GetWallets()[0]->cs_wallet);
+            EnsureWalletIsUnlocked(GetWallets()[0].get());
         }
 
         if((strCommand == "start-missing" || strCommand == "start-disabled") &&
@@ -286,9 +294,10 @@ Value systemnode(const Array& params, bool fHelp)
         int successful = 0;
         int failed = 0;
 
-        Object resultsObj;
+        UniValue resultsObj(UniValue::VOBJ);
 
-        BOOST_FOREACH(CNodeEntry mne, systemnodeConfig.getEntries()) {
+        for (auto mne : systemnodeConfig.getEntries()) {
+        //BOOST_FOREACH(CNodeEntry mne, systemnodeConfig.getEntries()) {
             std::string errorMessage;
 
             CTxIn vin = CTxIn(uint256S(mne.getTxHash()), uint32_t(atoi(mne.getOutputIndex().c_str())));
@@ -300,7 +309,7 @@ Value systemnode(const Array& params, bool fHelp)
 
             bool result = CSystemnodeBroadcast::Create(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage, snb);
 
-            Object statusObj;
+            UniValue statusObj(UniValue::VOBJ);
             statusObj.push_back(Pair("alias", mne.getAlias()));
             statusObj.push_back(Pair("result", result ? "successful" : "failed"));
 
@@ -316,7 +325,7 @@ Value systemnode(const Array& params, bool fHelp)
             resultsObj.push_back(Pair("status", statusObj));
         }
 
-        Object returnObj;
+        UniValue returnObj(UniValue::VOBJ);
         returnObj.push_back(Pair("overall", strprintf("Successfully started %d systemnodes, failed to start %d, total %d", successful, failed, successful + failed)));
         returnObj.push_back(Pair("detail", resultsObj));
 
@@ -327,12 +336,12 @@ Value systemnode(const Array& params, bool fHelp)
     {
         if(!fSystemNode) throw runtime_error("This is not a systemnode\n");
 
-        Object mnObj;
+        UniValue mnObj(UniValue::VOBJ);
         CSystemnode *pmn = snodeman.Find(activeSystemnode.vin);
 
         mnObj.push_back(Pair("vin", activeSystemnode.vin.ToString()));
         mnObj.push_back(Pair("service", activeSystemnode.service.ToString()));
-        if (pmn) mnObj.push_back(Pair("pubkey", CBitcoinAddress(pmn->pubkey.GetID()).ToString()));
+        if (pmn) mnObj.push_back(Pair("pubkey", EncodeDestination(pmn->pubkey.GetID())));
         mnObj.push_back(Pair("status", activeSystemnode.GetStatus()));
         return mnObj;
     }
@@ -341,11 +350,11 @@ Value systemnode(const Array& params, bool fHelp)
     {
         int nLast = 10;
 
-        if (params.size() >= 2){
-            nLast = atoi(params[1].get_str());
+        if (request.params.size() >= 2){
+            nLast = atoi(request.params[1].get_str());
         }
 
-        Object obj;
+        UniValue obj(UniValue::VOBJ);
 
         for(int nHeight = chainActive.Tip()->nHeight-nLast; nHeight < chainActive.Tip()->nHeight+20; nHeight++)
         {
@@ -363,16 +372,17 @@ Value systemnode(const Array& params, bool fHelp)
 
         int nLast = 10;
 
-        if (params.size() >= 2){
-            nLast = atoi(params[1].get_str());
+        if (request.params.size() >= 2){
+            nLast = atoi(request.params[1].get_str());
         }
-        Object obj;
+        UniValue obj(UniValue::VOBJ);
 
         std::vector<CSystemnode> vSystemnodes = snodeman.GetFullSystemnodeVector();
         for(int nHeight = chainActive.Tip()->nHeight-nLast; nHeight < chainActive.Tip()->nHeight+20; nHeight++){
             arith_uint256  nHigh = 0;
             CSystemnode *pBestSystemnode = NULL;
-            BOOST_FOREACH(CSystemnode& mn, vSystemnodes) {
+            for (auto& mn : vSystemnodes) {
+            //BOOST_FOREACH(CSystemnode& mn, vSystemnodes) {
                 arith_uint256  n = mn.CalculateScore(nHeight - 100);
                 if(n > nHigh){
                     nHigh = n;
@@ -386,18 +396,18 @@ Value systemnode(const Array& params, bool fHelp)
         return obj;
     }
 
-    return Value::null;
+    return UniValue();
 }
 
-Value systemnodelist(const Array& params, bool fHelp)
+UniValue systemnodelist(const JSONRPCRequest& request)
 {
     std::string strMode = "status";
     std::string strFilter = "";
 
-    if (params.size() >= 1) strMode = params[0].get_str();
-    if (params.size() == 2) strFilter = params[1].get_str();
+    if (request.params.size() >= 1) strMode = request.params[0].get_str();
+    if (request.params.size() == 2) strFilter = request.params[1].get_str();
 
-    if (fHelp ||
+    if (request.fHelp ||
             (strMode != "status" && strMode != "vin" && strMode != "pubkey" && strMode != "lastseen" && strMode != "activeseconds" && strMode != "rank" && strMode != "addr"
                 && strMode != "protocol" && strMode != "full" && strMode != "lastpaid"))
     {
@@ -425,17 +435,19 @@ Value systemnodelist(const Array& params, bool fHelp)
                 );
     }
 
-    Object obj;
+    UniValue obj(UniValue::VOBJ);
     if (strMode == "rank") {
         std::vector<pair<int, CSystemnode> > vSystemnodeRanks = snodeman.GetSystemnodeRanks(chainActive.Tip()->nHeight);
-        BOOST_FOREACH(PAIRTYPE(int, CSystemnode)& s, vSystemnodeRanks) {
+        for (auto& s : vSystemnodeRanks) {
+        //BOOST_FOREACH(PAIRTYPE(int, CSystemnode)& s, vSystemnodeRanks) {
             std::string strVin = s.second.vin.prevout.ToStringShort();
             if(strFilter !="" && strVin.find(strFilter) == string::npos) continue;
             obj.push_back(Pair(strVin,       s.first));
         }
     } else {
         std::vector<CSystemnode> vSystemnodes = snodeman.GetFullSystemnodeVector();
-        BOOST_FOREACH(CSystemnode& mn, vSystemnodes) {
+        for (auto& mn : vSystemnodes) {
+        //BOOST_FOREACH(CSystemnode& mn, vSystemnodes) {
             std::string strVin = mn.vin.prevout.ToStringShort();
             if (strMode == "activeseconds") {
                 if(strFilter !="" && strVin.find(strFilter) == string::npos) continue;
@@ -452,7 +464,7 @@ Value systemnodelist(const Array& params, bool fHelp)
                 stringStream << setw(9) <<
                                mn.Status() << " " <<
                                mn.protocolVersion << " " <<
-                               CBitcoinAddress(mn.pubkey.GetID()).ToString() << " " << setw(21) <<
+                               EncodeDestination(mn.pubkey.GetID()) << " " << setw(21) <<
                                mn.addr.ToString() << " " <<
                                (int64_t)mn.lastPing.sigTime << " " << setw(8) <<
                                (int64_t)(mn.lastPing.sigTime - mn.sigTime) << " " <<
@@ -474,11 +486,9 @@ Value systemnodelist(const Array& params, bool fHelp)
                     strVin.find(strFilter) == string::npos) continue;
                 obj.push_back(Pair(strVin,       (int64_t)mn.protocolVersion));
             } else if (strMode == "pubkey") {
-                CBitcoinAddress address(mn.pubkey.GetID());
-
-                if(strFilter !="" && address.ToString().find(strFilter) == string::npos &&
+                if(strFilter !="" && EncodeDestination(mn.pubkey.GetID()).find(strFilter) == string::npos &&
                     strVin.find(strFilter) == string::npos) continue;
-                obj.push_back(Pair(strVin,       address.ToString()));
+                obj.push_back(Pair(strVin,       EncodeDestination(mn.pubkey.GetID())));
             } else if(strMode == "status") {
                 std::string strStatus = mn.Status();
                 if(strFilter !="" && strVin.find(strFilter) == string::npos && strStatus.find(strFilter) == string::npos) continue;
@@ -507,13 +517,13 @@ bool DecodeHexVecSnb(std::vector<CSystemnodeBroadcast>& vecSnb, std::string strH
     return true;
 }
 
-Value systemnodebroadcast(const Array& params, bool fHelp)
+UniValue systemnodebroadcast(const JSONRPCRequest& request)
 {
     string strCommand;
-    if (params.size() >= 1)
-        strCommand = params[0].get_str();
+    if (request.params.size() >= 1)
+        strCommand = request.params[0].get_str();
 
-    if (fHelp  ||
+    if (request.fHelp  ||
         (strCommand != "create-alias" && strCommand != "create-all" && strCommand != "decode" && strCommand != "relay"))
         throw runtime_error(
                 "systemnodebroadcast \"command\"... ( \"passphrase\" )\n"
@@ -526,7 +536,7 @@ Value systemnodebroadcast(const Array& params, bool fHelp)
                 "  create-all    - Create remote systemnode broadcast messages for all systemnodes configured in systemnode.conf\n"
                 "  decode        - Decode systemnode broadcast message\n"
                 "  relay         - Relay systemnode broadcast message to the network\n"
-                + HelpRequiringPassphrase());
+                + HelpRequiringPassphrase(GetWallets()[0].get()));
 
     if (strCommand == "create-alias")
     {
@@ -534,24 +544,25 @@ Value systemnodebroadcast(const Array& params, bool fHelp)
         if (fImporting || fReindex)
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Wait for reindex and/or import to finish");
 
-        if (params.size() < 2)
+        if (request.params.size() < 2)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Command needs at least 2 parameters");
 
         {
-            LOCK(pwalletMain->cs_wallet);
-            EnsureWalletIsUnlocked();
+            LOCK(GetWallets()[0]->cs_wallet);
+            EnsureWalletIsUnlocked(GetWallets()[0].get());
         }
 
-        std::string alias = params[1].get_str();
+        std::string alias = request.params[1].get_str();
 
         bool found = false;
 
-        Object statusObj;
+        UniValue statusObj(UniValue::VOBJ);
         std::vector<CSystemnodeBroadcast> vecMnb;
 
         statusObj.push_back(Pair("alias", alias));
 
-        BOOST_FOREACH(CNodeEntry mne, systemnodeConfig.getEntries()) {
+        for (auto mne : systemnodeConfig.getEntries()) {
+        //BOOST_FOREACH(CNodeEntry mne, systemnodeConfig.getEntries()) {
             if(mne.getAlias() == alias) {
                 found = true;
                 std::string errorMessage;
@@ -588,8 +599,8 @@ Value systemnodebroadcast(const Array& params, bool fHelp)
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Wait for reindex and/or import to finish");
 
         {
-            LOCK(pwalletMain->cs_wallet);
-            EnsureWalletIsUnlocked();
+            LOCK(GetWallets()[0]->cs_wallet);
+            EnsureWalletIsUnlocked(GetWallets()[0].get());
         }
 
         std::vector<CNodeEntry> mnEntries;
@@ -598,10 +609,11 @@ Value systemnodebroadcast(const Array& params, bool fHelp)
         int successful = 0;
         int failed = 0;
 
-        Object resultsObj;
+        UniValue resultsObj(UniValue::VOBJ);
         std::vector<CSystemnodeBroadcast> vecMnb;
 
-        BOOST_FOREACH(CNodeEntry mne, systemnodeConfig.getEntries()) {
+        for (auto mne : systemnodeConfig.getEntries()) {
+        //BOOST_FOREACH(CNodeEntry mne, systemnodeConfig.getEntries()) {
             std::string errorMessage;
 
             CTxIn vin = CTxIn(uint256S(mne.getTxHash()), uint32_t(atoi(mne.getOutputIndex().c_str())));
@@ -609,7 +621,7 @@ Value systemnodebroadcast(const Array& params, bool fHelp)
 
             bool result = CSystemnodeBroadcast::Create(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage, snb, true);
 
-            Object statusObj;
+            UniValue statusObj(UniValue::VOBJ);
             statusObj.push_back(Pair("alias", mne.getAlias()));
             statusObj.push_back(Pair("result", result ? "successful" : "failed"));
 
@@ -626,7 +638,7 @@ Value systemnodebroadcast(const Array& params, bool fHelp)
 
         CDataStream ssVecMnb(SER_NETWORK, PROTOCOL_VERSION);
         ssVecMnb << vecMnb;
-        Object returnObj;
+        UniValue returnObj(UniValue::VOBJ);
         returnObj.push_back(Pair("overall", strprintf("Successfully created broadcast messages for %d systemnodes, failed to create %d, total %d", successful, failed, successful + failed)));
         returnObj.push_back(Pair("detail", resultsObj));
         returnObj.push_back(Pair("hex", HexStr(ssVecMnb.begin(), ssVecMnb.end())));
@@ -636,32 +648,33 @@ Value systemnodebroadcast(const Array& params, bool fHelp)
 
     if (strCommand == "decode")
     {
-        if (params.size() != 2)
+        if (request.params.size() != 2)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Correct usage is 'systemnodebroadcast decode \"hexstring\"'");
 
         int successful = 0;
         int failed = 0;
 
         std::vector<CSystemnodeBroadcast> vecMnb;
-        Object returnObj;
+        UniValue returnObj(UniValue::VOBJ);
 
-        if (!DecodeHexVecSnb(vecMnb, params[1].get_str()))
+        if (!DecodeHexVecSnb(vecMnb, request.params[1].get_str()))
             throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Systemnode broadcast message decode failed");
 
-        BOOST_FOREACH(CSystemnodeBroadcast& snb, vecMnb) {
-            Object resultObj;
+        for (auto& snb : vecMnb) {
+        //BOOST_FOREACH(CSystemnodeBroadcast& snb, vecMnb) {
+            UniValue resultObj(UniValue::VOBJ);
 
             if(snb.VerifySignature()) {
                 successful++;
                 resultObj.push_back(Pair("vin", snb.vin.ToString()));
                 resultObj.push_back(Pair("addr", snb.addr.ToString()));
-                resultObj.push_back(Pair("pubkey", CBitcoinAddress(snb.pubkey.GetID()).ToString()));
-                resultObj.push_back(Pair("pubkey2", CBitcoinAddress(snb.pubkey2.GetID()).ToString()));
+                resultObj.push_back(Pair("pubkey", EncodeDestination(snb.pubkey.GetID())));
+                resultObj.push_back(Pair("pubkey2", EncodeDestination(snb.pubkey.GetID())));
                 resultObj.push_back(Pair("vchSig", EncodeBase64(&snb.sig[0], snb.sig.size())));
                 resultObj.push_back(Pair("sigTime", snb.sigTime));
                 resultObj.push_back(Pair("protocolVersion", snb.protocolVersion));
 
-                Object lastPingObj;
+                UniValue lastPingObj(UniValue::VOBJ);
                 lastPingObj.push_back(Pair("vin", snb.lastPing.vin.ToString()));
                 lastPingObj.push_back(Pair("blockHash", snb.lastPing.blockHash.ToString()));
                 lastPingObj.push_back(Pair("sigTime", snb.lastPing.sigTime));
@@ -683,7 +696,7 @@ Value systemnodebroadcast(const Array& params, bool fHelp)
 
     if (strCommand == "relay")
     {
-        if (params.size() < 2 || params.size() > 3)
+        if (request.params.size() < 2 || request.params.size() > 3)
             throw JSONRPCError(RPC_INVALID_PARAMETER,   "systemnodebroadcast relay \"hexstring\" ( fast )\n"
                                                         "\nArguments:\n"
                                                         "1. \"hex\"      (string, required) Broadcast messages hex string\n"
@@ -691,17 +704,18 @@ Value systemnodebroadcast(const Array& params, bool fHelp)
 
         int successful = 0;
         int failed = 0;
-        bool fSafe = params.size() == 2;
+        bool fSafe = request.params.size() == 2;
 
         std::vector<CSystemnodeBroadcast> vecMnb;
-        Object returnObj;
+        UniValue returnObj(UniValue::VOBJ);
 
-        if (!DecodeHexVecSnb(vecMnb, params[1].get_str()))
+        if (!DecodeHexVecSnb(vecMnb, request.params[1].get_str()))
             throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Systemnode broadcast message decode failed");
 
         // verify all signatures first, bailout if any of them broken
-        BOOST_FOREACH(CSystemnodeBroadcast& snb, vecMnb) {
-            Object resultObj;
+        for (auto& snb : vecMnb) {
+        //BOOST_FOREACH(CSystemnodeBroadcast& snb, vecMnb) {
+            UniValue resultObj(UniValue::VOBJ);
 
             resultObj.push_back(Pair("vin", snb.vin.ToString()));
             resultObj.push_back(Pair("addr", snb.addr.ToString()));
@@ -736,5 +750,5 @@ Value systemnodebroadcast(const Array& params, bool fHelp)
         return returnObj;
     }
 
-    return Value::null;
+    return UniValue();
 }
