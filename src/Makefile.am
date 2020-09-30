@@ -170,6 +170,12 @@ BITCOIN_CORE_H = \
   support/events.h \
   support/lockedpool.h \
   sync.h \
+  mn-pos/blockwitness.h \
+  mn-pos/kernel.h \
+  mn-pos/prooftracker.h \
+  mn-pos/stakepointer.h \
+  mn-pos/stakeminer.h \
+  mn-pos/stakevalidation.h \
   platform/specialtx-common.h \
   platform/specialtx.h \
   platform/platform-db.h \
