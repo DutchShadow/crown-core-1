@@ -112,6 +112,7 @@ BITCOIN_CORE_H = \
   consensus/consensus.h \
   consensus/tx_verify.h \
   core_io.h \
+  legacysigner.h \
   core_memusage.h \
   cuckoocache.h \
   fs.h \
