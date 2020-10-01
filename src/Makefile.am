@@ -161,6 +161,8 @@ BITCOIN_CORE_H = \
   rpc/server.h \
   rpc/register.h \
   rpc/util.h \
+  rpc/rawtransaction.h \
+  rpc/update.h \
   scheduler.h \
   script/descriptor.h \
   script/ismine.h \
