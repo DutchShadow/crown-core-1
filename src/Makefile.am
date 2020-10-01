@@ -124,6 +124,7 @@ BITCOIN_CORE_H = \
   index/txindex.h \
   indirectmap.h \
   init.h \
+  instantx.h \
   interfaces/handler.h \
   interfaces/node.h \
   interfaces/wallet.h \
