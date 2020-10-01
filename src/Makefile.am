@@ -110,6 +110,7 @@ BITCOIN_CORE_H = \
   compat/byteswap.h \
   compat/endian.h \
   compat/sanity.h \
+  updater.h \
   compressor.h \
   consensus/consensus.h \
   consensus/tx_verify.h \
