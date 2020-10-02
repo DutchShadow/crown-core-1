@@ -300,6 +300,8 @@ RES_ICONS = \
   qt/res/icons/open.png \
   qt/res/icons/overview.png \
   qt/res/icons/proxy.png \
+  qt/res/icons/masternode.png \
+  qt/res/icons/systemnode.png \
   qt/res/icons/quit.png \
   qt/res/icons/receive.png \
   qt/res/icons/remove.png \
