@@ -34,7 +34,7 @@ cache:
 
 .job_template: &win64_definition
   tags:
-    - windows
+    - Windownsubuntu18
   variables:
     CROWN_CONFIG: "--enable-mingw"
     HOST: "x86_64-w64-mingw32"
@@ -44,7 +44,7 @@ cache:
 
 .job_template: &win32_definition
   tags:
-    - windows
+    - Windownsubuntu18
   variables:
     CROWN_CONFIG: ""
     HOST: "i686-w64-mingw32"
