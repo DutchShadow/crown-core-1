@@ -25,10 +25,10 @@ cache:
   script:
     - ./autogen.sh
     - mkdir build && cd build
-    - ../configure --disable-tests --cache-file=config.cache $CROWN_CONFIG_ALL $CROWN_CONFIG
+    - ../configure --disable-tests --with-libs=no --cache-file=config.cache $CROWN_CONFIG_ALL $CROWN_CONFIG
     - make distdir VERSION=$HOST
     - cd crown-$HOST
-    - ./configure --disable-tests --cache-file=../config.cache $CROWN_CONFIG_ALL $CROWN_CONFIG
+    - ./configure --disable-tests --with-libs=no --cache-file=../config.cache $CROWN_CONFIG_ALL $CROWN_CONFIG
     - make $MAKEJOBS $GOAL || ( echo "Build failure. Verbose build follows." && make $GOAL V=1 ; false )
     - if [ -n "$DMG" ]; then cp Crown-Qt.dmg ../../Crown-Qt.dmg; fi
 

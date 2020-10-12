@@ -1,14 +1,3 @@
-<<<<<<< HEAD
-// Copyright (c) 2014 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
-#include "winshutdownmonitor.h"
-
-#if defined(Q_OS_WIN) && QT_VERSION >= 0x050000
-#include "init.h"
-#include "util.h"
-=======
 // Copyright (c) 2014-2018 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -18,7 +7,6 @@
 #if defined(Q_OS_WIN)
 #include <shutdown.h>
 #include <util.h>
->>>>>>> ef70f9b52b851c7997a9f1a0834714e3eebc1fd8
 
 #include <windows.h>
 
@@ -39,11 +27,7 @@ bool WinShutdownMonitor::nativeEventFilter(const QByteArray &eventType, void *pM
             // Warn only once as this is performance-critical
             static bool warned = false;
             if (!warned) {
-<<<<<<< HEAD
-                LogPrint("%s: OpenSSL RAND_event() failed to seed OpenSSL PRNG with enough data.\n", __func__);
-=======
                 LogPrintf("%s: OpenSSL RAND_event() failed to seed OpenSSL PRNG with enough data.\n", __func__);
->>>>>>> ef70f9b52b851c7997a9f1a0834714e3eebc1fd8
                 warned = true;
             }
        }
@@ -73,11 +57,7 @@ void WinShutdownMonitor::registerShutdownBlockReason(const QString& strReason, c
 {
     typedef BOOL (WINAPI *PSHUTDOWNBRCREATE)(HWND, LPCWSTR);
     PSHUTDOWNBRCREATE shutdownBRCreate = (PSHUTDOWNBRCREATE)GetProcAddress(GetModuleHandleA("User32.dll"), "ShutdownBlockReasonCreate");
-<<<<<<< HEAD
-    if (shutdownBRCreate == NULL) {
-=======
     if (shutdownBRCreate == nullptr) {
->>>>>>> ef70f9b52b851c7997a9f1a0834714e3eebc1fd8
         qWarning() << "registerShutdownBlockReason: GetProcAddress for ShutdownBlockReasonCreate failed";
         return;
     }
