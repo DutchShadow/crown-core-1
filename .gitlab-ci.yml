@@ -85,7 +85,7 @@ cache:
 
 .job_template: &osx_definition
   tags:
-    - osx
+    - Windownsubuntu18
   variables:
     CROWN_CONFIG: ""
     HOST: "x86_64-apple-darwin14"
@@ -96,7 +96,7 @@ cache:
 
 .job_template: &osx_dmg_definition
   tags:
-    - osx
+    - Windownsubuntu18
   variables:
     CROWN_CONFIG: ""
     HOST: "x86_64-apple-darwin14"
