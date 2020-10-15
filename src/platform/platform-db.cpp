@@ -180,7 +180,8 @@ namespace Platform
             try
             {
                 streamKey >> key;
-                streamValue >> protoSupply;
+		// TODO fix
+                //streamValue >> protoSupply;
             }
             catch (const std::exception & ex)
             {
