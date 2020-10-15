@@ -30,7 +30,7 @@ cache:
     - cd crown-$HOST
     - ./configure --disable-tests --with-libs=no --cache-file=../config.cache $CROWN_CONFIG_ALL $CROWN_CONFIG
     - make $MAKEJOBS $GOAL || ( echo "Build failure. Verbose build follows." && make $GOAL V=1 ; false )
-    - if [ -n "$DMG" ]; then cp Crown-Qt.dmg ../../Crown-Qt.dmg; fi
+    - if [ -n "$DMG" ]; then cp Crown-Core.dmg ../../Crown-Core.dmg; fi
 
 .job_template: &win64_definition
   tags:
