@@ -154,6 +154,7 @@ public:
 
     CBudgetProposal *FindProposal(const std::string &strProposalName);
     CBudgetProposal *FindProposal(uint256 nHash);
+    std::vector<CBudgetProposal*> FindProposals(const std::string &strProposalName);
     BudgetDraft *FindBudgetDraft(uint256 nHash);
 
     static CAmount GetTotalBudget(int nHeight);
