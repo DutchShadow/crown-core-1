@@ -66,6 +66,10 @@ Value mnbudget(const Array& params, bool fHelp)
         if(strProposalName.size() > 20)
             return "Invalid proposal name, limit of 20 characters.";
 
+        CBudgetProposal* pbudgetProp = budget.FindProposal(strProposalName);
+        if(pbudgetProp != NULL)
+            return "invalid proposal name, already in use";
+
         std::string strURL = params[2].get_str();
         if(strURL.size() > 64)
             return "Invalid url, limit of 64 characters.";
@@ -111,7 +115,7 @@ Value mnbudget(const Array& params, bool fHelp)
 
         // create transaction 15 minutes into the future, to allow for confirmation time
         CBudgetProposalBroadcast budgetProposalBroadcast(strProposalName, strURL, nPaymentCount, scriptPubKey, nAmount, nBlockStart, uint256());
-        
+
         std::string strError = "";
         if(!budgetProposalBroadcast.IsValid(strError, false))
             return "Proposal is not valid - " + budgetProposalBroadcast.GetHash().ToString() + " - " + strError;
@@ -150,6 +154,10 @@ Value mnbudget(const Array& params, bool fHelp)
         std::string strProposalName = params[1].get_str();
         if(strProposalName.size() > 20)
             return "Invalid proposal name, limit of 20 characters.";
+        
+        CBudgetProposal* pbudgetProp = budget.FindProposal(strProposalName);
+        if(pbudgetProp != NULL)
+            return "invalid proposal name, already in use";
 
         std::string strURL = params[2].get_str();
         if(strURL.size() > 64)
@@ -428,44 +436,38 @@ Value mnbudget(const Array& params, bool fHelp)
 
         std::string strProposalName = params[1].get_str();
 
-        std::vector<CBudgetProposal*> pbudgetProposals = budget.FindProposals(strProposalName);
+        CBudgetProposal* pbudgetProposal = budget.FindProposal(strProposalName);
 
-        if(pbudgetProposals.empty()) return "Unknown proposal name";
+        if(pbudgetProposal == NULL) return "Unknown proposal name";
 
-        Object resultObj;
-        BOOST_FOREACH(CBudgetProposal* pbudgetProposal, pbudgetProposals)
-        {
-            CTxDestination address1;
-            ExtractDestination(pbudgetProposal->GetPayee(), address1);
-            CBitcoinAddress address2(address1);
+        CTxDestination address1;
+        ExtractDestination(pbudgetProposal->GetPayee(), address1);
+        CBitcoinAddress address2(address1);
 
-            Object obj;
-            obj.push_back(Pair("Name",  pbudgetProposal->GetName()));
-            obj.push_back(Pair("Hash",  pbudgetProposal->GetHash().ToString()));
-            obj.push_back(Pair("FeeHash",  pbudgetProposal->nFeeTXHash.ToString()));
-            obj.push_back(Pair("URL",  pbudgetProposal->GetURL()));
-            obj.push_back(Pair("BlockStart",  (int64_t)pbudgetProposal->GetBlockStart()));
-            obj.push_back(Pair("BlockEnd",    (int64_t)pbudgetProposal->GetBlockEnd()));
-            obj.push_back(Pair("TotalPaymentCount",  (int64_t)pbudgetProposal->GetTotalPaymentCount()));
-            obj.push_back(Pair("RemainingPaymentCount",  (int64_t)pbudgetProposal->GetRemainingPaymentCount()));
-            obj.push_back(Pair("PaymentAddress",   address2.ToString()));
-            obj.push_back(Pair("Ratio",  pbudgetProposal->GetRatio()));
-            obj.push_back(Pair("Yeas",  (int64_t)pbudgetProposal->GetYeas()));
-            obj.push_back(Pair("Nays",  (int64_t)pbudgetProposal->GetNays()));
-            obj.push_back(Pair("Abstains",  (int64_t)pbudgetProposal->GetAbstains()));
-            obj.push_back(Pair("TotalPayment",  ValueFromAmount(pbudgetProposal->GetAmount()*pbudgetProposal->GetTotalPaymentCount())));
-            obj.push_back(Pair("MonthlyPayment",  ValueFromAmount(pbudgetProposal->GetAmount())));
+        Object obj;
+        obj.push_back(Pair("Name",  pbudgetProposal->GetName()));
+        obj.push_back(Pair("Hash",  pbudgetProposal->GetHash().ToString()));
+        obj.push_back(Pair("FeeHash",  pbudgetProposal->nFeeTXHash.ToString()));
+        obj.push_back(Pair("URL",  pbudgetProposal->GetURL()));
+        obj.push_back(Pair("BlockStart",  (int64_t)pbudgetProposal->GetBlockStart()));
+        obj.push_back(Pair("BlockEnd",    (int64_t)pbudgetProposal->GetBlockEnd()));
+        obj.push_back(Pair("TotalPaymentCount",  (int64_t)pbudgetProposal->GetTotalPaymentCount()));
+        obj.push_back(Pair("RemainingPaymentCount",  (int64_t)pbudgetProposal->GetRemainingPaymentCount()));
+        obj.push_back(Pair("PaymentAddress",   address2.ToString()));
+        obj.push_back(Pair("Ratio",  pbudgetProposal->GetRatio()));
+        obj.push_back(Pair("Yeas",  (int64_t)pbudgetProposal->GetYeas()));
+        obj.push_back(Pair("Nays",  (int64_t)pbudgetProposal->GetNays()));
+        obj.push_back(Pair("Abstains",  (int64_t)pbudgetProposal->GetAbstains()));
+        obj.push_back(Pair("TotalPayment",  ValueFromAmount(pbudgetProposal->GetAmount()*pbudgetProposal->GetTotalPaymentCount())));
+        obj.push_back(Pair("MonthlyPayment",  ValueFromAmount(pbudgetProposal->GetAmount())));
         
-            obj.push_back(Pair("IsEstablished",  pbudgetProposal->IsEstablished()));
+        obj.push_back(Pair("IsEstablished",  pbudgetProposal->IsEstablished()));
 
-            std::string strError = "";
-            obj.push_back(Pair("IsValid",  pbudgetProposal->IsValid(strError)));
-            obj.push_back(Pair("fValid",  pbudgetProposal->fValid));
+        std::string strError = "";
+        obj.push_back(Pair("IsValid",  pbudgetProposal->IsValid(strError)));
+        obj.push_back(Pair("fValid",  pbudgetProposal->fValid));
 
-            resultObj.push_back(Pair(pbudgetProposal->GetName(), obj));
-        }
-
-        return resultObj;
+        return obj;
     }
 
     if(strCommand == "getvotes")
@@ -475,34 +477,28 @@ Value mnbudget(const Array& params, bool fHelp)
 
         std::string strProposalName = params[1].get_str();
 
-        std::vector<CBudgetProposal*> pbudgetProposals = budget.FindProposals(strProposalName);
+        Object obj;
 
-        if(pbudgetProposals.empty()) return "Unknown proposal name";
+        CBudgetProposal* pbudgetProposal = budget.FindProposal(strProposalName);
 
-        Object resultObj;
+        if(pbudgetProposal == NULL) return "Unknown proposal name";
 
-        BOOST_FOREACH(CBudgetProposal* pbudgetProposal, pbudgetProposals)
-        {
-            Object obj;
-            std::map<uint256, CBudgetVote>::iterator it = pbudgetProposal->mapVotes.begin();
-            while(it != pbudgetProposal->mapVotes.end())
-            {
+        std::map<uint256, CBudgetVote>::iterator it = pbudgetProposal->mapVotes.begin();
+        while(it != pbudgetProposal->mapVotes.end()){
 
-                Object bObj;
-                bObj.push_back(Pair("nHash",  (*it).first.ToString().c_str()));
-                bObj.push_back(Pair("Vote",  (*it).second.GetVoteString()));
-                bObj.push_back(Pair("nTime",  (int64_t)(*it).second.nTime));
-                bObj.push_back(Pair("fValid",  (*it).second.fValid));
+            Object bObj;
+            bObj.push_back(Pair("nHash",  (*it).first.ToString().c_str()));
+            bObj.push_back(Pair("Vote",  (*it).second.GetVoteString()));
+            bObj.push_back(Pair("nTime",  (int64_t)(*it).second.nTime));
+            bObj.push_back(Pair("fValid",  (*it).second.fValid));
 
-                obj.push_back(Pair((*it).second.vin.prevout.ToStringShort(), bObj));
+            obj.push_back(Pair((*it).second.vin.prevout.ToStringShort(), bObj));
 
-                it++;
-            }
-
-            resultObj.push_back(Pair(pbudgetProposal->GetHash().ToString(), obj));
+            it++;
         }
 
-        return resultObj;
+
+        return obj;
     }
 
     if(strCommand == "check")

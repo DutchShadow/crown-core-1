@@ -504,26 +504,6 @@ CBudgetProposal* CBudgetManager::FindProposal(const std::string &strProposalName
     return pbudgetProposal;
 }
 
-std::vector<CBudgetProposal*> CBudgetManager::FindProposals(const std::string &strProposalName)
-{
-    LOCK(cs);
-    
-    //Find more than just a single proposal given a name
-
-    std::vector<CBudgetProposal*> pbudgetProposals;
-
-    std::map<uint256, CBudgetProposal>::iterator it = mapProposals.begin();
-    while(it != mapProposals.end()){
-        if((*it).second.strProposalName == strProposalName)
-        {
-            pbudgetProposals.push_back(&(*it).second);
-        }
-        ++it;
-    }
-
-    return pbudgetProposals;
-}
-
 CBudgetProposal *CBudgetManager::FindProposal(uint256 nHash)
 {
     LOCK(cs);
