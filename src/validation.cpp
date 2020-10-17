@@ -2396,8 +2396,6 @@ void static UpdateTip(const CBlockIndex *pindexNew, const CChainParams& chainPar
     //  GuessVerificationProgress(chainParams.TxData(), pindexNew), pcoinsTip->DynamicMemoryUsage() * (1.0 / (1<<20)), pcoinsTip->GetCacheSize());
     if (!warningMessages.empty())
         LogPrintf(" warning='%s'", warningMessages); /* Continued */
-    LogPrintf("\n");
-
 }
 
 /** Disconnect chainActive's tip.
