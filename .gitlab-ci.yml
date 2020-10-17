@@ -130,7 +130,7 @@ cache:
   artifacts:
     name: "$OUTDIR-dmg"
     paths:
-    - Crown-Qt.dmg
+    - Crown-Core.dmg
   only:
     - master
     - tags
@@ -139,7 +139,7 @@ cache:
   artifacts:
     name: "$OUTDIR-dmg"
     paths:
-    - Crown-Qt.dmg
+    - Crown-Core.dmg
     expire_in: 2 weeks
   except:
     - master
