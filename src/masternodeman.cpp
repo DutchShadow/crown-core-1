@@ -60,7 +60,7 @@ bool CMasternodeMan::Add(const CMasternode &mn)
     CMasternode *pmn = Find(mn.vin);
     if (pmn == NULL)
     {
-        LogPrintf("masternode", "CMasternodeMan: Adding new Masternode %s - %i now\n", mn.addr.ToString(), size() + 1);
+        LogPrintf("CMasternodeMan: Adding new Masternode %s - %i now\n", mn.addr.ToString(), size() + 1);
         vMasternodes.push_back(mn);
         return true;
     }
@@ -108,7 +108,7 @@ void CMasternodeMan::CheckAndRemove(bool forceExpiredRemoval)
                 (*it).activeState == CMasternode::MASTERNODE_VIN_SPENT ||
                 (forceExpiredRemoval && (*it).activeState == CMasternode::MASTERNODE_EXPIRED) ||
                 (*it).protocolVersion < masternodePayments.GetMinMasternodePaymentsProto()) {
-            LogPrintf("masternode", "CMasternodeMan: Removing inactive Masternode %s - %i now\n", (*it).addr.ToString(), size() - 1);
+            LogPrintf("CMasternodeMan: Removing inactive Masternode %s - %i now\n", (*it).addr.ToString(), size() - 1);
 
             //erase all of the broadcasts we've seen from this vin
             // -- if we missed a few pings and the node was removed, this will allow is to get it back without them 
@@ -173,7 +173,7 @@ void CMasternodeMan::CheckAndRemove(bool forceExpiredRemoval)
     map<uint256, CMasternodeBroadcast>::iterator it3 = mapSeenMasternodeBroadcast.begin();
     while(it3 != mapSeenMasternodeBroadcast.end()){
         if((*it3).second.lastPing.sigTime < GetTime() - MASTERNODE_REMOVAL_SECONDS*2){
-            LogPrintf("masternode", "CMasternodeMan::CheckAndRemove - Removing expired Masternode broadcast %s\n", (*it3).second.GetHash().ToString());
+            LogPrintf("CMasternodeMan::CheckAndRemove - Removing expired Masternode broadcast %s\n", (*it3).second.GetHash().ToString());
             masternodeSync.mapSeenSyncMNB.erase((*it3).second.GetHash());
             mapSeenMasternodeBroadcast.erase(it3++);
         } else {
@@ -567,7 +567,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
         }
         vRecv >> mnp;
 
-        LogPrintf("masternode", "mnp - Masternode ping, vin: %s\n", mnp.vin.ToString());
+        LogPrintf("mnp - Masternode ping, vin: %s\n", mnp.vin.ToString());
 
         if(mapSeenMasternodePing.count(mnp.GetHash())) return; //seen
         mapSeenMasternodePing.insert(make_pair(mnp.GetHash(), mnp));
@@ -621,7 +621,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
             if(mn.addr.IsRFC1918()) continue; //local network
 
             if(mn.IsEnabled()) {
-                LogPrintf("masternode", "dseg - Sending Masternode entry - %s \n", mn.addr.ToString());
+                LogPrintf("dseg - Sending Masternode entry - %s \n", mn.addr.ToString());
                 if(vin == CTxIn() || vin == mn.vin){
                     CMasternodeBroadcast mnb = CMasternodeBroadcast(mn);
                     uint256 hash = mnb.GetHash();
@@ -653,7 +653,7 @@ void CMasternodeMan::Remove(CTxIn vin)
     vector<CMasternode>::iterator it = vMasternodes.begin();
     while(it != vMasternodes.end()){
         if((*it).vin == vin){
-            LogPrintf("masternode", "CMasternodeMan: Removing Masternode %s - %i now\n", (*it).addr.ToString(), size() - 1);
+            LogPrintf("CMasternodeMan: Removing Masternode %s - %i now\n", (*it).addr.ToString(), size() - 1);
             vMasternodes.erase(it);
             break;
         }
@@ -693,7 +693,7 @@ void CMasternodeMan::UpdateMasternodeList(CMasternodeBroadcast mnb) {
 
 bool CMasternodeMan::CheckMnbAndUpdateMasternodeList(CMasternodeBroadcast mnb, int& nDos) {
     nDos = 0;
-    LogPrintf("masternode", "CMasternodeMan::CheckMnbAndUpdateMasternodeList - Masternode broadcast, vin: %s\n", mnb.vin.ToString());
+    LogPrintf("CMasternodeMan::CheckMnbAndUpdateMasternodeList - Masternode broadcast, vin: %s\n", mnb.vin.ToString());
 
     if(mapSeenMasternodeBroadcast.count(mnb.GetHash())) { //seen
         masternodeSync.AddedMasternodeList(mnb.GetHash());
@@ -701,7 +701,7 @@ bool CMasternodeMan::CheckMnbAndUpdateMasternodeList(CMasternodeBroadcast mnb, i
     }
     mapSeenMasternodeBroadcast.insert(make_pair(mnb.GetHash(), mnb));
 
-    LogPrintf("masternode", "CMasternodeMan::CheckMnbAndUpdateMasternodeList - Masternode broadcast, vin: %s new\n", mnb.vin.ToString());
+    LogPrintf("CMasternodeMan::CheckMnbAndUpdateMasternodeList - Masternode broadcast, vin: %s new\n", mnb.vin.ToString());
     // We check addr before both initial mnb and update
     if(!mnb.IsValidNetAddr()) {
         LogPrintf("CMasternodeBroadcast::CheckMnbAndUpdateMasternodeList -- Invalid addr, rejected: masternode=%s  sigTime=%lld  addr=%s\n",
@@ -710,7 +710,7 @@ bool CMasternodeMan::CheckMnbAndUpdateMasternodeList(CMasternodeBroadcast mnb, i
     }
 
     if(!mnb.CheckAndUpdate(nDos)){
-        LogPrintf("masternode", "CMasternodeMan::CheckMnbAndUpdateMasternodeList - Masternode broadcast, vin: %s CheckAndUpdate failed\n", mnb.vin.ToString());
+        LogPrintf("CMasternodeMan::CheckMnbAndUpdateMasternodeList - Masternode broadcast, vin: %s CheckAndUpdate failed\n", mnb.vin.ToString());
         return false;
     }
 

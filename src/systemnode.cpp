@@ -82,7 +82,7 @@ bool CSystemnodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled, bool fChec
         return true;
     }
 
-    LogPrintf("systemnode", "CSystemnodePing::CheckAndUpdate - New Ping - %s - %s - %lli\n", GetHash().ToString(), blockHash.ToString(), sigTime);
+    LogPrintf("CSystemnodePing::CheckAndUpdate - New Ping - %s - %s - %lli\n", GetHash().ToString(), blockHash.ToString(), sigTime);
 
     // see if we have this Systemnode
     CSystemnode* psn = snodeman.Find(vin);
@@ -129,16 +129,16 @@ bool CSystemnodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled, bool fChec
             psn->Check(true);
             if(!psn->IsEnabled()) return false;
 
-            LogPrintf("systemnode", "CSystemnodePing::CheckAndUpdate - Systemnode ping accepted, vin: %s\n", vin.ToString());
+            LogPrintf("CSystemnodePing::CheckAndUpdate - Systemnode ping accepted, vin: %s\n", vin.ToString());
 
             Relay();
             return true;
         }
-        LogPrintf("systemnode", "CSystemnodePing::CheckAndUpdate - Systemnode ping arrived too early, vin: %s\n", vin.ToString());
+        LogPrintf("CSystemnodePing::CheckAndUpdate - Systemnode ping arrived too early, vin: %s\n", vin.ToString());
         //nDos = 1; //disable, this is happening frequently and causing banned peers
         return false;
     }
-    LogPrintf("systemnode", "CSystemnodePing::CheckAndUpdate - Couldn't find compatible Systemnode entry, vin: %s\n", vin.ToString());
+    LogPrintf("CSystemnodePing::CheckAndUpdate - Couldn't find compatible Systemnode entry, vin: %s\n", vin.ToString());
 
     return false;
 }
@@ -465,7 +465,7 @@ bool CSystemnodeBroadcast::CheckAndUpdate(int& nDos) const
         strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) +
                      vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
 
-        LogPrintf("systemnode", "snb - sanitized strMessage: %s, pubkey address: %s, sig: %s\n",
+        LogPrintf("snb - sanitized strMessage: %s, pubkey address: %s, sig: %s\n",
             SanitizeString(strMessage), EncodeDestination(pubkey.GetID()),
             EncodeBase64(&sig[0], sig.size()));
 
@@ -476,7 +476,7 @@ bool CSystemnodeBroadcast::CheckAndUpdate(int& nDos) const
                 strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) +
                                 vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
 
-                LogPrintf("systemnode", "snb - sanitized strMessage: %s, pubkey address: %s, sig: %s\n",
+                LogPrintf("snb - sanitized strMessage: %s, pubkey address: %s, sig: %s\n",
                     SanitizeString(strMessage), EncodeDestination(pubkey.GetID()),
                     EncodeBase64(&sig[0], sig.size()));
 
@@ -498,7 +498,7 @@ bool CSystemnodeBroadcast::CheckAndUpdate(int& nDos) const
                         pubkey.GetID().ToString() + pubkey2.GetID().ToString() +
                         boost::lexical_cast<std::string>(protocolVersion);
 
-        LogPrintf("systemnode", "snb - strMessage: %s, pubkey address: %s, sig: %s\n",
+        LogPrintf("snb - strMessage: %s, pubkey address: %s, sig: %s\n",
             strMessage, EncodeDestination(pubkey.GetID()), EncodeBase64(&sig[0], sig.size()));
 
         if(!legacySigner.VerifyMessage(pubkey, sig, strMessage, errorMessage)){
@@ -589,7 +589,7 @@ bool CSystemnodeBroadcast::CheckInputsAndAdd(int& nDoS) const
         }
     }
 
-    LogPrintf("systemnode", "snb - Accepted systemnode entry\n");
+    LogPrintf("snb - Accepted systemnode entry\n");
 
     if(GetInputAge(vin) < SYSTEMNODE_MIN_CONFIRMATIONS){
         LogPrintf("snb - Input must have at least %d confirmations\n", SYSTEMNODE_MIN_CONFIRMATIONS);

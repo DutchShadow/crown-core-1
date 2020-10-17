@@ -77,7 +77,7 @@ bool IsBlockValueValid(const CBlock& block, int64_t nExpectedValue){
 bool IsBlockPayeeValid(const CAmount& nAmountCreated, const CTransaction& txNew, int nBlockHeight, const uint32_t& nTime, const uint32_t& nTimePrevBlock)
 {
     if(!masternodeSync.IsSynced()) { //there is no budget data to use to check anything -- find the longest chain
-        LogPrintf("mnpayments", "Client not synced, skipping block payee checks\n");
+        LogPrintf("Client not synced, skipping block payee checks\n");
         return true;
     }
 
@@ -248,14 +248,14 @@ void CMasternodePayments::ProcessMessageMasternodePayments(CNode* pfrom, const s
         }
 
         if(masternodePayments.mapMasternodePayeeVotes.count(winner.GetHash())){
-            LogPrintf("mnpayments", "mnw - Already seen - %s bestHeight %d\n", winner.GetHash().ToString().c_str(), nHeight);
+            LogPrintf("mnw - Already seen - %s bestHeight %d\n", winner.GetHash().ToString().c_str(), nHeight);
             masternodeSync.AddedMasternodeWinner(winner.GetHash());
             return;
         }
 
         int nFirstBlock = nHeight - (mnodeman.CountEnabled()*1.25);
         if(winner.nBlockHeight < nFirstBlock || winner.nBlockHeight > nHeight+20){
-            LogPrintf("mnpayments", "mnw - winner out of range - FirstBlock %d Height %d bestHeight %d\n", nFirstBlock, winner.nBlockHeight, nHeight);
+            LogPrintf("mnw - winner out of range - FirstBlock %d Height %d bestHeight %d\n", nFirstBlock, winner.nBlockHeight, nHeight);
             return;
         }
 
@@ -283,7 +283,7 @@ void CMasternodePayments::ProcessMessageMasternodePayments(CNode* pfrom, const s
         // TODO fix
         //CBitcoinAddress address2(address1);
 
-        //LogPrintf("mnpayments", "mnw - winning vote - Addr %s Height %d bestHeight %d - %s\n", address2.ToString().c_str(), winner.nBlockHeight, nHeight, winner.vinMasternode.prevout.ToStringShort());
+        //LogPrintf("mnw - winning vote - Addr %s Height %d bestHeight %d - %s\n", address2.ToString().c_str(), winner.nBlockHeight, nHeight, winner.vinMasternode.prevout.ToStringShort());
 
         if(masternodePayments.AddWinningMasternode(winner)){
             winner.Relay();
@@ -507,7 +507,7 @@ void CMasternodePayments::CheckAndRemove()
         CMasternodePaymentWinner winner = (*it).second;
 
         if(nHeight - winner.nBlockHeight > nLimit){
-            LogPrintf("mnpayments", "CMasternodePayments::CleanPaymentList - Removing old Masternode payment - block %d\n", winner.nBlockHeight);
+            LogPrintf("CMasternodePayments::CleanPaymentList - Removing old Masternode payment - block %d\n", winner.nBlockHeight);
             masternodeSync.mapSeenSyncMNW.erase((*it).first);
             mapMasternodePayeeVotes.erase(it++);
             mapMasternodeBlocks.erase(winner.nBlockHeight);
@@ -577,13 +577,13 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
 
         if(n == -1)
         {
-            LogPrintf("mnpayments", "CMasternodePayments::ProcessBlock - Unknown Masternode\n");
+            LogPrintf("CMasternodePayments::ProcessBlock - Unknown Masternode\n");
             return false;
         }
 
         if(n > MNPAYMENTS_SIGNATURES_TOTAL)
         {
-            LogPrintf("mnpayments", "CMasternodePayments::ProcessBlock - Masternode not in the top %d (%d)\n", MNPAYMENTS_SIGNATURES_TOTAL, n);
+            LogPrintf("CMasternodePayments::ProcessBlock - Masternode not in the top %d (%d)\n", MNPAYMENTS_SIGNATURES_TOTAL, n);
             return false;
         }
     }

@@ -105,7 +105,7 @@ void CSystemnodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
     LOCK(cs_process_message);
 
     if (strCommand == "snb") { //Systemnode Broadcast
-        LogPrintf("systemnode", "CSystemnodeMan::ProcessMessage - snb");
+        LogPrintf("CSystemnodeMan::ProcessMessage - snb");
         CSystemnodeBroadcast snb;
         vRecv >> snb;
 
@@ -120,7 +120,7 @@ void CSystemnodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
         CSystemnodePing snp;
         vRecv >> snp;
 
-        LogPrintf("systemnode", "snp - Systemnode ping, vin: %s\n", snp.vin.ToString());
+        LogPrintf("snp - Systemnode ping, vin: %s\n", snp.vin.ToString());
 
         if(mapSeenSystemnodePing.count(snp.GetHash())) return; //seen
         mapSeenSystemnodePing.insert(make_pair(snp.GetHash(), snp));
@@ -174,7 +174,7 @@ void CSystemnodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
             if(sn.addr.IsRFC1918()) continue; //local network
 
             if(sn.IsEnabled()) {
-                LogPrintf("systemnode", "sndseg - Sending Systemnode entry - %s \n", sn.addr.ToString());
+                LogPrintf("sndseg - Sending Systemnode entry - %s \n", sn.addr.ToString());
                 if(vin == CTxIn() || vin == sn.vin){
                     CSystemnodeBroadcast snb = CSystemnodeBroadcast(sn);
                     uint256 hash = snb.GetHash();
@@ -221,7 +221,7 @@ void CSystemnodeMan::AskForSN(CNode* pnode, CTxIn &vin)
 bool CSystemnodeMan::CheckSnbAndUpdateSystemnodeList(CSystemnodeBroadcast snb, int& nDos)
 {
     nDos = 0;
-    LogPrintf("systemnode", "CSystemnodeMan::CheckSnbAndUpdateSystemnodeList - Systemnode broadcast, vin: %s\n", snb.vin.ToString());
+    LogPrintf("CSystemnodeMan::CheckSnbAndUpdateSystemnodeList - Systemnode broadcast, vin: %s\n", snb.vin.ToString());
 
     if(mapSeenSystemnodeBroadcast.count(snb.GetHash())) { //seen
         systemnodeSync.AddedSystemnodeList(snb.GetHash());
@@ -229,7 +229,7 @@ bool CSystemnodeMan::CheckSnbAndUpdateSystemnodeList(CSystemnodeBroadcast snb, i
     }
     mapSeenSystemnodeBroadcast.insert(make_pair(snb.GetHash(), snb));
 
-    LogPrintf("systemnode", "CSystemnodeMan::CheckSnbAndUpdateSystemnodeList - Systemnode broadcast, vin: %s new\n", snb.vin.ToString());
+    LogPrintf("CSystemnodeMan::CheckSnbAndUpdateSystemnodeList - Systemnode broadcast, vin: %s new\n", snb.vin.ToString());
     // We check addr before both initial snb and update
     if(!snb.IsValidNetAddr()) {
         LogPrintf("CMasternodeBroadcast::CheckSnbAndUpdateMasternodeList -- Invalid addr, rejected: masternode=%s  sigTime=%lld  addr=%s\n",
@@ -243,7 +243,7 @@ bool CSystemnodeMan::CheckSnbAndUpdateSystemnodeList(CSystemnodeBroadcast snb, i
     }
 
     if(!snb.CheckAndUpdate(nDos)) {
-        LogPrintf("systemnode", "CSystemnodeMan::CheckSnbAndUpdateSystemnodeList - Systemnode broadcast, vin: %s CheckAndUpdate failed\n", snb.vin.ToString());
+        LogPrintf("CSystemnodeMan::CheckSnbAndUpdateSystemnodeList - Systemnode broadcast, vin: %s CheckAndUpdate failed\n", snb.vin.ToString());
         return false;
     }
 
@@ -379,7 +379,7 @@ bool CSystemnodeMan::Add(CSystemnode &sn)
     CSystemnode *psn = Find(sn.vin);
     if (psn == NULL)
     {
-        LogPrintf("systemnode", "CSystemnodeMan: Adding new Systemnode %s - %i now\n", sn.addr.ToString(), size() + 1);
+        LogPrintf("CSystemnodeMan: Adding new Systemnode %s - %i now\n", sn.addr.ToString(), size() + 1);
         vSystemnodes.push_back(sn);
         return true;
     }
@@ -411,7 +411,7 @@ void CSystemnodeMan::Remove(CTxIn vin)
     vector<CSystemnode>::iterator it = vSystemnodes.begin();
     while(it != vSystemnodes.end()){
         if((*it).vin == vin){
-            LogPrintf("systemnode", "CSystemnodeMan: Removing Systemnode %s - %i now\n", (*it).addr.ToString(), size() - 1);
+            LogPrintf("CSystemnodeMan: Removing Systemnode %s - %i now\n", (*it).addr.ToString(), size() - 1);
             vSystemnodes.erase(it);
             break;
         }
@@ -557,7 +557,7 @@ void CSystemnodeMan::CheckAndRemove(bool forceExpiredRemoval)
                 (*it).activeState == CSystemnode::SYSTEMNODE_VIN_SPENT ||
                 (forceExpiredRemoval && (*it).activeState == CSystemnode::SYSTEMNODE_EXPIRED) ||
                 (*it).protocolVersion < systemnodePayments.GetMinSystemnodePaymentsProto()) {
-            LogPrintf("systemnode", "CSystemnodeMan: Removing inactive Systemnode %s - %i now\n", (*it).addr.ToString(), size() - 1);
+            LogPrintf("CSystemnodeMan: Removing inactive Systemnode %s - %i now\n", (*it).addr.ToString(), size() - 1);
 
             //erase all of the broadcasts we've seen from this vin
             // -- if we missed a few pings and the node was removed, this will allow is to get it back without them 
@@ -622,7 +622,7 @@ void CSystemnodeMan::CheckAndRemove(bool forceExpiredRemoval)
     auto it3 = mapSeenSystemnodeBroadcast.begin();
     while(it3 != mapSeenSystemnodeBroadcast.end()){
         if((*it3).second.lastPing.sigTime < GetTime() - SYSTEMNODE_REMOVAL_SECONDS*2){
-            LogPrintf("systemnode", "CSystemnodeMan::CheckAndRemove - Removing expired Systemnode broadcast %s\n", (*it3).second.GetHash().ToString());
+            LogPrintf("CSystemnodeMan::CheckAndRemove - Removing expired Systemnode broadcast %s\n", (*it3).second.GetHash().ToString());
             systemnodeSync.mapSeenSyncSNB.erase((*it3).second.GetHash());
             mapSeenSystemnodeBroadcast.erase(it3++);
         } else {

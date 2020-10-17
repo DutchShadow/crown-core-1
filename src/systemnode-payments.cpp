@@ -26,7 +26,7 @@ CCriticalSection cs_mapSystemnodePayeeVotes;
 bool SNIsBlockPayeeValid(const CAmount& nValueCreated, const CTransaction& txNew, int nBlockHeight, const uint32_t& nTime, const uint32_t& nTimePrevBlock)
 {
     if(!systemnodeSync.IsSynced()) { //there is no budget data to use to check anything -- find the longest chain
-        LogPrintf("snpayments", "Client not synced, skipping block payee checks\n");
+        LogPrintf("Client not synced, skipping block payee checks\n");
         return true;
     }
 
@@ -132,14 +132,14 @@ void CSystemnodePayments::ProcessMessageSystemnodePayments(CNode* pfrom, const s
         }
 
         if(systemnodePayments.mapSystemnodePayeeVotes.count(winner.GetHash())){
-            LogPrintf("snpayments", "snw - Already seen - %s bestHeight %d\n", winner.GetHash().ToString().c_str(), nHeight);
+            LogPrintf("snw - Already seen - %s bestHeight %d\n", winner.GetHash().ToString().c_str(), nHeight);
             systemnodeSync.AddedSystemnodeWinner(winner.GetHash());
             return;
         }
 
         int nFirstBlock = nHeight - (snodeman.CountEnabled()*1.25);
         if(winner.nBlockHeight < nFirstBlock || winner.nBlockHeight > nHeight+20){
-            LogPrintf("snpayments", "snw - winner out of range - FirstBlock %d Height %d bestHeight %d\n", nFirstBlock, winner.nBlockHeight, nHeight);
+            LogPrintf("snw - winner out of range - FirstBlock %d Height %d bestHeight %d\n", nFirstBlock, winner.nBlockHeight, nHeight);
             return;
         }
 
@@ -167,7 +167,7 @@ void CSystemnodePayments::ProcessMessageSystemnodePayments(CNode* pfrom, const s
         // TODO fix
         //CBitcoinAddress address2(address1);
 
-        //LogPrintf("snpayments", "snw - winning vote - Addr %s Height %d bestHeight %d - %s\n", address2.ToString().c_str(), winner.nBlockHeight, nHeight, winner.vinSystemnode.prevout.ToStringShort());
+        //LogPrintf("snw - winning vote - Addr %s Height %d bestHeight %d - %s\n", address2.ToString().c_str(), winner.nBlockHeight, nHeight, winner.vinSystemnode.prevout.ToStringShort());
 
         if(systemnodePayments.AddWinningSystemnode(winner)){
             winner.Relay();
@@ -375,7 +375,7 @@ void CSystemnodePayments::CheckAndRemove()
         CSystemnodePaymentWinner winner = (*it).second;
 
         if(nHeight - winner.nBlockHeight > nLimit){
-            LogPrintf("snpayments", "CSystemnodePayments::CleanPaymentList - Removing old Systemnode payment - block %d\n", winner.nBlockHeight);
+            LogPrintf("CSystemnodePayments::CleanPaymentList - Removing old Systemnode payment - block %d\n", winner.nBlockHeight);
             systemnodeSync.mapSeenSyncSNW.erase((*it).first);
             mapSystemnodePayeeVotes.erase(it++);
             mapSystemnodeBlocks.erase(winner.nBlockHeight);
@@ -435,13 +435,13 @@ bool CSystemnodePayments::ProcessBlock(int nBlockHeight)
 
         if(n == -1)
         {
-            LogPrintf("snpayments", "CSystemnodePayments::ProcessBlock - Unknown Systemnode\n");
+            LogPrintf("CSystemnodePayments::ProcessBlock - Unknown Systemnode\n");
             return false;
         }
 
         if(n > SNPAYMENTS_SIGNATURES_TOTAL)
         {
-            LogPrintf("snpayments", "CSystemnodePayments::ProcessBlock - Systemnode not in the top %d (%d)\n", MNPAYMENTS_SIGNATURES_TOTAL, n);
+            LogPrintf("CSystemnodePayments::ProcessBlock - Systemnode not in the top %d (%d)\n", MNPAYMENTS_SIGNATURES_TOTAL, n);
             return false;
         }
     }

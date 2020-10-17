@@ -938,7 +938,7 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand,
 
         CMasternode* pmn = mnodeman.Find(vote.vin);
         if(pmn == NULL) {
-            LogPrintf("mnbudget", "mvote - unknown masternode - vin: %s\n", vote.vin.ToString());
+            LogPrintf("mvote - unknown masternode - vin: %s\n", vote.vin.ToString());
             mnodeman.AskForMN(pfrom, vote.vin);
             return;
         }
@@ -1039,7 +1039,7 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand,
 
         CMasternode* pmn = mnodeman.Find(vote.vin);
         if(pmn == NULL) {
-            LogPrintf("mnbudget", "fbvote - unknown masternode - vin: %s\n", vote.vin.ToString());
+            LogPrintf("fbvote - unknown masternode - vin: %s\n", vote.vin.ToString());
             mnodeman.AskForMN(pfrom, vote.vin);
             return;
         }
@@ -1494,19 +1494,19 @@ bool CBudgetProposal::AddOrUpdateVote(const CBudgetVote& vote, std::string& strE
     if(mapVotes.count(hash)){
         if(mapVotes[hash].nTime > vote.nTime){
             strError = strprintf("new vote older than existing vote - %s\n", vote.GetHash().ToString());
-            LogPrintf("mnbudget", "CBudgetProposal::AddOrUpdateVote - %s\n", strError);
+            LogPrintf("CBudgetProposal::AddOrUpdateVote - %s\n", strError);
             return false;
         }
         if(vote.nTime - mapVotes[hash].nTime < BUDGET_VOTE_UPDATE_MIN){
             strError = strprintf("time between votes is too soon - %s - %lli\n", vote.GetHash().ToString(), vote.nTime - mapVotes[hash].nTime);
-            LogPrintf("mnbudget", "CBudgetProposal::AddOrUpdateVote - %s\n", strError);
+            LogPrintf("CBudgetProposal::AddOrUpdateVote - %s\n", strError);
             return false;
         }
     }
 
     if(vote.nTime > GetTime() + (60*60)){
         strError = strprintf("new vote is too far ahead of current time - %s - nTime %lli - Max Time %lli\n", vote.GetHash().ToString(), vote.nTime, GetTime() + (60*60));
-        LogPrintf("mnbudget", "CBudgetProposal::AddOrUpdateVote - %s\n", strError);
+        LogPrintf("CBudgetProposal::AddOrUpdateVote - %s\n", strError);
         return false;
     }        
 
@@ -1698,7 +1698,7 @@ bool CBudgetVote::SignatureValid(bool fSignatureCheck) const
 
     if(pmn == NULL)
     {
-        LogPrintf("mnbudget", "CBudgetVote::SignatureValid() - Unknown Masternode - %s\n", vin.ToString());
+        LogPrintf("CBudgetVote::SignatureValid() - Unknown Masternode - %s\n", vin.ToString());
         return false;
     }
 
@@ -1807,24 +1807,24 @@ bool BudgetDraft::AddOrUpdateVote(std::map<uint256, BudgetDraftVote>& votes, con
     if(found != votes.end()){
         const BudgetDraftVote& previousVote = found->second;
         if (previousVote.GetHash() == vote.GetHash()) {
-            LogPrintf("mnbudget", "BudgetDraft::AddOrUpdateVote - Already have the vote\n");
+            LogPrintf("BudgetDraft::AddOrUpdateVote - Already have the vote\n");
             return true;
         }
         if(previousVote.nTime > vote.nTime) {
             strError = strprintf("new vote older than existing vote - %s\n", vote.GetHash().ToString());
-            LogPrintf("mnbudget", "BudgetDraft::AddOrUpdateVote - %s\n", strError);
+            LogPrintf("BudgetDraft::AddOrUpdateVote - %s\n", strError);
             return false;
         }
         if(vote.nTime - previousVote.nTime < FINAL_BUDGET_VOTE_UPDATE_MIN) {
             strError = strprintf("time between votes is too soon - %s - %lli\n", vote.GetHash().ToString(), vote.nTime - previousVote.nTime);
-            LogPrintf("mnbudget", "BudgetDraft::AddOrUpdateVote - %s\n", strError);
+            LogPrintf("BudgetDraft::AddOrUpdateVote - %s\n", strError);
             return false;
         }
     }
 
     if(vote.nTime > GetTime() + (60*60)){
         strError = strprintf("new vote is too far ahead of current time - %s - nTime %lli - Max Time %lli\n", vote.GetHash().ToString(), vote.nTime, GetTime() + (60*60));
-        LogPrintf("mnbudget", "BudgetDraft::AddOrUpdateVote - %s\n", strError);
+        LogPrintf("BudgetDraft::AddOrUpdateVote - %s\n", strError);
         return false;
     }
 
@@ -2379,7 +2379,7 @@ bool BudgetDraftVote::SignatureValid(bool fSignatureCheck)
 
     if(pmn == NULL)
     {
-        LogPrintf("mnbudget", "BudgetDraftVote::SignatureValid() - Unknown Masternode\n");
+        LogPrintf("BudgetDraftVote::SignatureValid() - Unknown Masternode\n");
         return false;
     }
 
