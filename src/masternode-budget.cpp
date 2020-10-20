@@ -497,7 +497,7 @@ BudgetDraft* CBudgetManager::FindBudgetDraft(uint256 nHash)
     LOCK(cs);
 
     std::map<uint256, BudgetDraft>::iterator found = mapBudgetDrafts.find(nHash);
-    if (found != mapBudgetDrafts.end())
+    if (found == mapBudgetDrafts.end())
         return NULL;
 
     return &found->second;
