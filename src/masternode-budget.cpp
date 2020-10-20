@@ -24,6 +24,7 @@ CCriticalSection cs_budget;
 
 std::map<uint256, int64_t> askedForSourceProposalOrBudget;
 std::vector<CBudgetProposalBroadcast> vecImmatureBudgetProposals;
+std::vector<CBudgetProposalBroadcast> vecPreparedBudgetProposals;
 std::vector<BudgetDraftBroadcast> vecImmatureBudgetDrafts;
 
 namespace
@@ -1204,6 +1205,7 @@ const CBudgetProposalBroadcast* CBudgetManager::GetSeenProposal(uint256 hash) co
     else
         return &found->second;
 }
+
 const CBudgetVote* CBudgetManager::GetSeenVote(uint256 hash) const
 {
     LOCK(cs);

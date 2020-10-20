@@ -37,6 +37,7 @@ static const int64_t BUDGET_VOTE_UPDATE_MIN = 60*60;
 static const int64_t FINAL_BUDGET_VOTE_UPDATE_MIN = 30*60;
 
 extern std::vector<CBudgetProposalBroadcast> vecImmatureBudgetProposals;
+extern std::vector<CBudgetProposalBroadcast> vecPreparedBudgetProposals;
 extern std::vector<BudgetDraftBroadcast> vecImmatureBudgetDrafts;
 
 extern CBudgetManager budget;
