@@ -24,7 +24,6 @@ CCriticalSection cs_budget;
 
 std::map<uint256, int64_t> askedForSourceProposalOrBudget;
 std::vector<CBudgetProposalBroadcast> vecImmatureBudgetProposals;
-std::vector<CBudgetProposalBroadcast> vecPreparedBudgetProposals;
 std::vector<BudgetDraftBroadcast> vecImmatureBudgetDrafts;
 
 namespace
@@ -469,6 +468,28 @@ void CBudgetManager::FillBlockPayee(CMutableTransaction& txNew, CAmount nFees) c
             ScriptToAddress(payment.payee).ToString(), payment.nAmount, payment.nProposalHash.ToString());
         txNew.vout.push_back(CTxOut(payment.nAmount, payment.payee));
     }
+}
+
+
+CBudgetProposalBroadcast* CBudgetManager::FindPreparedProposal(const std::string &strProposalName)
+{
+    LOCK(cs);
+
+    std::map<std::string, CBudgetProposalBroadcast>::iterator found = mapPreparedBudgetProposals.find(strProposalName);
+    if (found == mapPreparedBudgetProposals.end())
+        return NULL;
+
+    return &found->second;
+}
+
+void CBudgetManager::AddPreparedProposal(const CBudgetProposalBroadcast &proposal)
+{
+    mapPreparedBudgetProposals.insert(make_pair(proposal.GetName(), proposal));
+}
+
+void CBudgetManager::RemovePreparedProposal(const CBudgetProposalBroadcast &proposal)
+{
+    mapPreparedBudgetProposals.erase(proposal.GetName());
 }
 
 BudgetDraft* CBudgetManager::FindBudgetDraft(uint256 nHash)

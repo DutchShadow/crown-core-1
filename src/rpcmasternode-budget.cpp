@@ -114,13 +114,9 @@ Value mnbudget(const Array& params, bool fHelp)
         //*************************************************************************
 
         // Checking the ProposalBroadcasts to ensure there are no proposals prepared with the given name
-        std::vector<CBudgetProposalBroadcast>::iterator it = vecPreparedBudgetProposals.begin();
-        while(it != vecPreparedBudgetProposals.end())
-        {
-            if((*it).strProposalName == strProposalName)
-                return "Error preparing proposal, already registered.";
-            ++it;
-        }
+        CBudgetProposalBroadcast* pfound = budget.FindPreparedProposal(strProposalName);
+        if(pfound)
+            return "Error preparing proposal, already registered.";
 
         // create transaction 15 minutes into the future, to allow for confirmation time
         CBudgetProposalBroadcast budgetProposalBroadcast(strProposalName, strURL, nPaymentCount, scriptPubKey, nAmount, nBlockStart, uint256());
@@ -142,8 +138,8 @@ Value mnbudget(const Array& params, bool fHelp)
         CReserveKey reservekey(pwalletMain);
         //send the tx to the network
         pwalletMain->CommitTransaction(wtx, reservekey);
-        // Add the BudgetProposalBroadcast to the repared vector
-        vecPreparedBudgetProposals.push_back(budgetProposalBroadcast);
+        // Add the BudgetProposalBroadcast to the repared collection
+        budget.AddPreparedProposal(budgetProposalBroadcast);
 
         return wtx.GetHash().ToString();
     }
@@ -220,17 +216,8 @@ Value mnbudget(const Array& params, bool fHelp)
         budgetProposalBroadcast.Relay();
         budget.AddProposal(budgetProposalBroadcast);
         
-        // Remove the proposal from the prepared vector
-        std::vector<CBudgetProposalBroadcast>::iterator it = vecPreparedBudgetProposals.begin();
-        while(it != vecPreparedBudgetProposals.end())
-        {
-            if(it->strProposalName == strProposalName)
-            {
-                vecPreparedBudgetProposals.erase(it);
-                break;
-            }
-            ++it;
-        }
+        // Remove the proposal from the prepared collection
+        budget.RemovePreparedProposal(budgetProposalBroadcast);
 
         return budgetProposalBroadcast.GetHash().ToString();
     }
