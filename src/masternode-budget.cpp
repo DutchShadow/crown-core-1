@@ -13,6 +13,9 @@
 #include "util.h"
 #include "net_processing.h"
 #include "addrman.h"
+#include "key_io.h"
+#include "netmessagemaker.h"
+#include "consensus/validation.h"
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/range/algorithm.hpp>
@@ -28,14 +31,6 @@ std::vector<BudgetDraftBroadcast> vecImmatureBudgetDrafts;
 
 namespace
 {
-    // TODO fix
-    //CBitcoinAddress ScriptToAddress(const CScript& script)
-    //{
-    //    CTxDestination destination;
-    //    ExtractDestination(script, destination);
-    //    return destination;
-    //}
-
     void DebugLogBudget(
         int64_t currentTime,
         int64_t objectTime,
@@ -45,9 +40,8 @@ namespace
         const std::string& opcode
     )
     {
-        // TODO fix
-        //if(GetArg("-budgetdebug", "") != "true")
-            //return;
+        if (gArgs.GetArg("-budgetdebug", false))
+            return;
 
         const boost::filesystem::path filename = GetDataDir() / "budgetdebuglog.csv";
 
@@ -110,34 +104,32 @@ int GetNextSuperblock(int height)
 
 bool IsBudgetCollateralValid(uint256 nTxCollateralHash, uint256 nExpectedHash, std::string& strError, int64_t& nTime, int& nConf)
 {
-    CTransaction txCollateral;
+    CTransactionRef txCollateral;
     uint256 nBlockHash;
-    // TODO fix
-    //if(!GetTransaction(nTxCollateralHash, txCollateral, nBlockHash, true)){
-    //    strError = strprintf("Can't find collateral tx %s", txCollateral.ToString());
-    //    LogPrintf ("CBudgetProposalBroadcast::IsBudgetCollateralValid - %s\n", strError);
-    //    return false;
-    //}
+    if(!GetTransaction(nTxCollateralHash, txCollateral, Params().GetConsensus(), nBlockHash, true)){
+        strError = strprintf("Can't find collateral tx %s", txCollateral->ToString());
+        LogPrintf ("CBudgetProposalBroadcast::IsBudgetCollateralValid - %s\n", strError);
+        return false;
+    }
 
-    if(txCollateral.vout.size() < 1) return false;
-    if(txCollateral.nLockTime != 0) return false;
+    if(txCollateral->vout.size() < 1) return false;
+    if(txCollateral->nLockTime != 0) return false;
 
     CScript findScript;
     findScript << OP_RETURN << ToByteVector(nExpectedHash);
 
     bool foundOpReturn = false;
-    for (const auto& o : txCollateral.vout) {
-        // TODO fix
-        //if(!o.scriptPubKey.IsNormalPaymentScript() && !o.scriptPubKey.IsUnspendable()){
-        //    strError = strprintf("Invalid Script %s", txCollateral.ToString());
-        //    LogPrintf ("CBudgetProposalBroadcast::IsBudgetCollateralValid - %s\n", strError);
-        //    return false;
-        //}
+    for (const auto& o : txCollateral->vout) {
+        if(!o.scriptPubKey.IsNormalPaymentScript() && !o.scriptPubKey.IsUnspendable()){
+            strError = strprintf("Invalid Script %s", txCollateral->ToString());
+            LogPrintf ("CBudgetProposalBroadcast::IsBudgetCollateralValid - %s\n", strError);
+            return false;
+        }
         if(o.scriptPubKey == findScript && o.nValue >= BUDGET_FEE_TX) foundOpReturn = true;
 
     }
     if(!foundOpReturn){
-        strError = strprintf("Couldn't find opReturn %s in %s", nExpectedHash.ToString(), txCollateral.ToString());
+        strError = strprintf("Couldn't find opReturn %s in %s", nExpectedHash.ToString(), txCollateral->ToString());
         LogPrintf ("CBudgetProposalBroadcast::IsBudgetCollateralValid - %s\n", strError);
         return false;
     }
@@ -148,8 +140,7 @@ bool IsBudgetCollateralValid(uint256 nTxCollateralHash, uint256 nExpectedHash, s
         - nTime is never validated via the hashing mechanism and comes from a full-validated source (the blockchain)
     */
 
-    // TODO fix
-    int conf;// = GetIXConfirmations(nTxCollateralHash);
+    int conf = GetIXConfirmations(nTxCollateralHash);
     if (nBlockHash != uint256()) {
         BlockMap::iterator mi = mapBlockIndex.find(nBlockHash);
         if (mi != mapBlockIndex.end() && (*mi).second) {
@@ -285,34 +276,32 @@ void CBudgetManager::SubmitBudgetDraft()
         uint256 txidCollateral;
 
         if(!mapCollateralTxids.count(tempBudget.GetHash())){
-            // TODO fix
-            //CWalletTx wtx;
-            //if(!pwalletMain->GetBudgetSystemCollateralTX(wtx, tempBudget.GetHash())){
-            //    LogPrintf("CBudgetManager::SubmitBudgetDraft - Can't make collateral transaction\n");
-            //    return;
-            //}
+            CTransactionRef wtx;
+            if(!GetWallets()[0]->GetBudgetSystemCollateralTX(wtx, tempBudget.GetHash())){
+                LogPrintf("CBudgetManager::SubmitBudgetDraft - Can't make collateral transaction\n");
+                return;
+            }
 
-            //// make our change address
-            //CReserveKey reservekey(pwalletMain);
-            ////send the tx to the network
-            //pwalletMain->CommitTransaction(wtx, reservekey);
-            //tx = (CTransaction)wtx;
-            //txidCollateral = tx.GetHash();
-            //mapCollateralTxids.insert(make_pair(tempBudget.GetHash(), txidCollateral));
+            // make our change address
+            CReserveKey reservekey((GetWallets()[0]).get());
+            mapValue_t mapValue;
+            CValidationState state;
+            //send the tx to the network
+            GetWallets()[0]->CommitTransaction(wtx, std::move(mapValue), {} /* orderForm */, "", reservekey, g_connman.get(), state);
+            txidCollateral = wtx->GetHash();
+            mapCollateralTxids.insert(make_pair(tempBudget.GetHash(), txidCollateral));
         } else {
             txidCollateral = mapCollateralTxids[tempBudget.GetHash()];
         }
 
-        // TODO fix
-        int conf;// = GetIXConfirmations(tx.GetHash());
-        CTransaction txCollateral;
+        int conf = GetIXConfirmations(tx.GetHash());
+        CTransactionRef txCollateral;
         uint256 nBlockHash;
 
-        // TODO fix
-        //if(!GetTransaction(txidCollateral, txCollateral, nBlockHash, true)) {
-        //    LogPrintf ("CBudgetManager::SubmitBudgetDraft - Can't find collateral tx %s", txidCollateral.ToString());
-        //    return;
-        //}
+        if(!GetTransaction(txidCollateral, txCollateral, Params().GetConsensus(), nBlockHash, true)) {
+            LogPrintf ("CBudgetManager::SubmitBudgetDraft - Can't find collateral tx %s", txidCollateral.ToString());
+            return;
+        }
 
         if (nBlockHash != uint256()) {
             BlockMap::iterator mi = mapBlockIndex.find(nBlockHash);
@@ -460,8 +449,7 @@ void CBudgetManager::FillBlockPayee(CMutableTransaction& txNew, CAmount nFees) c
 
     // Pay the miner
 
-    // TODO fix
-    //txNew.vout[0].nValue = GetBlockValue(pindexPrev->nHeight, nFees);
+    txNew.vout[0].nValue = GetBlockValue(pindexPrev->nHeight, nFees);
 
     // Find finalized budgets with the most votes
 
@@ -473,9 +461,8 @@ void CBudgetManager::FillBlockPayee(CMutableTransaction& txNew, CAmount nFees) c
 
     for (const auto& payment : budgetToPay->GetBudgetPayments())
     {
-            // TODO fix
-        //LogPrintf("CBudgetManager::FillBlockPayee - Budget payment to %s for %lld; proposal %s\n",
-            //ScriptToAddress(payment.payee).ToString(), payment.nAmount, payment.nProposalHash.ToString());
+        LogPrintf("CBudgetManager::FillBlockPayee - Budget payment to %s for %lld; proposal %s\n",
+            EncodeDestination(CScriptID(payment.payee)), payment.nAmount, payment.nProposalHash.ToString());
         txNew.vout.push_back(CTxOut(payment.nAmount, payment.payee));
     }
 }
@@ -719,16 +706,15 @@ CAmount CBudgetManager::GetTotalBudget(int nHeight)
 
     //get min block value and calculate from that
     CAmount nSubsidy = 12 * COIN;
-    // TODO fix
-    //if (nHeight >= Params().PoSStartHeight())
-    //{
-    //    nSubsidy = 10 * COIN;
-    //}
+    if (nHeight >= Params().PoSStartHeight())
+    {
+        nSubsidy = 10 * COIN;
+    }
 
-    //int halvings = nHeight / Params().SubsidyHalvingInterval();
+    int halvings = nHeight / Params().GetConsensus().nSubsidyHalvingInterval;
 
     // Subsidy is cut in half every 2,100,000 blocks which will occur approximately every 4 years.
-    //nSubsidy >>= halvings;
+    nSubsidy >>= halvings;
 
     // Amount of blocks in a months period of time (using 1 minutes per) = (60*24*30)/1
     if(Params().NetworkID() == CBaseChainParams::MAIN)
@@ -747,9 +733,8 @@ void CBudgetManager::NewBlock()
     if (masternodeSync.RequestedMasternodeAssets <= MASTERNODE_SYNC_BUDGET)
         return;
 
-    // TODO fix
-    //if (strBudgetMode == "suggest" || fMasterNode) //suggest the budget we see
-    //    SubmitBudgetDraft();
+    if (strBudgetMode == "suggest" || fMasterNode) //suggest the budget we see
+        SubmitBudgetDraft();
 
     //this function should be called 1/6 blocks, allowing up to 100 votes per day on all proposals
     if(chainActive.Height() % 6 != 0)
@@ -763,11 +748,10 @@ void CBudgetManager::NewBlock()
             ResetSync();
         }
 
-        // TODO fix
-        //LOCK(cs_vNodes);
-        //for (auto& pnode : vNodes)
-        //    if(pnode->nVersion >= MIN_BUDGET_PEER_PROTO_VERSION) 
-        //        Sync(pnode, uint256(), true);
+        LOCK(cs_vNodes);
+        for (auto& pnode : g_connman->GetNodes())
+            if(pnode->nVersion >= MIN_BUDGET_PEER_PROTO_VERSION) 
+                Sync(pnode, uint256(), true);
         
         MarkSynced();
     }
@@ -860,8 +844,7 @@ void CBudgetManager::NewBlock()
 void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv)
 {
     // lite mode is not supported
-    // TODO fix
-    //if(fLiteMode) return;
+    if(fLiteMode) return;
     if(!masternodeSync.IsBlockchainSynced()) return;
 
     LOCK(cs);
@@ -872,13 +855,12 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand,
 
         if(Params().NetworkID() == CBaseChainParams::MAIN){
             if(nProp.IsNull()) {
-                // TODO fix
-                //if(pfrom->HasFulfilledRequest("mnvs")) {
-                //    LogPrintf("mnvs - peer already asked me for the list\n");
-                //    Misbehaving(pfrom->GetId(), 20);
-                //    return;
-                //}
-                //pfrom->FulfilledRequest("mnvs");
+                if(pfrom->HasFulfilledRequest("mnvs")) {
+                    LogPrintf("mnvs - peer already asked me for the list\n");
+                    Misbehaving(pfrom->GetId(), 20);
+                    return;
+                }
+                pfrom->FulfilledRequest("mnvs");
             }
         }
 
@@ -888,8 +870,7 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand,
 
     if (strCommand == "mprop") { //Masternode Proposal
         CBudgetProposalBroadcast budgetProposalBroadcast;
-        // TODO fix
-        //vRecv >> budgetProposalBroadcast;
+        vRecv >> budgetProposalBroadcast;
 
         DebugLogBudget(budgetProposalBroadcast, pfrom->addr, "PR");
 
@@ -965,8 +946,7 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand,
 
     if (strCommand == "fbs") { //Finalized Budget Suggestion
         BudgetDraftBroadcast budgetDraftBroadcast;
-        // TODO fix
-        //vRecv >> budgetDraftBroadcast;
+        vRecv >> budgetDraftBroadcast;
 
         std::map<uint256, BudgetDraftBroadcast>::const_iterator found = mapSeenBudgetDrafts.find(budgetDraftBroadcast.GetHash());
         if(found != mapSeenBudgetDrafts.end())
@@ -1028,8 +1008,7 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand,
 
     if (strCommand == "fbvote") { //Finalized Budget Vote
         BudgetDraftVote vote;
-        // TODO fix
-        //vRecv >> vote;
+        vRecv >> vote;
         vote.fValid = true;
 
         if(mapSeenBudgetDraftVotes.count(vote.GetHash())){
@@ -1172,8 +1151,8 @@ void CBudgetManager::Sync(CNode* pfrom, uint256 nProp, bool fPartial) const
         ++it1;
     }
 
-    // TODO fix
-    //pfrom->PushMessage("ssc", MASTERNODE_SYNC_BUDGET_PROP, nInvCount);
+    const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
+    g_connman->PushMessage(pfrom, msgMaker.Make("ssc", MASTERNODE_SYNC_BUDGET_PROP, nInvCount));
 
     LogPrintf("CBudgetManager::Sync - sent %d items\n", nInvCount);
 
@@ -1187,8 +1166,7 @@ void CBudgetManager::Sync(CNode* pfrom, uint256 nProp, bool fPartial) const
         ++it3;
     }
 
-    // TODO fix
-    //pfrom->PushMessage("ssc", MASTERNODE_SYNC_BUDGET_FIN, nInvCount);
+    g_connman->PushMessage(pfrom, msgMaker.Make("ssc", MASTERNODE_SYNC_BUDGET_FIN, nInvCount));
     LogPrintf("CBudgetManager::Sync - sent %d items\n", nInvCount);
 
 }
@@ -1290,8 +1268,8 @@ bool CBudgetManager::ReceiveProposalVote(const CBudgetVote &vote, CNode *pfrom, 
             mapOrphanMasternodeBudgetVotes[vote.nProposalHash] = vote;
 
             if(!askedForSourceProposalOrBudget.count(vote.nProposalHash)){
-                // TODO fix
-                //pfrom->PushMessage("mnvs", vote.nProposalHash);
+                const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
+                g_connman->PushMessage(pfrom, msgMaker.Make("mnvs", vote.nProposalHash));
                 askedForSourceProposalOrBudget[vote.nProposalHash] = GetTime();
             }
         }
@@ -1305,15 +1283,14 @@ bool CBudgetManager::ReceiveProposalVote(const CBudgetVote &vote, CNode *pfrom, 
     int height = chainActive.Height();
     if (proposal.nBlockStart <= GetNextSuperblock(height) && proposal.nBlockEnd > GetNextSuperblock(height))
     {
-        // TODO fix
-        //const int votingThresholdTime = GetVotingThreshold() * Params().TargetSpacing() * 0.75;
-        //const int superblockProjectedTime = GetAdjustedTime() + (GetNextSuperblock(height) - height) * Params().TargetSpacing();
+        const int votingThresholdTime = GetVotingThreshold() * Params().GetConsensus().nPowTargetSpacing * 0.75;
+        const int superblockProjectedTime = GetAdjustedTime() + (GetNextSuperblock(height) - height) * Params().GetConsensus().nPowTargetSpacing;
 
-        //if (superblockProjectedTime - vote.nTime <= votingThresholdTime)
-        //{
-        //    strError = "Vote is too close to superblock.";
-        //    return false;
-        //}
+        if (superblockProjectedTime - vote.nTime <= votingThresholdTime)
+        {
+            strError = "Vote is too close to superblock.";
+            return false;
+        }
     }
 
     if(!proposal.AddOrUpdateVote(vote, strError))
@@ -1347,8 +1324,8 @@ bool CBudgetManager::UpdateBudgetDraft(const BudgetDraftVote& vote, CNode* pfrom
             mapOrphanBudgetDraftVotes[vote.nBudgetHash] = vote;
 
             if(!askedForSourceProposalOrBudget.count(vote.nBudgetHash)){
-                // TODO fix
-                //pfrom->PushMessage("mnvs", vote.nBudgetHash);
+                const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
+                g_connman->PushMessage(pfrom, msgMaker.Make("mnvs", vote.nBudgetHash));
                 askedForSourceProposalOrBudget[vote.nBudgetHash] = GetTime();
             }
 
@@ -1362,11 +1339,10 @@ bool CBudgetManager::UpdateBudgetDraft(const BudgetDraftVote& vote, CNode* pfrom
 
     for (std::map<uint256, BudgetDraft>::iterator i = mapBudgetDrafts.begin(); i != mapBudgetDrafts.end(); ++i)
     {
-        // TODO fix
-        //const std::map<uint256, BudgetDraftVote>& votes = i->second.GetVotes();
-        //const std::map<uint256, BudgetDraftVote>::const_iterator found = votes.find(vote.vin.prevout.GetHash());
-        //if (found != votes.end() && found->second.nTime > vote.nTime)
-        //    isOldVote = true;
+        const std::map<uint256, BudgetDraftVote>& votes = i->second.GetVotes();
+        const std::map<uint256, BudgetDraftVote>::const_iterator found = votes.find(vote.vin.prevout.GetHash());
+        if (found != votes.end() && found->second.nTime > vote.nTime)
+            isOldVote = true;
     }
 
     if (!mapBudgetDrafts[vote.nBudgetHash].AddOrUpdateVote(isOldVote, vote, strError))
@@ -1488,8 +1464,7 @@ bool CBudgetProposal::AddOrUpdateVote(const CBudgetVote& vote, std::string& strE
 {
     LOCK(cs);
 
-    // TODO fix
-    uint256 hash;// = vote.vin.prevout.GetHash();
+    uint256 hash = vote.vin.prevout.GetHash();
 
     if(mapVotes.count(hash)){
         if(mapVotes[hash].nTime > vote.nTime){
@@ -1775,15 +1750,13 @@ void BudgetDraft::DiscontinueOlderVotes(const BudgetDraftVote& newerVote)
 {
     LOCK(m_cs);
 
-    // TODO fix
-    std::map<uint256, BudgetDraftVote>::iterator found;// = m_votes.find(newerVote.vin.prevout.GetHash());
+    std::map<uint256, BudgetDraftVote>::iterator found = m_votes.find(newerVote.vin.prevout.GetHash());
     if (found == m_votes.end())
         return;
 
     if (found->second.nTime < newerVote.nTime)
     {
-        // TODO fix
-        //m_obsoleteVotes.insert(std::make_pair(newerVote.vin.prevout.GetHash(), found->second));
+        m_obsoleteVotes.insert(std::make_pair(newerVote.vin.prevout.GetHash(), found->second));
         m_votes.erase(found);
     }
 }
@@ -1800,8 +1773,7 @@ bool BudgetDraft::AddOrUpdateVote(bool isOldVote, const BudgetDraftVote& vote, s
 
 bool BudgetDraft::AddOrUpdateVote(std::map<uint256, BudgetDraftVote>& votes, const BudgetDraftVote& vote, std::string& strError)
 {
-    // TODO fix
-    uint256 masternodeHash;// = vote.vin.prevout.GetHash();
+    uint256 masternodeHash = vote.vin.prevout.GetHash();
     map<uint256, BudgetDraftVote>::iterator found = votes.find(masternodeHash);
 
     if(found != votes.end()){
@@ -2022,9 +1994,8 @@ std::string BudgetDraft::GetStatus() const
 uint256 BudgetDraft::GetHash() const
 {
     CHashWriter stream(SER_GETHASH, PROTOCOL_VERSION);
-    // TODO fix
-    //stream << m_blockStart;
-    //stream << m_payments;
+    stream << m_blockStart;
+    stream << m_payments;
 
     return stream.GetHash();
 }
@@ -2129,8 +2100,7 @@ bool BudgetDraft::IsTransactionValid(const CTransaction& txNew, int nBlockHeight
         }
         if(!found)
         {
-            // TODO fix
-            //LogPrintf("BudgetDraft::IsTransactionValid - Missing required payment - %s: %d\n", ScriptToAddress(payment.payee).ToString(), payment.nAmount);
+            LogPrintf("BudgetDraft::IsTransactionValid - Missing required payment - %s: %d\n", EncodeDestination(CScriptID(payment.payee)), payment.nAmount);
             return false;
         }
     }
@@ -2262,9 +2232,8 @@ BudgetDraft BudgetDraftBroadcast::Budget() const
 uint256 BudgetDraftBroadcast::GetHash() const
 {
     CHashWriter stream(SER_GETHASH, PROTOCOL_VERSION);
-    // TODO fix
-    //stream << m_blockStart;
-    //stream << m_payments;
+    stream << m_blockStart;
+    stream << m_payments;
 
     return stream.GetHash();
 }

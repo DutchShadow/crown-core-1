@@ -120,6 +120,7 @@ public:
         nBlockPoSStart = 2330000;
         nPruneAfterHeight = 100000;
         nAuxpowChainId = 20;
+        nChainStallDuration = 60*60;
 
         genesis = CreateGenesisBlock(1412760826, 1612467894, 0x1d00ffff, 1, 10 * COIN);
 

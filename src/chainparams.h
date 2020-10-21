@@ -153,7 +153,7 @@ public:
     // int ValidStakePointerDuration() const { return nStakePointerValidityPeriod; }
     // int MaxReorganizationDepth() const { return nMaxReorgDepth; }
     // int KernelModifierOffset() const { return nKernelModifierOffset; }
-    // int ChainStallDuration() const { return nChainStallDuration; }
+    int ChainStallDuration() const { return nChainStallDuration; }
     // /* Return start height of auxpow and the retarget interval change.  */
     // virtual int AuxpowStartHeight() const = 0;
     /* Return whether or not to enforce strict chain ID checks.  */
@@ -188,7 +188,7 @@ protected:
     int nStakePointerValidityPeriod;
     // int nMaxReorgDepth;
     // int nKernelModifierOffset;
-    // int nChainStallDuration;
+    int nChainStallDuration;
 };
 
 /**

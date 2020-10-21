@@ -28,6 +28,7 @@
 #include <utilmoneystr.h>
 #include <wallet/fees.h>
 #include <wallet/walletutil.h>
+#include "masternode-budget.h"
 
 #include <algorithm>
 #include <assert.h>
@@ -2818,8 +2819,33 @@ OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vec
     return m_default_address_type;
 }
 
-bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet,
-                         int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign)
+bool CWallet::GetBudgetSystemCollateralTX(CTransactionRef& tx, uint256 hash)
+{
+    // make our change address
+    CReserveKey reservekey(GetWallets()[0].get());
+
+    CScript scriptChange;
+    scriptChange << OP_RETURN << ToByteVector(hash);
+
+    int64_t nFeeRet = 0;
+    std::string strFail = "";
+    std::vector<CRecipient> vecSend;
+    CRecipient r = {scriptChange, BUDGET_FEE_TX, false};
+    vecSend.push_back(r);
+    int nChangePosRet = -1;
+
+    CCoinControl coinControl;
+
+    bool success = CreateTransaction(vecSend, tx, reservekey, nFeeRet, nChangePosRet, strFail, coinControl, true, ALL_COINS, (CAmount)0);
+    if(!success){
+        LogPrintf("GetBudgetSystemCollateralTX: Error - %s\n", strFail);
+        return false;
+    }
+
+    return true;
+}
+
+bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet, int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign, AvailableCoinsType coin_type, int extraPayloadSize)
 {
     CAmount nValue = 0;
     int nChangePosRequest = nChangePosInOut;

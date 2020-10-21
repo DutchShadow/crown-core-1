@@ -113,8 +113,7 @@ bool CLegacySigner::VerifyMessage(CPubKey pubkey, const vector<unsigned char>& v
 //TODO: Rename/move to core
 void ThreadCheckLegacySigner()
 {
-    // TODO fix
-    //if(fLiteMode) return; //disable all Masternode related functionality
+    if(fLiteMode) return; //disable all Masternode related functionality
 
     // Make this thread recognisable as the wallet flushing thread
     RenameThread("crown-legacysigner");

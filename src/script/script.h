@@ -535,6 +535,7 @@ public:
 
     /** Proof of Stake is marked via OP code */
     bool IsProofOfStakeMarker() const;
+    bool IsNormalPaymentScript() const;
     bool IsPayToScriptHash() const;
     bool IsPayToWitnessScriptHash() const;
     bool IsWitnessProgram(int& version, std::vector<unsigned char>& program) const;

@@ -87,6 +87,10 @@ struct CNodeStateStats {
 /** Get statistics from node state */
 bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats);
 void RelayInv(CInv &inv, const int minProtoVersion = MinPeerProtoVersion());
+int GetIXConfirmations(uint256 nTXHash);
+int64_t GetBlockValue(int nHeight, const CAmount &nFees);
+int64_t GetMasternodePayment(int nHeight, int64_t blockValue);
+int64_t GetSystemnodePayment(int nHeight, int64_t blockValue);
 
 /** Increase a node's misbehavior score. */
 void Misbehaving(NodeId nodeid, int howmuch, const std::string& message="") EXCLUSIVE_LOCKS_REQUIRED(cs_main);

@@ -26,8 +26,7 @@ std::map<int, CSporkMessage> mapSporksActive;
 
 void ProcessSpork(CNode* pfrom, CConnman* connman, const std::string& strCommand, CDataStream& vRecv)
 {
-    // TODO fix
-    //if(fLiteMode) return; //disable all masternode related functionality
+    if(fLiteMode) return; //disable all masternode related functionality
 
     if (strCommand == "spork")
     {

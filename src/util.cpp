@@ -92,6 +92,8 @@ std::string strSystemNodePrivKey = "";
 std::string strMasterNodeAddr = "";
 std::string strSystemNodeAddr = "";
 
+int nInstantXDepth = 5;
+
 int64_t enforceMasternodePaymentsTime = 4085657524;
 int64_t enforceSystemnodePaymentsTime = 4085657524;
 
@@ -100,6 +102,9 @@ const int64_t nStartupTime = GetTime();
 
 const char * const BITCOIN_CONF_FILENAME = "crown.conf";
 const char * const BITCOIN_PID_FILENAME = "crown.pid";
+
+std::string strBudgetMode = "";
+bool fLiteMode = "";
 
 ArgsManager gArgs;
 

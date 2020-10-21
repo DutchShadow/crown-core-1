@@ -31,8 +31,7 @@ std::auto_ptr<InstantSend> g_instantSend;
 
 void InstantSend::ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStream& vRecv)
 {
-    // TODO fix
-    //if(fLiteMode) return; //disable all masternode related functionality
+    if(fLiteMode) return; //disable all masternode related functionality
     if(!IsSporkActive(SPORK_2_INSTANTX)) return;
     if(!masternodeSync.IsBlockchainSynced()) return;
 
