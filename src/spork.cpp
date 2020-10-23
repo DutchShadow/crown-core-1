@@ -10,6 +10,7 @@
 #include "spork.h"
 #include "net_processing.h"
 #include "masternode-budget.h"
+#include "netmessagemaker.h"
 #include <boost/lexical_cast.hpp>
 
 using namespace std;
@@ -67,8 +68,8 @@ void ProcessSpork(CNode* pfrom, CConnman* connman, const std::string& strCommand
         std::map<int, CSporkMessage>::iterator it = mapSporksActive.begin();
 
         while(it != mapSporksActive.end()) {
-            // TODO fix
-            //connman->PushMessage(pfrom, "spork", it->second);
+            const CNetMsgMaker msgMaker(PROTOCOL_VERSION);
+            g_connman->PushMessage(pfrom, msgMaker.Make("spork", it->second));
             it++;
         }
     }
@@ -152,14 +153,13 @@ void ExecuteSpork(int nSporkID, int nValue)
     }
     else if (nSporkID == SPORK_16_DISCONNECT_OLD_NODES && nValue == 1)
     {
-        // TODO fix
-        //LOCK(cs_vNodes);
+        LOCK(cs_vNodes);
 
-        //for (std::vector<CNode*>::iterator i = vNodes.begin(); i != vNodes.end(); ++i)
-        //{
-        //    if ((*i)->nVersion < MinPeerProtoVersion())
-        //        (*i)->fDisconnect = true;
-        //}
+        for (std::vector<CNode*>::iterator i = g_connman->GetNodes().begin(); i != g_connman->GetNodes().end(); ++i)
+        {
+            if ((*i)->nVersion < MinPeerProtoVersion())
+                (*i)->fDisconnect = true;
+        }
     }
 }
 

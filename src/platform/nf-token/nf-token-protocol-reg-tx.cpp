@@ -8,6 +8,8 @@
 #include "platform/specialtx.h"
 #include "nft-protocols-manager.h"
 #include "nf-tokens-manager.h"
+#include "consensus/validation.h"
+#include "key_io.h"
 
 #include "sync.h"
 
@@ -18,36 +20,35 @@ namespace Platform
         AssertLockHeld(cs_main);
 
         NfTokenProtocolRegTx nftProtoRegTx;
-        // TODO fix
-        //if (!GetTxPayload(tx, nftProtoRegTx))
-            //return state.DoS(100, false, REJECT_INVALID, "bad-tx-payload");
+        if (!GetTxPayload(tx, nftProtoRegTx))
+            return state.DoS(100, false, REJECT_INVALID, "bad-tx-payload");
 
         const NfTokenProtocol & nftProto = nftProtoRegTx.GetNftProto();
 
-        //if (nftProtoRegTx.m_version != NfTokenProtocolRegTx::CURRENT_VERSION)
-        //    return state.DoS(100, false, REJECT_INVALID, "bad-nft-proto-reg-tx-version");
+        if (nftProtoRegTx.m_version != NfTokenProtocolRegTx::CURRENT_VERSION)
+            return state.DoS(100, false, REJECT_INVALID, "bad-nft-proto-reg-tx-version");
 
-        //if (nftProto.tokenProtocolId == NfToken::UNKNOWN_TOKEN_PROTOCOL)
-        //    return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-token-protocol");
+        if (nftProto.tokenProtocolId == NfToken::UNKNOWN_TOKEN_PROTOCOL)
+            return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-token-protocol");
 
-        //if (nftProto.tokenProtocolOwnerId.IsNull())
-        //    return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-owner-key-null");
+        if (nftProto.tokenProtocolOwnerId.IsNull())
+            return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-owner-key-null");
 
-        //if (nftProto.nftRegSign < static_cast<uint8_t>(NftRegSignMin) || nftProto.nftRegSign > static_cast<uint8_t>(NftRegSignMax))
-        //    return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-reg-sign");
+        if (nftProto.nftRegSign < static_cast<uint8_t>(NftRegSignMin) || nftProto.nftRegSign > static_cast<uint8_t>(NftRegSignMax))
+            return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-reg-sign");
 
-        //if (nftProto.tokenProtocolName.size() < NfTokenProtocol::TOKEN_PROTOCOL_NAME_MIN
-        //|| nftProto.tokenProtocolName.size() > NfTokenProtocol::TOKEN_PROTOCOL_NAME_MAX)
-        //    return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-proto-name");
+        if (nftProto.tokenProtocolName.size() < NfTokenProtocol::TOKEN_PROTOCOL_NAME_MIN
+        || nftProto.tokenProtocolName.size() > NfTokenProtocol::TOKEN_PROTOCOL_NAME_MAX)
+            return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-proto-name");
 
-        //if (nftProto.tokenMetadataMimeType.size() > NfTokenProtocol::TOKEN_METADATA_MIMETYPE_MAX)
-        //    return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-metadata-mime-type");
+        if (nftProto.tokenMetadataMimeType.size() > NfTokenProtocol::TOKEN_METADATA_MIMETYPE_MAX)
+            return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-metadata-mime-type");
 
-        //if (nftProto.tokenMetadataSchemaUri.size() > NfTokenProtocol::TOKEN_METADATA_SCHEMA_URI_MAX)
-        //    return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-metadata-schema-uri");
+        if (nftProto.tokenMetadataSchemaUri.size() > NfTokenProtocol::TOKEN_METADATA_SCHEMA_URI_MAX)
+            return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-metadata-schema-uri");
 
-        //if (nftProto.maxMetadataSize > NfTokenProtocol::TOKEN_METADATA_ABSOLUTE_MAX)
-        //    return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-metadata-max-size-too-big");
+        if (nftProto.maxMetadataSize > NfTokenProtocol::TOKEN_METADATA_ABSOLUTE_MAX)
+            return state.DoS(10, false, REJECT_INVALID, "bad-nft-proto-reg-tx-metadata-max-size-too-big");
 
         //if (pindexLast != nullptr)
         //{
@@ -64,15 +65,14 @@ namespace Platform
     bool NfTokenProtocolRegTx::ProcessTx(const CTransaction & tx, const CBlockIndex * pindex, CValidationState & state)
     {
         NfTokenProtocolRegTx nftProtoRegTx;
-        // TODO fix
-        //bool result = GetTxPayload(tx, nftProtoRegTx);
+        bool result = GetTxPayload(tx, nftProtoRegTx);
         // should have been checked already
-        //assert(result);
+        assert(result);
 
         auto nftProto = nftProtoRegTx.GetNftProto();
 
-        //if (!NftProtocolsManager::Instance().AddNftProto(nftProto, tx, pindex))
-        //    return state.DoS(100, false, REJECT_DUPLICATE/*TODO: REJECT_CONFLICT*/, "nft-proto-reg-tx-conflict");
+        if (!NftProtocolsManager::Instance().AddNftProto(nftProto, tx, pindex))
+            return state.DoS(100, false, REJECT_DUPLICATE/*TODO: REJECT_CONFLICT*/, "nft-proto-reg-tx-conflict");
         NfTokensManager::Instance().OnNewProtocolRegistered(nftProto.tokenProtocolId);
         return true;
     }
@@ -80,41 +80,38 @@ namespace Platform
     bool NfTokenProtocolRegTx::UndoTx(const CTransaction & tx, const CBlockIndex * pindex)
     {
         NfTokenProtocolRegTx nftProtoRegTx;
-        // TODO fix
-        //bool result = GetTxPayload(tx, nftProtoRegTx);
+        bool result = GetTxPayload(tx, nftProtoRegTx);
         // should have been checked already
-        //assert(result);
+        assert(result);
 
         auto nftProto = nftProtoRegTx.GetNftProto();
         return NftProtocolsManager::Instance().Delete(nftProto.tokenProtocolId, pindex->nHeight);
     }
 
-    // TODO fix
-    //void NfTokenProtocolRegTx::ToJson(json_spirit::Object & result) const
-    //{
-    //    result.push_back(json_spirit::Pair("version", m_version));
-    //    result.push_back(json_spirit::Pair("nftProtocolId", ProtocolName{m_nfTokenProtocol.tokenProtocolId}.ToString()));
-    //    result.push_back(json_spirit::Pair("tokenProtocolName", m_nfTokenProtocol.tokenProtocolName));
-    //    result.push_back(json_spirit::Pair("tokenMetadataSchemaUri", m_nfTokenProtocol.tokenMetadataSchemaUri));
-    //    result.push_back(json_spirit::Pair("tokenMetadataMimeType", m_nfTokenProtocol.tokenMetadataMimeType));
-    //    result.push_back(json_spirit::Pair("isTokenTransferable", m_nfTokenProtocol.isTokenTransferable));
-    //    result.push_back(json_spirit::Pair("isMetadataEmbedded", m_nfTokenProtocol.isMetadataEmbedded));
-    //    auto nftRegSignStr = NftRegSignToString(static_cast<NftRegSign>(m_nfTokenProtocol.nftRegSign));
-    //    result.push_back(json_spirit::Pair("nftRegSign", nftRegSignStr));
-    //    result.push_back(json_spirit::Pair("maxMetadataSize", m_nfTokenProtocol.maxMetadataSize));
-    //    result.push_back(json_spirit::Pair("tokenProtocolOwnerId", CBitcoinAddress(m_nfTokenProtocol.tokenProtocolOwnerId).ToString()));
-    //}
+    void NfTokenProtocolRegTx::ToJson(UniValue& result) const
+    {
+        result.push_back(Pair("version", m_version));
+        result.push_back(Pair("nftProtocolId", ProtocolName{m_nfTokenProtocol.tokenProtocolId}.ToString()));
+        result.push_back(Pair("tokenProtocolName", m_nfTokenProtocol.tokenProtocolName));
+        result.push_back(Pair("tokenMetadataSchemaUri", m_nfTokenProtocol.tokenMetadataSchemaUri));
+        result.push_back(Pair("tokenMetadataMimeType", m_nfTokenProtocol.tokenMetadataMimeType));
+        result.push_back(Pair("isTokenTransferable", m_nfTokenProtocol.isTokenTransferable));
+        result.push_back(Pair("isMetadataEmbedded", m_nfTokenProtocol.isMetadataEmbedded));
+        auto nftRegSignStr = NftRegSignToString(static_cast<NftRegSign>(m_nfTokenProtocol.nftRegSign));
+        result.push_back(Pair("nftRegSign", nftRegSignStr));
+        result.push_back(Pair("maxMetadataSize", m_nfTokenProtocol.maxMetadataSize));
+        result.push_back(Pair("tokenProtocolOwnerId", EncodeDestination(m_nfTokenProtocol.tokenProtocolOwnerId)));
+    }
 
 
     std::string NfTokenProtocolRegTx::ToString() const
     {
-        // TODO fix
-        //std::ostringstream out;
-        //out << "NfTokenProtocolRegTx(nft protocol ID=" << ProtocolName{m_nfTokenProtocol.tokenProtocolId}.ToString()
-        //<< ", nft protocol name=" << m_nfTokenProtocol.tokenProtocolName << ", nft metadata schema url=" << m_nfTokenProtocol.tokenMetadataSchemaUri
-        //<< ", nft metadata mimetype=" << m_nfTokenProtocol.tokenMetadataMimeType << ", transferable=" << m_nfTokenProtocol.isTokenTransferable
-        //<< ", is metadata embedded" << m_nfTokenProtocol.isMetadataEmbedded << ", max metadata size=" << m_nfTokenProtocol.maxMetadataSize
-        //<< ", nft Protocol owner ID=" << CBitcoinAddress(m_nfTokenProtocol.tokenProtocolOwnerId).ToString() << ")";
-        //return out.str();
+        std::ostringstream out;
+        out << "NfTokenProtocolRegTx(nft protocol ID=" << ProtocolName{m_nfTokenProtocol.tokenProtocolId}.ToString()
+        << ", nft protocol name=" << m_nfTokenProtocol.tokenProtocolName << ", nft metadata schema url=" << m_nfTokenProtocol.tokenMetadataSchemaUri
+        << ", nft metadata mimetype=" << m_nfTokenProtocol.tokenMetadataMimeType << ", transferable=" << m_nfTokenProtocol.isTokenTransferable
+        << ", is metadata embedded" << m_nfTokenProtocol.isMetadataEmbedded << ", max metadata size=" << m_nfTokenProtocol.maxMetadataSize
+        << ", nft Protocol owner ID=" << EncodeDestination(m_nfTokenProtocol.tokenProtocolOwnerId) << ")";
+        return out.str();
     }
 }

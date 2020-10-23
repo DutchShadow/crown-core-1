@@ -53,16 +53,14 @@ namespace Platform
             READWRITE(vote);
             READWRITE(candidate);
             READWRITE(keyId);
-            // TODO fix
-            //if (!(s.nType & SER_GETHASH))
-            //{
-            //    READWRITE(signature);
-            //}
+            if (!(s.nType & SER_GETHASH))
+            {
+                READWRITE(signature);
+            }
         }
 
         std::string ToString() const;
-        // TODO fix
-        //void ToJson(UniValue& result) const;
+        void ToJson(UniValue& result) const;
     };
 
 

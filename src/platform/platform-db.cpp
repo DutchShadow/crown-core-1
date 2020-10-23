@@ -235,11 +235,10 @@ namespace Platform
     NftProtoIndex PlatformDb::ReadNftProtoIndex(const uint64_t &protocolId)
     {
         NftProtoDiskIndex protoDiskIndex;
-        // TODO fix
-        //if (this->Read(std::make_pair(DB_NFT_PROTO, protocolId), protoDiskIndex))
-        //{
-        //    return NftProtoDiskIndexToNftProtoMemIndex(protoDiskIndex);
-        //}
+        if (this->Read(std::make_pair(DB_NFT_PROTO, protocolId), protoDiskIndex))
+        {
+            return NftProtoDiskIndexToNftProtoMemIndex(protoDiskIndex);
+        }
         return NftProtoIndex();
     }
 
@@ -284,19 +283,18 @@ namespace Platform
         /// Not sure if this case is even possible
         if (nftDiskIndex.NfTokenPtr() == nullptr)
         {
-            CTransaction tx;
+            CTransactionRef tx;
             uint256 txBlockHash;
-            // TODO fix
-            //if (!GetTransaction(nftDiskIndex.RegTxHash(), tx, txBlockHash, true))
-            //{
-            //    LogPrintf("%s: Transaction for NFT cannot be found, block hash: %s, tx hash: %s",
-            //              __func__, nftDiskIndex.BlockHash().ToString(), nftDiskIndex.RegTxHash().ToString());
-            //    return NfTokenIndex();
-            //}
+            if (!GetTransaction(nftDiskIndex.RegTxHash(), tx, Params().GetConsensus(), txBlockHash, true))
+            {
+                LogPrintf("%s: Transaction for NFT cannot be found, block hash: %s, tx hash: %s",
+                          __func__, nftDiskIndex.BlockHash().ToString(), nftDiskIndex.RegTxHash().ToString());
+                return NfTokenIndex();
+            }
             assert(txBlockHash == nftDiskIndex.BlockHash());
 
             NfTokenRegTx nftRegTx;
-            bool res = GetTxPayload(tx, nftRegTx);
+            bool res = GetTxPayload(*tx, nftRegTx);
             assert(res);
 
             std::shared_ptr<NfToken> nfTokenPtr(new NfToken(nftRegTx.GetNfToken()));
@@ -319,20 +317,19 @@ namespace Platform
         /// Not sure if this case is even possible
         if (protoDiskIndex.NftProtoPtr() == nullptr)
         {
-            CTransaction tx;
+            CTransactionRef tx;
             uint256 txBlockHash;
-            // TODO fix
-            //if (!GetTransaction(protoDiskIndex.RegTxHash(), tx, txBlockHash, true))
-            //{
-            //    LogPrintf("%s: Transaction for NFT proto cannot be found, block hash: %s, tx hash: %s",
-            //              __func__, protoDiskIndex.BlockHash().ToString(), protoDiskIndex.RegTxHash().ToString());
-            //    return NftProtoIndex();
-            //}
+            if (!GetTransaction(protoDiskIndex.RegTxHash(), tx, Params().GetConsensus(), txBlockHash, true))
+            {
+                LogPrintf("%s: Transaction for NFT proto cannot be found, block hash: %s, tx hash: %s",
+                          __func__, protoDiskIndex.BlockHash().ToString(), protoDiskIndex.RegTxHash().ToString());
+                return NftProtoIndex();
+            }
             assert(txBlockHash == protoDiskIndex.BlockHash());
 
             // TODO fix
             NfTokenProtocolRegTx protoRegTx;
-            //bool res = GetTxPayload(tx, protoRegTx);
+            //bool res = GetTxPayload(*tx, protoRegTx);
             //assert(res);
 
             std::shared_ptr<NfTokenProtocol> nftProtoPtr(new NfTokenProtocol(protoRegTx.GetNftProto()));

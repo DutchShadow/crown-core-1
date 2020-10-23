@@ -5,6 +5,8 @@
 #include "governance-vote.h"
 #include "agent.h"
 #include "specialtx.h"
+#include "consensus/validation.h"
+#include "key_io.h"
 
 #include "sync.h"
 
@@ -15,12 +17,11 @@ namespace Platform
         AssertLockHeld(cs_main);
 
         VoteTx vtx;
-        // TODO fix
-        //if (!GetTxPayload(tx, vtx))
-        //    return state.DoS(100, false, REJECT_INVALID, "bad-tx-payload");
+        if (!GetTxPayload(tx, vtx))
+            return state.DoS(100, false, REJECT_INVALID, "bad-tx-payload");
 
-        //if (!CheckInputsHashAndSig(tx, vtx, vtx.keyId, state))
-        //    return state.DoS(50, false, REJECT_INVALID, "bad-vote-tx-invalid-signature");
+        if (!CheckInputsHashAndSig(tx, vtx, vtx.keyId, state))
+            return state.DoS(50, false, REJECT_INVALID, "bad-vote-tx-invalid-signature");
 
         return true;
     }
@@ -33,12 +34,11 @@ namespace Platform
             GetTxPayload(tx, vtx);
 
             CMasternode* pmn = mnodeman.Find(vtx.voterId);
-            // TODO fix
-            //if(pmn == nullptr)
-            //    return state.DoS(10, false, REJECT_INVALID, "vote-tx-process-fail-no-masternode");
+            if(pmn == nullptr)
+                return state.DoS(10, false, REJECT_INVALID, "vote-tx-process-fail-no-masternode");
 
-            //if (pmn->pubkey2.GetID() != vtx.keyId)
-            //    return state.DoS(10, false, REJECT_INVALID, "vote-tx-process-fail-signed-by-wrong-key");
+            if (pmn->pubkey2.GetID() != vtx.keyId)
+                return state.DoS(10, false, REJECT_INVALID, "vote-tx-process-fail-signed-by-wrong-key");
 
             AgentsVoting().AcceptVote(vtx.GetVote());
 
@@ -46,8 +46,7 @@ namespace Platform
         }
         catch (const std::exception& )
         {
-            // TODO fix
-            //return state.DoS(1, false, REJECT_INVALID, "vote-tx-process-fail");
+            return state.DoS(1, false, REJECT_INVALID, "vote-tx-process-fail");
         }
 
     }
@@ -69,16 +68,15 @@ namespace Platform
         return { candidate, ConvertVote(vote), time, voterId };
     }
 
-    // TODO fix
-    //void VoteTx::ToJson(json_spirit::Object & result) const
-    //{
-    //    result.push_back(json_spirit::Pair("voterId", voterId.ToString()));
-    //    result.push_back(json_spirit::Pair("electionCode", electionCode));
-    //    result.push_back(json_spirit::Pair("vote", vote));
-    //    result.push_back(json_spirit::Pair("time", time));
-    //    result.push_back(json_spirit::Pair("candidate", candidate.ToString()));
-    //    result.push_back(json_spirit::Pair("keyId", CBitcoinAddress(keyId).ToString()));
-    //}
+    void VoteTx::ToJson(UniValue& result) const
+    {
+        result.push_back(Pair("voterId", voterId.ToString()));
+        result.push_back(Pair("electionCode", electionCode));
+        result.push_back(Pair("vote", vote));
+        result.push_back(Pair("time", time));
+        result.push_back(Pair("candidate", candidate.ToString()));
+        result.push_back(Pair("keyId", EncodeDestination(keyId)));
+    }
 
     std::string VoteTx::ToString() const
     {

@@ -1803,8 +1803,7 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
     for (int i = 0; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
         ThresholdState state = VersionBitsState(pindexPrev, params, static_cast<Consensus::DeploymentPos>(i), versionbitscache);
         if (state == ThresholdState::LOCKED_IN || state == ThresholdState::STARTED) {
-            //TODO fix
-            //nVersion |= VersionBitsMask(params, static_cast<Consensus::DeploymentPos>(i));
+            nVersion |= VersionBitsMask(params, static_cast<Consensus::DeploymentPos>(i));
         }
     }
 
@@ -3235,12 +3234,13 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // First transaction must be coinbase, the rest must not be
     if (block.vtx.empty() || !block.vtx[0]->IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "first tx is not coinbase");
-    // TODO fix
-    //for (unsigned int i = 1; i < block.vtx.size(); i++)
-    //    if (block.vtx[i]->IsCoinBase())
-    //    {
-    //        return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
-    //    }
+    for (unsigned int i = 1; i < block.vtx.size(); i++)
+    {
+        if (block.vtx[i]->IsCoinBase())
+        {
+            return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
+        }
+    }
 
     // Check transactions
     for (const auto& tx : block.vtx)
@@ -3346,11 +3346,10 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
 
     // Check proof of work
     const Consensus::Params& consensusParams = params.GetConsensus();
-    // TODO fix
-    //if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams))
-    //{
-    //    return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
-    //}
+    if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams))
+    {
+        return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
+    }
 
     // Check against checkpoints
     if (fCheckpointsEnabled) {

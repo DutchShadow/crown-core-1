@@ -34,8 +34,7 @@ namespace Platform
         // bool Sign(CKey & privKey, CPubKey & pubKey);
 
         std::string ToString() const;
-        // TODO fix
-        //void ToJson(json_spirit::Object & result) const;
+        void ToJson(UniValue& result) const;
 
         static bool CheckTx(const CTransaction & tx, const CBlockIndex * pindexLast, CValidationState & state);
         static bool ProcessTx(const CTransaction & tx, const CBlockIndex * pindex, CValidationState & state);
