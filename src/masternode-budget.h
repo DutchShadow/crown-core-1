@@ -115,7 +115,7 @@ private:
 
 private:
     // critical section to protect the inner data structures
-    mutable CCriticalSection cs;
+    mutable CCriticalSection m_cs;
 
     // keep track of the scanning errors I've seen
     map<uint256, CBudgetProposal> mapProposals;
@@ -137,7 +137,7 @@ public:
 
     void ClearSeen()
     {
-        LOCK(cs);
+        LOCK(m_cs);
         mapSeenMasternodeBudgetProposals.clear();
         mapSeenMasternodeBudgetVotes.clear();
         mapSeenBudgetDrafts.clear();
@@ -168,7 +168,7 @@ public:
 
     bool HasItem(uint256 hash) const
     {
-        LOCK(cs);
+        //LOCK(m_cs);
 
         return
             //mapSeenMasternodeBudgetProposals.count(hash) ||
@@ -202,7 +202,7 @@ public:
 
     void Clear()
     {
-        LOCK(cs);
+        LOCK(m_cs);
 
         LogPrintf("Budget object cleared\n");
         mapProposals.clear();
@@ -476,7 +476,7 @@ class CBudgetProposal
 {
 private:
     // critical section to protect the inner data structures
-    mutable CCriticalSection cs;
+    mutable CCriticalSection m_cs;
     CAmount nAlloted;
 
 public:

@@ -267,7 +267,6 @@ public:
         //genesis.nNonce   = 1612467894;
 
         consensus.hashGenesisBlock = genesis.GetHash();
-        std::cout << "hash " << consensus.hashGenesisBlock.ToString() << std::endl;
         assert(consensus.hashGenesisBlock == uint256S("0x0000000085370d5e122f64f4ab19c68614ff3df78c8d13cb814fd7e69a1dc6da"));
         assert(genesis.hashMerkleRoot == uint256S("0x80ad356118a9ab8db192db66ef77146cc36d958f959251feace550e4ca3d1446"));
 

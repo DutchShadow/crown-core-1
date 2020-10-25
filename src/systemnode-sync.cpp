@@ -26,34 +26,33 @@ bool CSystemnodeSync::IsSynced()
 
 bool CSystemnodeSync::IsBlockchainSynced()
 {
-    // TODO uncomment later
-    //static bool fBlockchainSynced = false;
-    //static int64_t lastProcess = GetTime();
+    static bool fBlockchainSynced = false;
+    static int64_t lastProcess = GetTime();
 
-    //// if the last call to this function was more than 60 minutes ago (client was in sleep mode) reset the sync process
-    //if(GetTime() - lastProcess > 60*60) {
-    //    Reset();
-    //    fBlockchainSynced = false;
-    //}
-    //lastProcess = GetTime();
+    // if the last call to this function was more than 60 minutes ago (client was in sleep mode) reset the sync process
+    if(GetTime() - lastProcess > 60*60) {
+        Reset();
+        fBlockchainSynced = false;
+    }
+    lastProcess = GetTime();
 
-    //if(fBlockchainSynced) return true;
+    if(fBlockchainSynced) return true;
 
-    //if (fImporting || fReindex) return false;
+    if (fImporting || fReindex) return false;
 
-    //TRY_LOCK(cs_main, lockMain);
-    //if(!lockMain) return false;
+    TRY_LOCK(cs_main, lockMain);
+    if(!lockMain) return false;
 
-    //CBlockIndex* pindex = chainActive.Tip();
-    //if(pindex == NULL) return false;
+    CBlockIndex* pindex = chainActive.Tip();
+    if(pindex == NULL) return false;
 
 
-    //if(!gArgs.GetBoolArg("-jumpstart", false) && pindex->nTime + 60*60 < GetTime())
-    //    return false;
+    if(!gArgs.GetBoolArg("-jumpstart", false) && pindex->nTime + 60*60 < GetTime())
+        return false;
 
-    //fBlockchainSynced = true;
+    fBlockchainSynced = true;
 
-    //return true;
+    return true;
 }
 
 void CSystemnodeSync::Reset()
@@ -206,7 +205,7 @@ void CSystemnodeSync::Process()
         return;
     }
 
-    LogPrintf("CSystemnodeSync::Process() - tick %d RequestedSystemnodeAssets %d\n", tick, RequestedSystemnodeAssets);
+    //LogPrintf("CSystemnodeSync::Process() - tick %d RequestedSystemnodeAssets %d\n", tick, RequestedSystemnodeAssets);
 
     if(RequestedSystemnodeAssets == SYSTEMNODE_SYNC_INITIAL) GetNextAsset();
 

@@ -166,7 +166,7 @@ bool IsBudgetCollateralValid(uint256 nTxCollateralHash, uint256 nExpectedHash, s
 
 void CBudgetManager::CheckOrphanVotes()
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
 
     std::string strError = "";
@@ -192,7 +192,7 @@ void CBudgetManager::CheckOrphanVotes()
 
 void CBudgetManager::SubmitBudgetDraft()
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     static int nSubmittedHeight = 0; // height at which final budget was submitted last time
     int nCurrentHeight;
@@ -254,7 +254,7 @@ void CBudgetManager::SubmitBudgetDraft()
                 return;
             }
 
-            LOCK(cs);
+            LOCK(m_cs);
             mapSeenBudgetDrafts.insert(make_pair(budgetDraftBroadcast.GetHash(), budgetDraftBroadcast));
             budgetDraftBroadcast.Relay();
             AddBudgetDraft(budgetDraftBroadcast.Budget());
@@ -331,7 +331,7 @@ void CBudgetManager::SubmitBudgetDraft()
             return;
         }
 
-        LOCK(cs);
+        LOCK(m_cs);
         mapSeenBudgetDrafts.insert(make_pair(budgetDraftBroadcast.GetHash(), budgetDraftBroadcast));
         budgetDraftBroadcast.Relay();
         AddBudgetDraft(budgetDraftBroadcast.Budget());
@@ -342,7 +342,7 @@ void CBudgetManager::SubmitBudgetDraft()
 
 bool CBudgetManager::AddBudgetDraft(const BudgetDraft &budgetDraft, bool checkCollateral)
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::string strError = "";
     if(!budgetDraft.IsValid(strError, checkCollateral))
@@ -358,7 +358,7 @@ bool CBudgetManager::AddBudgetDraft(const BudgetDraft &budgetDraft, bool checkCo
 
 bool CBudgetManager::AddProposal(const CBudgetProposal& budgetProposal, bool checkCollateral)
 {
-    LOCK(cs);
+    LOCK(m_cs);
     std::string strError = "";
     if(!budgetProposal.IsValid(strError, checkCollateral)) {
         LogPrintf("CBudgetManager::AddProposal - invalid budget proposal - %s\n", strError);
@@ -376,7 +376,7 @@ bool CBudgetManager::AddProposal(const CBudgetProposal& budgetProposal, bool che
 
 void CBudgetManager::CheckAndRemove()
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     LogPrintf("CBudgetManager::CheckAndRemove\n");
 
@@ -441,7 +441,7 @@ void CBudgetManager::FillBlockPayee(CMutableTransaction& txNew, CAmount nFees) c
 {
     assert (txNew.vout.size() == 1); // There is a blank for block creator's reward
 
-    LOCK(cs);
+    LOCK(m_cs);
 
     const CBlockIndex* pindexPrev = chainActive.Tip();
     if(!pindexPrev)
@@ -469,7 +469,7 @@ void CBudgetManager::FillBlockPayee(CMutableTransaction& txNew, CAmount nFees) c
 
 BudgetDraft* CBudgetManager::FindBudgetDraft(uint256 nHash)
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::map<uint256, BudgetDraft>::iterator found = mapBudgetDrafts.find(nHash);
     if (found != mapBudgetDrafts.end())
@@ -480,7 +480,7 @@ BudgetDraft* CBudgetManager::FindBudgetDraft(uint256 nHash)
 
 CBudgetProposal* CBudgetManager::FindProposal(const std::string &strProposalName)
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     //find the prop with the highest yes count
 
@@ -503,7 +503,7 @@ CBudgetProposal* CBudgetManager::FindProposal(const std::string &strProposalName
 
 CBudgetProposal *CBudgetManager::FindProposal(uint256 nHash)
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::map<uint256, CBudgetProposal>::iterator found = mapProposals.find(nHash);
     if (found == mapProposals.end())
@@ -514,7 +514,7 @@ CBudgetProposal *CBudgetManager::FindProposal(uint256 nHash)
 
 bool CBudgetManager::IsBudgetPaymentBlock(int nBlockHeight) const
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     const BudgetDraft* bestBudget = GetMostVotedBudget(nBlockHeight);
     if (bestBudget == NULL)
@@ -526,7 +526,7 @@ bool CBudgetManager::IsBudgetPaymentBlock(int nBlockHeight) const
 
 bool CBudgetManager::IsTransactionValid(const CTransaction& txNew, int nBlockHeight) const
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     const BudgetDraft* bestBudget = GetMostVotedBudget(nBlockHeight);
     const int mnodeCount = mnodeman.CountEnabled(MIN_BUDGET_PEER_PROTO_VERSION);
@@ -553,7 +553,7 @@ bool CBudgetManager::IsTransactionValid(const CTransaction& txNew, int nBlockHei
 
 std::vector<CBudgetProposal*> CBudgetManager::GetAllProposals()
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::vector<CBudgetProposal*> vBudgetProposalRet;
 
@@ -586,7 +586,7 @@ struct sortProposalsByVotes {
 
 std::vector<CBudgetProposal*> CBudgetManager::GetBudget()
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     // ------- Sort budgets by Yes Count
 
@@ -650,7 +650,7 @@ struct SortBudgetDraftsByVotes
 
 std::vector<BudgetDraft*> CBudgetManager::GetBudgetDrafts()
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::vector<BudgetDraft*> budgetDrafts;
     std::vector<std::pair<BudgetDraft*, int> > budgetDraftsSorted;
@@ -679,7 +679,7 @@ std::vector<BudgetDraft*> CBudgetManager::GetBudgetDrafts()
 
 std::string CBudgetManager::GetRequiredPaymentsString(int nBlockHeight) const
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::string ret = "unknown-budget";
 
@@ -726,7 +726,7 @@ CAmount CBudgetManager::GetTotalBudget(int nHeight)
 
 void CBudgetManager::NewBlock()
 {
-    TRY_LOCK(cs, fBudgetNewBlock);
+    TRY_LOCK(m_cs, fBudgetNewBlock);
     if(!fBudgetNewBlock)
         return;
 
@@ -847,7 +847,7 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand,
     if(fLiteMode) return;
     if(!masternodeSync.IsBlockchainSynced()) return;
 
-    LOCK(cs);
+    LOCK(m_cs);
 
     if (strCommand == "mnvs") { //Masternode vote sync
         uint256 nProp;
@@ -1047,7 +1047,7 @@ void CBudgetManager::ProcessMessage(CNode* pfrom, const std::string& strCommand,
 //mark that a full sync is needed
 void CBudgetManager::ResetSync()
 {
-    LOCK(cs);
+    LOCK(m_cs);
     // Jump start should only be used for brief moment to start the chain.
     // TODO string
     //if (GetBoolArg("-jumpstart", false))
@@ -1079,7 +1079,7 @@ void CBudgetManager::ResetSync()
 
 void CBudgetManager::MarkSynced()
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     /*
         Mark that we've sent all valid items
@@ -1114,7 +1114,7 @@ void CBudgetManager::MarkSynced()
 
 void CBudgetManager::Sync(CNode* pfrom, uint256 nProp, bool fPartial) const
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     /*
         Sync with a client on the network
@@ -1173,7 +1173,7 @@ void CBudgetManager::Sync(CNode* pfrom, uint256 nProp, bool fPartial) const
 
 const BudgetDraftBroadcast* CBudgetManager::GetSeenBudgetDraft(uint256 hash) const
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::map<uint256, BudgetDraftBroadcast>::const_iterator found = mapSeenBudgetDrafts.find(hash);
     if (found == mapSeenBudgetDrafts.end())
@@ -1184,7 +1184,7 @@ const BudgetDraftBroadcast* CBudgetManager::GetSeenBudgetDraft(uint256 hash) con
 
 const BudgetDraftVote* CBudgetManager::GetSeenBudgetDraftVote(uint256 hash) const
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::map<uint256, BudgetDraftVote>::const_iterator found = mapSeenBudgetDraftVotes.find(hash);
     if (found == mapSeenBudgetDraftVotes.end())
@@ -1195,7 +1195,7 @@ const BudgetDraftVote* CBudgetManager::GetSeenBudgetDraftVote(uint256 hash) cons
 
 const CBudgetProposalBroadcast* CBudgetManager::GetSeenProposal(uint256 hash) const
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::map<uint256, CBudgetProposalBroadcast>::const_iterator found = mapSeenMasternodeBudgetProposals.find(hash);
     if (found == mapSeenMasternodeBudgetProposals.end())
@@ -1205,7 +1205,7 @@ const CBudgetProposalBroadcast* CBudgetManager::GetSeenProposal(uint256 hash) co
 }
 const CBudgetVote* CBudgetManager::GetSeenVote(uint256 hash) const
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::map<uint256, CBudgetVote>::const_iterator found = mapSeenMasternodeBudgetVotes.find(hash);
     if (found == mapSeenMasternodeBudgetVotes.end())
@@ -1217,7 +1217,7 @@ const CBudgetVote* CBudgetManager::GetSeenVote(uint256 hash) const
 
 bool CBudgetManager::SubmitProposalVote(const CBudgetVote& vote, std::string& strError)
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     DebugLogBudget(vote, CAddress(), "VR");
     map<uint256, CBudgetProposal>::iterator found = mapProposals.find(vote.nProposalHash);
@@ -1255,7 +1255,7 @@ bool CBudgetManager::CanSubmitVotes(int blockStart, int blockEnd)
 
 bool CBudgetManager::ReceiveProposalVote(const CBudgetVote &vote, CNode *pfrom, std::string &strError)
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     if(!mapProposals.count(vote.nProposalHash)){
         if(pfrom){
@@ -1312,7 +1312,7 @@ bool CBudgetManager::ReceiveProposalVote(const CBudgetVote &vote, CNode *pfrom, 
 
 bool CBudgetManager::UpdateBudgetDraft(const BudgetDraftVote& vote, CNode* pfrom, std::string& strError)
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     if(!mapBudgetDrafts.count(vote.nBudgetHash)){
         if(pfrom){
@@ -1462,7 +1462,7 @@ bool CBudgetProposal::IsValid(std::string& strError, bool fCheckCollateral) cons
 
 bool CBudgetProposal::AddOrUpdateVote(const CBudgetVote& vote, std::string& strError)
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     uint256 hash = vote.vin.prevout.GetHash();
 
@@ -1581,7 +1581,7 @@ int CBudgetProposal::GetBlockEndCycle() const
 
 int CBudgetProposal::GetTotalPaymentCount() const
 {
-    LOCK(cs);
+    LOCK(m_cs);
     return (GetBlockEndCycle() - GetBlockStartCycle()) / GetBudgetPaymentCycleBlocks();
 }
 
@@ -2364,7 +2364,7 @@ bool BudgetDraftVote::SignatureValid(bool fSignatureCheck)
 
 std::string CBudgetManager::ToString() const
 {
-    LOCK(cs);
+    LOCK(m_cs);
 
     std::ostringstream info;
 
