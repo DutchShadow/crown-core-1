@@ -109,12 +109,12 @@ public:
 
 public:
 
-  inline explicit CAuxPow (const CTransaction& txIn)
-    //: CMerkleTx (txIn)
+  inline explicit CAuxPow (const CTransactionRef& txIn)
+    : CMerkleTx (txIn)
   {}
 
   inline CAuxPow ()
-    //: CMerkleTx ()
+    : CMerkleTx ()
   {}
 
   ADD_SERIALIZE_METHODS;

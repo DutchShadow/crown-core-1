@@ -34,6 +34,8 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     QStackedWidget(parent),
     clientModel(0),
     walletModel(0),
+    masternodeListPage(0),
+    systemnodeListPage(0),
     platformStyle(_platformStyle)
 {
     // Create tabs

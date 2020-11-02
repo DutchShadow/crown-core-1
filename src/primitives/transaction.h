@@ -255,7 +255,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
     }
     s >> tx.nLockTime;
 
-    if (tx.nVersion >= 3) {
+    if (tx.nVersion >= 3 && tx.nType != TRANSACTION_NORMAL) {
         s >> tx.extraPayload;
     }
 }
@@ -287,7 +287,7 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
         }
     }
     s << tx.nLockTime;
-    if (tx.nVersion >= 3) {
+    if (tx.nVersion >= 3 && tx.nType != TRANSACTION_NORMAL) {
         s << tx.extraPayload;
     }
 }
@@ -369,7 +369,7 @@ public:
     
     bool IsCoinBase() const
     {
-        return (vin.size() == 1 && vin[0].prevout.IsNull());
+        return (vin.size() == 1 && vin[0].prevout.IsNull() && !vin[0].scriptSig.IsProofOfStakeMarker());
     }
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)
