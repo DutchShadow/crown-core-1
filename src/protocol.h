@@ -238,6 +238,25 @@ extern const char *GETBLOCKTXN;
  * @since protocol version 70014 as described by BIP 152
  */
 extern const char *BLOCKTXN;
+extern const char* IX;
+extern const char* IXLOCKVOTE;
+extern const char* SPORK;
+extern const char* GETSPORKS;
+extern const char* MNBROADCAST;
+extern const char* MNPING;
+extern const char* MNWINNER;
+extern const char* GETMNWINNERS;
+extern const char* BUDGETPROPOSAL;
+extern const char* BUDGETVOTE;
+extern const char* BUDGETVOTESYNC;
+extern const char* FINALBUDGET;
+extern const char* FINALBUDGETVOTE;
+extern const char* SYNCSTATUSCOUNT;
+extern const char* DSEG;
+extern const char* DSEEP;
+extern const char* SYSWINNER;
+extern const char* SYSBROADCAST;
+extern const char* SYSPING;
 };
 
 /* Get a vector of all valid message types (see above) */
@@ -402,6 +421,7 @@ class CInv
 public:
     CInv();
     CInv(int typeIn, const uint256& hashIn);
+    CInv(const std::string& strType, const uint256& hashIn);
 
     ADD_SERIALIZE_METHODS;
 
@@ -414,6 +434,7 @@ public:
 
     friend bool operator<(const CInv& a, const CInv& b);
 
+    bool IsKnownType() const;
     std::string GetCommand() const;
     std::string ToString() const;
 
