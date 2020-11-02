@@ -2910,9 +2910,6 @@ uint64_t CConnman::CalculateKeyedNetGroup(const CAddress& ad) const
 
 int MinPeerProtoVersion()
 {
-    // TODO fix
-//    if (IsSporkActive(SPORK_16_DISCONNECT_OLD_NODES))
-//        return MIN_PEER_PROTO_VERSION_CURR;
-//    else
-//        return MIN_PEER_PROTO_VERSION_PREV;
+    return PROTOCOL_VERSION;
 }
+
