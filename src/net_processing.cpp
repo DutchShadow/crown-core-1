@@ -1060,9 +1060,9 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
     case MSG_WITNESS_BLOCK:
         return LookupBlockIndex(inv.hash) != nullptr;
     case MSG_TXLOCK_REQUEST:
-        return GetInstantSend().TxLockRequested(inv.hash);
+        return instantSend.TxLockRequested(inv.hash);
     case MSG_TXLOCK_VOTE:
-        return GetInstantSend().AlreadyHave(inv.hash);
+        return instantSend.AlreadyHave(inv.hash);
     case MSG_SPORK:
         return mapSporks.count(inv.hash);
     case MSG_MASTERNODE_WINNER:
@@ -1206,7 +1206,7 @@ int64_t GetBlockValue(int nHeight, const CAmount &nFees)
 
 int GetIXConfirmations(uint256 nTXHash)
 {
-    int sigs = GetInstantSend().GetSignaturesCount(nTXHash);
+    int sigs = instantSend.GetSignaturesCount(nTXHash);
 
     if(sigs >= INSTANTX_SIGNATURES_REQUIRED){
         return nInstantXDepth;
@@ -1453,7 +1453,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                 // Send stream from relay memory
                 bool pushed = false;
                 if (!pushed && inv.type == MSG_TXLOCK_VOTE) {
-                    boost::optional<CConsensusVote> vote = GetInstantSend().GetLockVote(inv.hash);
+                    boost::optional<CConsensusVote> vote = instantSend.GetLockVote(inv.hash);
                     if (vote)
                     {
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
@@ -1464,7 +1464,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                     }
                 }
                 if (!pushed && inv.type == MSG_TXLOCK_REQUEST) {
-                    boost::optional<CTransaction> lockedTx = GetInstantSend().GetLockReq(inv.hash);
+                    boost::optional<CTransaction> lockedTx = instantSend.GetLockReq(inv.hash);
                     if (lockedTx)
                     {
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
@@ -1538,36 +1538,26 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
 
                 if (!pushed && inv.type == MSG_MASTERNODE_ANNOUNCE) {
                     if(mnodeman.mapSeenMasternodeBroadcast.count(inv.hash)) {
-                        auto mnb = mnodeman.mapSeenMasternodeBroadcast[inv.hash];
-                        std::string strCommand = "mnb_new";
-                        if (pfrom->nVersion < MIN_MNW_PING_VERSION) {
-                            //Make sure this serializes to a format that is readable by the peer we are sending to
-                            mnb.lastPing.nVersion = 1;
-                        }
-                        if (mnb.lastPing.nVersion == 1)
-                            strCommand = "mnb";
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
-                        ss << mnb;
-                        g_connman->PushMessage(pfrom, msgMaker.Make(strCommand.c_str(), ss));
+                        ss << mnodeman.mapSeenMasternodeBroadcast[inv.hash];
+                        if (pfrom->nVersion < MIN_MNW_PING_VERSION)
+                            g_connman->PushMessage(pfrom, msgMaker.Make("mnb", ss));
+                        else
+                            g_connman->PushMessage(pfrom, msgMaker.Make("mnb_new", ss));
                         pushed = true;
                     }
                 }
 
                 if (!pushed && inv.type == MSG_MASTERNODE_PING) {
                     if(mnodeman.mapSeenMasternodePing.count(inv.hash)){
-                        auto mnp = mnodeman.mapSeenMasternodePing[inv.hash];
-                        std::string strCommand = "mnp_new";
-                        if (pfrom->nVersion < MIN_MNW_PING_VERSION) {
-                            //Make sure this serializes to a format that is readable by the peer we are sending to
-                            mnp.nVersion = 1;
-                        }
-                        if (mnp.nVersion == 1)
-                            strCommand = "mnp";
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
-                        ss << mnp;
-                        g_connman->PushMessage(pfrom, msgMaker.Make(strCommand.c_str(), ss));
+                        ss << mnodeman.mapSeenMasternodePing[inv.hash];
+                        if (pfrom->nVersion < MIN_MNW_PING_VERSION)
+                            g_connman->PushMessage(pfrom, msgMaker.Make("mnp", ss));
+                        else
+                            g_connman->PushMessage(pfrom, msgMaker.Make("mnp_new", ss));
                         pushed = true;
                     }
                 }
@@ -3277,7 +3267,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         budget.ProcessMessage(pfrom, strCommand, vRecv);
         masternodePayments.ProcessMessageMasternodePayments(pfrom, strCommand, vRecv);
         systemnodePayments.ProcessMessageSystemnodePayments(pfrom, strCommand, vRecv);
-        GetInstantSend().ProcessMessage(pfrom, strCommand, vRecv);
+        instantSend.ProcessMessage(pfrom, strCommand, vRecv);
         ProcessSpork(pfrom, connman, strCommand, vRecv);
         masternodeSync.ProcessMessage(pfrom, strCommand, vRecv);
         systemnodeSync.ProcessMessage(pfrom, strCommand, vRecv);
@@ -4060,26 +4050,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
         //
         std::vector<CInv> vGetData;
         if (!pto->fClient && ((fFetch && !pto->m_limited_node) || !IsInitialBlockDownload()) && state.nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
-            //std::vector<const CBlockIndex*> vToDownload;
-            //NodeId staller = -1;
-            //FindNextBlocksToDownload(pto->GetId(), MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller, consensusParams);
-            //for (const CBlockIndex *pindex : vToDownload) {
-            //    uint32_t nFetchFlags = GetFetchFlags(pto);
-            //    vGetData.push_back(CInv(MSG_BLOCK | nFetchFlags, pindex->GetBlockHash()));
-            //    MarkBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), pindex);
-            //    LogPrint(BCLog::NET, "Requesting block %s (%d) peer=%d\n", pindex->GetBlockHash().ToString(),
-            //        pindex->nHeight, pto->GetId());
-            //}
-            //if (state.nBlocksInFlight == 0 && staller != -1) {
-            //    if (State(staller)->nStallingSince == 0) {
-            //        State(staller)->nStallingSince = nNow;
-            //        LogPrint(BCLog::NET, "Stall started peer=%d\n", staller);
-            //    }
-            //}
-
             std::vector<const CBlockIndex*> vToDownload;
-            NodeId staller = -1;
-            //FindNextBlocksToDownload(pto->GetId(), MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller);
             while (!pto->listAskForBlocks.empty()) {
                 const CInv& inv = pto->listAskForBlocks.front();
                 //Only request if this block is not already in the chain
@@ -4088,12 +4059,6 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
                     MarkBlockAsInFlight(pto->GetId(), inv.hash);
                 }
                 pto->listAskForBlocks.pop_front();
-            }
-            if (state.nBlocksInFlight == 0 && staller != -1) {
-                if (State(staller)->nStallingSince == 0) {
-                    State(staller)->nStallingSince = nNow;
-                    LogPrint(BCLog::NET, "Stall started peer=%d\n", staller);
-                }
             }
         }
 

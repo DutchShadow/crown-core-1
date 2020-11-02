@@ -261,7 +261,7 @@ public:
         if(chainActive.Tip() == NULL) return 0;
 
         if(cacheInputAge == 0){
-            cacheInputAge = GetInputAge(vin);
+            cacheInputAge = GetUTXOConfirmations(vin.prevout);
             cacheInputAgeBlock = chainActive.Tip()->nHeight;
         }
 

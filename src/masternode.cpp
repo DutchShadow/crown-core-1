@@ -163,7 +163,8 @@ arith_uint256 CMasternode::CalculateScore(int64_t nBlockHeight) const
         return arith_uint256();
 
     // Find the block hash where tx got MASTERNODE_MIN_CONFIRMATIONS
-    CBlockIndex *pblockIndex = chainActive[GetInputHeight(vin) + MASTERNODE_MIN_CONFIRMATIONS - 1];
+    int nPrevoutAge = GetUTXOConfirmations(vin.prevout);
+    CBlockIndex *pblockIndex = chainActive[nPrevoutAge + MASTERNODE_MIN_CONFIRMATIONS - 1];
     if (!pblockIndex)
         return arith_uint256();
     uint256 collateralMinConfBlockHash = pblockIndex->GetBlockHash();
@@ -423,7 +424,7 @@ bool CMasternodeBroadcast::Create(std::string strService, std::string strKeyMast
         return false;
     }
 
-    int age = GetInputAge(txin);
+    int age = GetUTXOConfirmations(txin.prevout);
     if (age < MASTERNODE_MIN_CONFIRMATIONS)
     {
         strErrorMessage = strprintf("Input must have at least %d confirmations. Now it has %d",
@@ -668,7 +669,7 @@ bool CMasternodeBroadcast::CheckInputsAndAdd(int& nDoS) const
 
     LogPrint(BCLog::NET, "masternode", "mnb - Accepted Masternode entry\n");
 
-    if(GetInputAge(vin) < MASTERNODE_MIN_CONFIRMATIONS){
+    if(GetUTXOConfirmations(vin.prevout) < MASTERNODE_MIN_CONFIRMATIONS){
         LogPrintf("mnb - Input must have at least %d confirmations\n", MASTERNODE_MIN_CONFIRMATIONS);
         // maybe we miss few blocks, let this mnb to be checked again later
         mnodeman.mapSeenMasternodeBroadcast.erase(GetHash());

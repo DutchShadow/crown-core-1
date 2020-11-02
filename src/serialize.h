@@ -20,6 +20,7 @@
 #include <string.h>
 #include <utility>
 #include <vector>
+#include <list>
 #include <tuple>
 
 #include <prevector.h>
@@ -560,9 +561,9 @@ template<typename Stream, typename K, typename T> void Unserialize(Stream& is, s
 /**
  * tuple
  */
-template<typename K, typename T1, typename T2> unsigned int GetSerializeSize(const std::tuple<K, T1, T2>& item, int nType, int nVersion);
-template<typename Stream, typename K, typename T1, typename T2> void Serialize(Stream& os, const std::tuple<K, T1, T2>& item, int nType, int nVersion);
-template<typename Stream, typename K, typename T1, typename T2> void Unserialize(Stream& is, std::tuple<K, T1, T2>& item, int nType, int nVersion);
+template<typename K, typename T1, typename T2> unsigned int GetSerializeSize(const std::tuple<K, T1, T2>& item);
+template<typename Stream, typename K, typename T1, typename T2> void Serialize(Stream& os, const std::tuple<K, T1, T2>& item);
+template<typename Stream, typename K, typename T1, typename T2> void Unserialize(Stream& is, std::tuple<K, T1, T2>& item);
 
 /**
  * map
@@ -575,6 +576,9 @@ template<typename Stream, typename K, typename T, typename Pred, typename A> voi
  */
 template<typename Stream, typename K, typename Pred, typename A> void Serialize(Stream& os, const std::set<K, Pred, A>& m);
 template<typename Stream, typename K, typename Pred, typename A> void Unserialize(Stream& is, std::set<K, Pred, A>& m);
+
+template<typename Stream, typename T, typename A> inline void Serialize(Stream& os, const std::list<T, A>& l);
+template<typename Stream, typename T, typename A> inline void Unserialize(Stream& is, std::list<T, A>& l);
 
 /**
  * shared_ptr
@@ -789,28 +793,30 @@ void Unserialize(Stream& is, std::pair<K, T>& item)
  * tuple
  */
 template<typename K, typename T1, typename T2>
-unsigned int GetSerializeSize(const std::tuple<K, T1, T2>& item, int nType, int nVersion)
+unsigned int GetSerializeSize(const std::tuple<K, T1, T2>& item)
 {
-    return GetSerializeSize(std::get<0>(item), nType, nVersion) +
-           GetSerializeSize(std::get<1>(item), nType, nVersion) +
-           GetSerializeSize(std::get<2>(item), nType, nVersion);
+    return GetSerializeSize(std::get<0>(item)) +
+           GetSerializeSize(std::get<1>(item)) +
+           GetSerializeSize(std::get<2>(item));
 }
 
 template<typename Stream, typename K, typename T1, typename T2>
-void Serialize(Stream& os, const std::tuple<K, T1, T2>& item, int nType, int nVersion)
+void Serialize(Stream& os, const std::tuple<K, T1, T2>& item)
 {
-    Serialize(os, std::get<0>(item), nType, nVersion);
-    Serialize(os, std::get<1>(item), nType, nVersion);
-    Serialize(os, std::get<2>(item), nType, nVersion);
+    Serialize(os, std::get<0>(item));
+    Serialize(os, std::get<1>(item));
+    Serialize(os, std::get<2>(item));
 }
 
 template<typename Stream, typename K, typename T1, typename T2>
-void Unserialize(Stream& is, std::tuple<K, T1, T2>& item, int nType, int nVersion)
+void Unserialize(Stream& is, std::tuple<K, T1, T2>& item)
 {
-    Unserialize(is, std::get<0>(item), nType, nVersion);
-    Unserialize(is, std::get<1>(item), nType, nVersion);
-    Unserialize(is, std::get<2>(item), nType, nVersion);
+    Unserialize(is, std::get<0>(item));
+    Unserialize(is, std::get<1>(item));
+    Unserialize(is, std::get<2>(item));
 }
+
+
 
 /**
  * map
@@ -861,6 +867,31 @@ void Unserialize(Stream& is, std::set<K, Pred, A>& m)
         K key;
         Unserialize(is, key);
         it = m.insert(it, key);
+    }
+}
+
+
+/**
+ * list
+ */
+template<typename Stream, typename T, typename A>
+void Serialize(Stream& os, const std::list<T, A>& l)
+{
+    WriteCompactSize(os, l.size());
+    for (typename std::list<T, A>::const_iterator li = l.begin(); li != l.end(); ++li)
+        ::Serialize(os, (*li));
+}
+
+template<typename Stream, typename T, typename A>
+void Unserialize(Stream& is, std::list<T, A>& l)
+{
+    l.clear();
+    unsigned int nSize = ReadCompactSize(is);
+    for (unsigned int i = 0; i < nSize; i++)
+    {
+        T value;
+        Unserialize(is, value);
+        l.push_back(value);
     }
 }
 

@@ -30,9 +30,7 @@ class InstantSend;
 
 static const int MIN_INSTANTX_PROTO_VERSION = 70040;
 
-extern std::auto_ptr<InstantSend> g_instantSend;
-
-InstantSend& GetInstantSend();
+extern InstantSend instantSend;
 
 class InstantSend
 {

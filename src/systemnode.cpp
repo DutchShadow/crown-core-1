@@ -232,7 +232,8 @@ arith_uint256 CSystemnode::CalculateScore(int64_t nBlockHeight) const
         return arith_uint256();
 
     // Find the block hash where tx got SYSTEMNODE_MIN_CONFIRMATIONS
-    CBlockIndex *pblockIndex = chainActive[GetInputHeight(vin) + SYSTEMNODE_MIN_CONFIRMATIONS - 1];
+    int nPrevoutAge = GetUTXOConfirmations(vin.prevout);
+    CBlockIndex *pblockIndex = chainActive[nPrevoutAge + SYSTEMNODE_MIN_CONFIRMATIONS - 1];
     if (!pblockIndex)
         return arith_uint256();
     uint256 collateralMinConfBlockHash = pblockIndex->GetBlockHash();
@@ -591,7 +592,8 @@ bool CSystemnodeBroadcast::CheckInputsAndAdd(int& nDoS) const
 
     LogPrintf("snb - Accepted systemnode entry\n");
 
-    if(GetInputAge(vin) < SYSTEMNODE_MIN_CONFIRMATIONS){
+    int age = GetUTXOConfirmations(vin.prevout);
+    if(age < SYSTEMNODE_MIN_CONFIRMATIONS){
         LogPrintf("snb - Input must have at least %d confirmations\n", SYSTEMNODE_MIN_CONFIRMATIONS);
         // maybe we miss few blocks, let this snb to be checked again later
         snodeman.mapSeenSystemnodeBroadcast.erase(GetHash());
@@ -728,7 +730,7 @@ bool CSystemnodeBroadcast::Create(std::string strService, std::string strKeySyst
         return false;
     }
 
-    int age = GetInputAge(txin);
+    int age = GetUTXOConfirmations(txin.prevout);
     if (age < SYSTEMNODE_MIN_CONFIRMATIONS)
     {
         strErrorMessage = strprintf("Input must have at least %d confirmations. Now it has %d",

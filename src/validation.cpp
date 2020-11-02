@@ -1017,34 +1017,29 @@ int GetTransactionAge(const uint256 &txid)
     return -1;
 }
 
-int GetInputHeight(const CTxIn& vin)
+bool GetUTXOCoin(const COutPoint& outpoint, Coin& coin)
 {
-    CCoinsView viewDummy;
-    CCoinsViewCache view(&viewDummy);
-    {
-        LOCK(mempool.cs); 
-        CCoinsViewMemPool viewMempool(pcoinsTip.get(), mempool);
-        view.SetBackend(viewMempool); // temporarily switch cache backend to db+mempool view
-
-        //const CCoins* coins = view.AccessCoins(vin.prevout.hash);
-
-        //if (coins) {
-        //    return coins->nHeight;
-        //}
-        //else
-        //    return -1;
-    }
+    LOCK(cs_main);
+    if (!pcoinsTip->GetCoin(outpoint, coin))
+        return false;
+    if (coin.IsSpent())
+        return false;
+    return true;
 }
 
-
-int GetInputAge(const CTxIn& vin)
+int GetUTXOHeight(const COutPoint& outpoint)
 {
-    int height = GetInputHeight(vin);
+    // -1 means UTXO is yet unknown or already spent
+    Coin coin;
+    return GetUTXOCoin(outpoint, coin) ? coin.nHeight : -1;
+}
 
-    if (height < 0 || height == MEMPOOL_HEIGHT)
-        return 0;
-
-    return (chainActive.Tip()->nHeight + 1) - height;
+int GetUTXOConfirmations(const COutPoint& outpoint)
+{
+    // -1 means UTXO is yet unknown or already spent
+    LOCK(cs_main);
+    int nPrevoutHeight = GetUTXOHeight(outpoint);
+    return (nPrevoutHeight > -1 && chainActive.Tip()) ? chainActive.Height() - nPrevoutHeight + 1 : -1;
 }
 
 int GetInputAgeIX(uint256 nTXHash, const CTxIn& vin)

@@ -22,7 +22,7 @@
 using namespace std;
 using namespace boost;
 
-std::auto_ptr<InstantSend> g_instantSend;
+InstantSend instantSend;
 
 //step 1.) Broadcast intention to lock transaction inputs, "txlreg", CTransaction
 //step 2.) Top INSTANTX_SIGNATURES_TOTAL masternodes, open connect to top 1 masternode.
@@ -228,7 +228,7 @@ int64_t InstantSend::CreateNewLock(const CTransaction& tx)
     LOCK(cs);
     int64_t nTxAge = 0;
     for (const auto& i : tx.vin) {
-        nTxAge = GetInputAge(i);
+        nTxAge = GetUTXOConfirmations(i.prevout);
         if(nTxAge < 5) //1 less than the "send IX" gui requires, incase of a block propagating the network at the time
         {
             LogPrintf("CreateNewLock - Transaction not found / too new: %d / %s\n", nTxAge, tx.GetHash().ToString().c_str());
@@ -689,11 +689,3 @@ uint256 CTransactionLock::GetHash() const
     return txHash;
 }
 
-InstantSend& GetInstantSend()
-{
-    if (g_instantSend.get() == NULL)
-    {
-        g_instantSend.reset(new InstantSend);
-    }
-    return *g_instantSend;
-}
