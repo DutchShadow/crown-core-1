@@ -410,8 +410,7 @@ public:
     bool Read(const K& key, V& value)
     {
         LOCK(m_cs);
-        // TODO fix
-        //return m_dbTransaction.Read(key, value);
+        return m_dbTransaction.Read(key, value);
     }
 
 
