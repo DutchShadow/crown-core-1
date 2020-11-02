@@ -72,7 +72,7 @@ UniValue systemnode(const JSONRPCRequest& request)
     if (strCommand == "list")
     {
         JSONRPCRequest newParams;
-        for (int i = 1; i < request.params.size(); i++) {
+        for (size_t i = 1; i < request.params.size(); i++) {
             newParams.params.push_back(request.params[i]);
         }
         return systemnodelist(newParams);

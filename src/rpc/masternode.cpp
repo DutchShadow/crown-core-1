@@ -22,43 +22,6 @@
 #include <fstream>
 #include <iomanip>
 
-void SendMoney(const CTxDestination &address, CAmount nValue, CWalletTx& wtxNew, AvailableCoinsType coin_type=ALL_COINS)
-{
-    // Check amount
-    if (nValue <= 0)
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
-
-    if (nValue > GetWallets()[0]->GetBalance())
-        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
-
-    string strError;
-    if (GetWallets()[0]->IsLocked())
-    {
-        strError = "Error: Wallet locked, unable to create transaction!";
-        LogPrintf("SendMoney() : %s", strError);
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    }
-
-    // Parse Crown address
-    CScript scriptPubKey = GetScriptForDestination(address);
-
-    // Create and send the transaction
-    CReserveKey reservekey(GetWallets()[0].get());
-    CAmount nFeeRequired;
-
-    // TODO fix
-    //if (!GetWallets()[0]->CreateTransaction(scriptPubKey, nValue, wtxNew, reservekey, nFeeRequired, strError, NULL, coin_type))
-    //{
-    //    if (nValue + nFeeRequired > GetWallets()[0]->GetBalance())
-    //        strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
-    //    LogPrintf("SendMoney() : %s\n", strError);
-    //    throw JSONRPCError(RPC_WALLET_ERROR, strError);
-    //}
-    //if (!GetWallets()[0]->CommitTransaction(wtxNew, reservekey))
-    //    throw JSONRPCError(RPC_WALLET_ERROR, "Error: The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
-}
-
-
 UniValue getpoolinfo(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 0)
@@ -130,7 +93,7 @@ UniValue masternode(const JSONRPCRequest& request)
     if (strCommand == "list")
     {
         JSONRPCRequest newParams;
-        for (int i = 1; i < request.params.size(); i++) {
+        for (size_t i = 1; i < request.params.size(); i++) {
             newParams.params.push_back(request.params[i]);
         }
         return masternodelist(newParams);
