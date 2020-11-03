@@ -223,6 +223,10 @@ List the most recent 20 NFT protocol records
 
         uint64_t tokenProtocolId = StringToProtocolName(params[1].get_str().c_str());
 
+        if (tokenProtocolId == NfToken::UNKNOWN_TOKEN_PROTOCOL)
+            throw std::runtime_error("NFT Protocol Id may only cointain the following characters: "
+                                     "abcdefghijklmnopqrstuvwxyz12345");
+
         auto nftProtoIndex = NftProtocolsManager::Instance().GetNftProtoIndex(tokenProtocolId);
         if (nftProtoIndex.IsNull())
             throw std::runtime_error("Can't find an NFT protocol record: " + params[1].get_str());
