@@ -66,10 +66,6 @@ Value mnbudget(const Array& params, bool fHelp)
         if(strProposalName.size() > 20)
             return "Invalid proposal name, limit of 20 characters.";
 
-        CBudgetProposal* pbudgetProp = budget.FindProposal(strProposalName);
-        if(pbudgetProp)
-            return "Invalid proposal name, already in use";
-
         std::string strURL = params[2].get_str();
         if(strURL.size() > 64)
             return "Invalid url, limit of 64 characters.";
@@ -113,21 +109,12 @@ Value mnbudget(const Array& params, bool fHelp)
 
         //*************************************************************************
 
-        // Checking the ProposalBroadcasts to ensure there are no proposals prepared with the given name
-        CBudgetProposalBroadcast* pfound = budget.FindPreparedProposal(strProposalName);
-        if(pfound)
-            return "Error preparing proposal, already registered.";
-
         // create transaction 15 minutes into the future, to allow for confirmation time
         CBudgetProposalBroadcast budgetProposalBroadcast(strProposalName, strURL, nPaymentCount, scriptPubKey, nAmount, nBlockStart, uint256());
 
         std::string strError = "";
         if(!budgetProposalBroadcast.IsValid(strError, false))
             return "Proposal is not valid - " + budgetProposalBroadcast.GetHash().ToString() + " - " + strError;
-
-        CBudgetProposal* pbudgetProposal = budget.FindProposal(budgetProposalBroadcast.GetHash());
-        if(pbudgetProposal != NULL) 
-            return "Error preparing proposal, already registered."; 
 
         CWalletTx wtx;
         if(!pwalletMain->GetBudgetSystemCollateralTX(wtx, budgetProposalBroadcast.GetHash())){
@@ -138,8 +125,6 @@ Value mnbudget(const Array& params, bool fHelp)
         CReserveKey reservekey(pwalletMain);
         //send the tx to the network
         pwalletMain->CommitTransaction(wtx, reservekey);
-        // Add the BudgetProposalBroadcast to the repared collection
-        budget.AddPreparedProposal(budgetProposalBroadcast);
 
         return wtx.GetHash().ToString();
     }
@@ -161,10 +146,6 @@ Value mnbudget(const Array& params, bool fHelp)
         std::string strProposalName = params[1].get_str();
         if(strProposalName.size() > 20)
             return "Invalid proposal name, limit of 20 characters.";
-        
-        CBudgetProposal* pbudgetProp = budget.FindProposal(strProposalName);
-        if(pbudgetProp)
-            return "Invalid proposal name, already in use";
 
         std::string strURL = params[2].get_str();
         if(strURL.size() > 64)
@@ -215,11 +196,9 @@ Value mnbudget(const Array& params, bool fHelp)
 
         budgetProposalBroadcast.Relay();
         budget.AddProposal(budgetProposalBroadcast);
-        
-        // Remove the proposal from the prepared collection
-        budget.RemovePreparedProposal(budgetProposalBroadcast);
 
         return budgetProposalBroadcast.GetHash().ToString();
+
     }
 
     if(strCommand == "vote-many")

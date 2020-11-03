@@ -470,34 +470,12 @@ void CBudgetManager::FillBlockPayee(CMutableTransaction& txNew, CAmount nFees) c
     }
 }
 
-
-CBudgetProposalBroadcast* CBudgetManager::FindPreparedProposal(const std::string &strProposalName)
-{
-    LOCK(cs);
-
-    std::map<std::string, CBudgetProposalBroadcast>::iterator found = mapPreparedBudgetProposals.find(strProposalName);
-    if (found == mapPreparedBudgetProposals.end())
-        return NULL;
-
-    return &found->second;
-}
-
-void CBudgetManager::AddPreparedProposal(const CBudgetProposalBroadcast &proposal)
-{
-    mapPreparedBudgetProposals.insert(make_pair(proposal.GetName(), proposal));
-}
-
-void CBudgetManager::RemovePreparedProposal(const CBudgetProposalBroadcast &proposal)
-{
-    mapPreparedBudgetProposals.erase(proposal.GetName());
-}
-
 BudgetDraft* CBudgetManager::FindBudgetDraft(uint256 nHash)
 {
     LOCK(cs);
 
     std::map<uint256, BudgetDraft>::iterator found = mapBudgetDrafts.find(nHash);
-    if (found == mapBudgetDrafts.end())
+    if (found != mapBudgetDrafts.end())
         return NULL;
 
     return &found->second;
@@ -1226,7 +1204,6 @@ const CBudgetProposalBroadcast* CBudgetManager::GetSeenProposal(uint256 hash) co
     else
         return &found->second;
 }
-
 const CBudgetVote* CBudgetManager::GetSeenVote(uint256 hash) const
 {
     LOCK(cs);

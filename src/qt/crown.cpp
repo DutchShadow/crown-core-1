@@ -587,7 +587,7 @@ int main(int argc, char *argv[])
     {
         HelpMessageDialog help(NULL, mapArgs.count("-version"));
         help.showOrPrint();
-        return 0;
+        return 1;
     }
 
     /// 5. Now that settings and translations are available, ask user for data directory
