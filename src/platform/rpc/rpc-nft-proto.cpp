@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <spork.h>
+#include <boost/algorithm/string.hpp>
 #include "platform/nf-token/nf-token-protocol.h"
 #include "platform/nf-token/nft-protocol-reg-tx-builder.h"
 #include "platform/nf-token/nft-protocols-manager.h"
@@ -221,7 +222,9 @@ List the most recent 20 NFT protocol records
         if (fHelp || params.size() != 2)
             GetNftProtocolHelp();
 
-        uint64_t tokenProtocolId = StringToProtocolName(params[1].get_str().c_str());
+        const std::string pProtoId = boost::to_lower_copy(params[1].get_str());
+
+        uint64_t tokenProtocolId = StringToProtocolName(pProtoId.c_str());
 
         auto nftProtoIndex = NftProtocolsManager::Instance().GetNftProtoIndex(tokenProtocolId);
         if (nftProtoIndex.IsNull())

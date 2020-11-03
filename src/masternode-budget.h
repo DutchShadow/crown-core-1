@@ -121,6 +121,9 @@ private:
     map<uint256, CBudgetProposal> mapProposals;
     map<uint256, BudgetDraft> mapBudgetDrafts;
 
+    // Prepared proposals
+    std::map<std::string, CBudgetProposalBroadcast> mapPreparedBudgetProposals;
+
     std::map<uint256, CBudgetProposalBroadcast> mapSeenMasternodeBudgetProposals;
     std::map<uint256, CBudgetVote> mapSeenMasternodeBudgetVotes;
     std::map<uint256, CBudgetVote> mapOrphanMasternodeBudgetVotes;
@@ -155,6 +158,10 @@ public:
     CBudgetProposal *FindProposal(const std::string &strProposalName);
     CBudgetProposal *FindProposal(uint256 nHash);
     BudgetDraft *FindBudgetDraft(uint256 nHash);
+
+    CBudgetProposalBroadcast *FindPreparedProposal(const std::string &strProposalName);
+    void AddPreparedProposal(const CBudgetProposalBroadcast &proposal);
+    void RemovePreparedProposal(const CBudgetProposalBroadcast &proposal);
 
     static CAmount GetTotalBudget(int nHeight);
 
@@ -226,6 +233,7 @@ public:
         READWRITE(mapSeenBudgetDraftVotes);
         READWRITE(mapOrphanMasternodeBudgetVotes);
         READWRITE(mapOrphanBudgetDraftVotes);
+        READWRITE(mapPreparedBudgetProposals);
 
         READWRITE(mapProposals);
         READWRITE(mapBudgetDrafts);
