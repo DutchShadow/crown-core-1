@@ -1250,18 +1250,65 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const CBlockIndex* pindex
     return ReadRawBlockFromDisk(block, block_pos, message_start);
 }
 
-CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
+CAmount GetSubsidy(int nHeight, const CAmount &nFees)
 {
-    int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
+    int64_t nSubsidy = 12 * COIN;
+    if (nHeight >= Params().PoSStartHeight()) {
+        nSubsidy = 10 * COIN;
+    }
+
+    int halvings = nHeight / Params().GetConsensus().nSubsidyHalvingInterval;
+
     // Force block reward to zero when right shift is undefined.
     if (halvings >= 64)
-        return 0;
+        return nFees;
 
-    CAmount nSubsidy = 50 * COIN;
-    // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
+    // Subsidy is cut in half every 2,100,000 blocks which will occur approximately every 4 years.
     nSubsidy >>= halvings;
     return nSubsidy;
 }
+
+CAmount GetBlockValue(int nHeight, const CAmount &nFees)
+{
+    int64_t nSubsidy = GetSubsidy(nHeight, nFees);
+    if (Params().NetworkID() == CBaseChainParams::DEVNET) {
+        if (nHeight == 2)
+            return 1000000 * COIN;
+    }
+
+    int64_t budgetValue = nSubsidy * 0.25;
+    if (Params().NetworkID() == CBaseChainParams::TESTNET) {
+        if (nHeight > 20000)
+            nSubsidy -= budgetValue;
+    } else {
+        if (nHeight > 1265000)
+            nSubsidy -= budgetValue;
+    }
+
+    return nSubsidy + nFees;
+}
+
+CAmount GetMasternodePayment(int nHeight, CAmount blockValue)
+{
+    // 25% percent is already taken for budget
+    int64_t ret = (blockValue * 37.5) / 75; // 37.5%
+    if (nHeight >= Params().PoSStartHeight()) {
+        ret = (blockValue * 37) / 75; // 37%
+    }
+    return ret;
+}
+
+CAmount GetSystemnodePayment(int nHeight, CAmount blockValue)
+{
+    // 25% percent is already taken for budget
+    int64_t ret = (blockValue * 7.5) / 75; // 7.5%
+    if (nHeight >= Params().PoSStartHeight())
+    {
+        ret = (blockValue * 8) / 75; // 8%
+    }
+    return ret;
+}
+
 
 bool IsInitialBlockDownload()
 {
@@ -2144,20 +2191,37 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         }
         UpdateCoins(tx, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
     }
+
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
-    CAmount blockReward = nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
-    // TODO fix
-    //if (block.vtx[0]->GetValueOut() > blockReward)
-    //    return state.DoS(100,
-    //                     error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
-    //                           block.vtx[0]->GetValueOut(), blockReward),
-    //                           REJECT_INVALID, "bad-cb-amount");
 
-    // TODO fix
-    //if (!control.Wait())
-    //    return state.DoS(100, error("%s: CheckQueue failed", __func__), REJECT_INVALID, "block-validation-failed");
+    // CROWN : MODIFIED TO CHECK MASTERNODE PAYMENTS, SYSTEMNODE PAYMENTS AND SUPERBLOCKS ///////////////////////////////////////
+
+    std::string strError = "";
+    const int nHeight =  pindex->nHeight;
+    CAmount blockReward = GetBlockValue(nHeight, nFees);
+    CAmount blockCreated = block.vtx[0]->GetValueOut();
+    if (block.IsProofOfStake())
+        blockCreated += block.vtx[1]->GetValueOut();
+
+    if (!IsBlockValueValid(block, blockReward)) {
+        return state.DoS(0, error("ConnectBlock(CROWN): %s", strError), REJECT_INVALID, "bad-cb-amount");
+    }
+
+    if(!IsBlockPayeeValid(blockCreated, *block.vtx[0], nHeight, block.nTime, pindex->pprev->nTime)) {
+        return state.DoS(0, error("ConnectBlock(CROWN): couldn't find masternode payments"), REJECT_INVALID, "bad-mn-payee");
+    }
+
+    if(!SNIsBlockPayeeValid(blockCreated, *block.vtx[0], nHeight, block.nTime, pindex->pprev->nTime)) {
+        return state.DoS(0, error("ConnectBlock(CROWN): couldn't find systemnode payments"), REJECT_INVALID, "bad-sn-payee");
+    }
+
+    // CROWN : FINISH //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // if (!control.Wait())
+    //     return state.DoS(100, error("%s: CheckQueue failed", __func__), REJECT_INVALID, "block-validation-failed");
+
     int64_t nTime4 = GetTimeMicros(); nTimeVerify += nTime4 - nTime2;
     LogPrint(BCLog::BENCH, "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs (%.2fms/blk)]\n", nInputs - 1, MILLI * (nTime4 - nTime2), nInputs <= 1 ? 0 : MILLI * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * MICRO, nTimeVerify * MILLI / nBlocksTotal);
 

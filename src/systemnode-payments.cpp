@@ -28,7 +28,8 @@ CCriticalSection cs_mapSystemnodePayeeVotes;
 bool SNIsBlockPayeeValid(const CAmount& nValueCreated, const CTransaction& txNew, int nBlockHeight, const uint32_t& nTime, const uint32_t& nTimePrevBlock)
 {
     if(!systemnodeSync.IsSynced()) { //there is no budget data to use to check anything -- find the longest chain
-        LogPrintf("Client not synced, skipping block payee checks\n");
+        if (gArgs.GetBoolArg("-debug", false))
+            LogPrintf("Client not synced, skipping block payee checks\n");
         return true;
     }
 
@@ -52,7 +53,7 @@ bool SNIsBlockPayeeValid(const CAmount& nValueCreated, const CTransaction& txNew
     //check for systemnode payee
     if(systemnodePayments.IsTransactionValid(nValueCreated, txNew, nBlockHeight)) {
         return true;
-    } else if (nTime - nTimePrevBlock > Params().ChainStallDuration()) {
+    } else if (nTime - nTimePrevBlock > (unsigned int)Params().ChainStallDuration()) {
         // The chain has stalled, allow the first block to have no payment to winners
         LogPrintf("%s: Chain stall, time between blocks=%d\n", __func__, nTime - nTimePrevBlock);
         return true;

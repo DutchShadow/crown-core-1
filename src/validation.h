@@ -509,4 +509,9 @@ inline bool IsBlockPruned(const CBlockIndex* pblockindex)
     return (fHavePruned && !(pblockindex->nStatus & BLOCK_HAVE_DATA) && pblockindex->nTx > 0);
 }
 
+CAmount GetSubsidy(int nHeight, const CAmount &nFees);
+CAmount GetBlockValue(int nHeight, const CAmount &nFees);
+CAmount GetMasternodePayment(int nHeight, CAmount blockValue);
+CAmount GetSystemnodePayment(int nHeight, CAmount blockValue);
+
 #endif // BITCOIN_VALIDATION_H

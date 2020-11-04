@@ -78,7 +78,8 @@ bool IsBlockValueValid(const CBlock& block, int64_t nExpectedValue){
 bool IsBlockPayeeValid(const CAmount& nAmountCreated, const CTransaction& txNew, int nBlockHeight, const uint32_t& nTime, const uint32_t& nTimePrevBlock)
 {
     if(!masternodeSync.IsSynced()) { //there is no budget data to use to check anything -- find the longest chain
-        LogPrintf("Client not synced, skipping block payee checks\n");
+        if (gArgs.GetBoolArg("-debug", false))
+            LogPrintf("Client not synced, skipping block payee checks\n");
         return true;
     }
 
@@ -103,7 +104,7 @@ bool IsBlockPayeeValid(const CAmount& nAmountCreated, const CTransaction& txNew,
     if(masternodePayments.IsTransactionValid(nAmountCreated, txNew, nBlockHeight))
     {
         return true;
-    } else if (nTime - nTimePrevBlock > Params().ChainStallDuration()) {
+    } else if (nTime - nTimePrevBlock > (unsigned int)Params().ChainStallDuration()) {
         // The chain has stalled, allow the first block to have no payment to winners
         LogPrintf("%s: Chain stall, time between blocks=%d\n", __func__, nTime - nTimePrevBlock);
         return true;
