@@ -1414,7 +1414,7 @@ void CChainState::InvalidBlockFound(CBlockIndex *pindex, const CValidationState 
 void UpdateCoins(const CTransaction& tx, CCoinsViewCache& inputs, CTxUndo &txundo, int nHeight)
 {
     // mark inputs spent
-    if (!tx.IsCoinBase()) {
+    if (!tx.IsCoinBase() && !tx.IsCoinStake()) {
         txundo.vprevout.reserve(tx.vin.size());
         for (const CTxIn &txin : tx.vin) {
             txundo.vprevout.emplace_back();
@@ -1474,7 +1474,7 @@ void InitScriptExecutionCache() {
  */
 bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &inputs, bool fScriptChecks, unsigned int flags, bool cacheSigStore, bool cacheFullScriptStore, PrecomputedTransactionData& txdata, std::vector<CScriptCheck> *pvChecks)
 {
-    if (!tx.IsCoinBase())
+    if (!tx.IsCoinBase() && !tx.IsCoinStake())
     {
         if (pvChecks)
             pvChecks->reserve(tx.vin.size());
@@ -2096,7 +2096,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
         nInputs += tx.vin.size();
 
-        if (!tx.IsCoinBase())
+        if (!tx.IsCoinBase() && !tx.IsCoinStake())
         {
             CAmount txfee = 0;
             if (!Consensus::CheckTxInputs(tx, state, view, pindex->nHeight, txfee)) {
@@ -2336,8 +2336,21 @@ static void AppendWarning(std::string& res, const std::string& warn)
     res += warn;
 }
 
+int64_t nTime0 = 0;   //! benchmark variable
+int nBenchHeight = 0; //! benchmark store
+
 /** Check warning conditions and do some notifications on new chain tip set. */
 void static UpdateTip(const CBlockIndex *pindexNew, const CChainParams& chainParams) {
+
+    if (GetTimeMillis() - nTime0 > 5000) {
+        int newTime = (GetTimeMillis() - nTime0) / 1000;
+        int passedHeight = pindexNew->nHeight - nBenchHeight;
+        int blocksPerSec = passedHeight / newTime;
+        LogPrintf("averaging %d blocks per second\n", blocksPerSec);
+        nTime0 = GetTimeMillis();
+        nBenchHeight = pindexNew->nHeight;
+    }
+
     // New best block
     mempool.AddTransactionsUpdated(1);
 
@@ -3235,6 +3248,8 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
         {
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
         }
+        if (i > 2 && block.vtx[i]->IsCoinStake())
+            return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinstake");
     }
 
     // Check transactions
@@ -3665,7 +3680,6 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         }
         if (!ret) {
             GetMainSignals().BlockChecked(*pblock, state);
-            std::cout << "AcceptBlock failed" << std::endl;
             return error("%s: AcceptBlock FAILED (%s)", __func__, FormatStateMessage(state));
         }
     }
@@ -3675,7 +3689,6 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
     CValidationState state; // Only used to report errors, not invalidity - ignore it
     if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
     {
-        std::cout << "ActivateBestChain failed " << std::endl;
         return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
     }
 
