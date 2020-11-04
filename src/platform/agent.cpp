@@ -6,15 +6,6 @@
 #include <boost/foreach.hpp>
 #include <memory>
 
-namespace std // TODO: remove this when we switch to C++14
-{
-    template<typename T, typename... Args>
-    unique_ptr<T> make_unique(Args &&... args)
-    {
-        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-    }
-}
-
 namespace Platform
 {
     class AgentRegistryIteratorImpl:

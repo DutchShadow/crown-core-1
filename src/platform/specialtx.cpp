@@ -34,9 +34,7 @@ namespace Platform
                 return Platform::NfTokenProtocolRegTx::CheckTx(tx, pindexLast, state);
         }
 
-
-        // TODO fix
-        //return state.DoS(100, false, REJECT_INVALID, "bad-tx-type");
+        return true;
     }
 
     bool ProcessSpecialTx(bool justCheck, const CTransaction &tx, const CBlockIndex *pindex, CValidationState &state)
@@ -59,8 +57,7 @@ namespace Platform
                 return Platform::NfTokenProtocolRegTx::ProcessTx(tx, pindex, state);
         }
 
-        // TODO fix
-        //return state.DoS(100, false, REJECT_INVALID, "bad-tx-type");
+        return true;
     }
 
     bool UndoSpecialTx(const CTransaction &tx, const CBlockIndex *pindex)
