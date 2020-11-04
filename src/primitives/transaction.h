@@ -225,7 +225,12 @@ template<typename Stream, typename TxType>
 inline void UnserializeTransaction(TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
 
-    s >> tx.nVersion;
+    int32_t n32bitVersion = tx.nVersion | (tx.nType << 16);
+    s >> n32bitVersion;
+
+    tx.nVersion = (int16_t)(n32bitVersion & 0xffff);
+    tx.nType = (int16_t)((n32bitVersion >> 16) & 0xffff);
+
     unsigned char flags = 0;
     tx.vin.clear();
     tx.vout.clear();
@@ -264,7 +269,9 @@ template<typename Stream, typename TxType>
 inline void SerializeTransaction(const TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
 
-    s << tx.nVersion;
+    int32_t n32bitVersion = tx.nVersion | (tx.nType << 16);
+    s << n32bitVersion;
+
     unsigned char flags = 0;
     // Consistency check
     if (fAllowWitness) {
@@ -315,7 +322,7 @@ public:
     // structure, including the hash.
     const std::vector<CTxIn> vin;
     const std::vector<CTxOut> vout;
-    const int32_t nVersion;
+    const int16_t nVersion;
     const int16_t nType;
     const uint32_t nLockTime;
     const std::vector<uint8_t> extraPayload; // only available for special transaction types
@@ -345,7 +352,7 @@ public:
     /** This deserializing constructor is provided instead of an Unserialize method.
      *  Unserialize is not possible, since it would require overwriting const fields. */
     template <typename Stream>
-    CTransaction(deserialize_type, Stream& s) : CTransaction(CMutableTransaction(deserialize, s)) {}
+    CTransaction(deserialize_type, Stream& s) : CTransaction(CMutableTransaction(deserialize, s)) {ComputeHash();}
 
     bool IsNull() const {
         return vin.empty() && vout.empty();
@@ -400,7 +407,7 @@ struct CMutableTransaction
 {
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
-    int32_t nVersion;
+    int16_t nVersion;
     int16_t nType;
     uint32_t nLockTime;
     std::vector<uint8_t> extraPayload; // only available for special transaction types
