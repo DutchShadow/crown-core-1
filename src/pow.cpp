@@ -97,7 +97,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     if (Params().NetworkID() == CBaseChainParams::MAIN && pindexLast->nHeight >= Params().PoSStartHeight() - 1)
     {
         // Increase mainnet difficulty for POS
-        Params().GetConsensusNonConst().powLimit = uint256S("0000003fffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        Params().GetConsensusNonConst().powLimit = uint256S("000003ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
     }
 
     if (retarget == DIFF_BTC)

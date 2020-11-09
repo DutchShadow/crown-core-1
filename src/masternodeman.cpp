@@ -573,7 +573,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
         mapSeenMasternodePing.insert(make_pair(mnp.GetHash(), mnp));
 
         int nDoS = 0;
-        LOCK(cs_main);
+        //LOCK(cs_main);
         if(mnp.CheckAndUpdate(nDoS)) return;
 
         if(nDoS > 0) {
