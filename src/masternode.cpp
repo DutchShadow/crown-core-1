@@ -214,10 +214,9 @@ void CMasternode::Check(bool forceCheck)
             TRY_LOCK(cs_main, lockMain);
             if(!lockMain) return;
 
-            if(!AcceptableInputs(mempool, state, CTransaction(tx), false, NULL)){
+            if(!AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, NULL, true, 0)){
                 activeState = MASTERNODE_VIN_SPENT;
                 return;
-
             }
         }
     }
@@ -660,7 +659,7 @@ bool CMasternodeBroadcast::CheckInputsAndAdd(int& nDoS) const
             return false;
         }
 
-        if(!AcceptableInputs(mempool, state, CTransaction(tx), false, NULL)) {
+        if(!AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, NULL, true, 0)) {
             //set nDos
             state.IsInvalid(nDoS);
             return false;

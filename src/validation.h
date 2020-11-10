@@ -500,9 +500,6 @@ bool DumpMempool();
 /** Load the mempool from disk. */
 bool LoadMempool();
 
-bool AcceptableInputs(CTxMemPool& pool, CValidationState &state, const CTransaction &tx, bool fLimitFree,
-                                bool* pfMissingInputs, bool fRejectInsaneFee=false, bool isDSTX=false);
-
 //! Check whether the block associated with this index entry is pruned or not.
 inline bool IsBlockPruned(const CBlockIndex* pblockindex)
 {
