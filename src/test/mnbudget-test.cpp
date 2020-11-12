@@ -690,7 +690,7 @@ BOOST_FIXTURE_TEST_SUITE(TestBudgetDraft, BudgetDraftFixture)
         stream.reserve(1000);
         stream << draft;
 
-        CNode dummy(INVALID_SOCKET, CAddress(CService("127.0.0.1", 0), NODE_NETWORK));
+        CNode dummy(INVALID_SOCKET, "127.0.0.1", NODE_NETWORK);
 
         budget.ProcessMessage(&dummy, "fbs", stream);
 

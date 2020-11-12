@@ -26,7 +26,7 @@ public:
     int64_t EndTime(const Consensus::Params& params) const override { return TestTime(20000); }
     int Period(const Consensus::Params& params) const override { return 1000; }
     int Threshold(const Consensus::Params& params) const override { return 900; }
-    bool Condition(const CBlockIndex* pindex, const Consensus::Params& params) const override { return (pindex->nVersion & 0x100); }
+    //bool Condition(const CBlockIndex* pindex, const Consensus::Params& params) const override { return (pindex->nVersion & 0x100); }
 
     ThresholdState GetStateFor(const CBlockIndex* pindexPrev) const { return AbstractThresholdConditionChecker::GetStateFor(pindexPrev, paramsDummy, cache); }
     int GetStateSinceHeightFor(const CBlockIndex* pindexPrev) const { return AbstractThresholdConditionChecker::GetStateSinceHeightFor(pindexPrev, paramsDummy, cache); }
@@ -48,9 +48,9 @@ class VersionBitsTester
     // 6 independent checkers for the same bit.
     // The first one performs all checks, the second only 50%, the third only 25%, etc...
     // This is to test whether lack of cached information leads to the same results.
-    TestConditionChecker checker[CHECKERS];
+    //TestConditionChecker checker[CHECKERS];
     // Another 6 that assume always active activation
-    TestAlwaysActiveConditionChecker checker_always[CHECKERS];
+    //TestAlwaysActiveConditionChecker checker_always[CHECKERS];
 
     // Test counter (to identify failures)
     int num;
@@ -80,7 +80,7 @@ public:
             pindex->nHeight = vpblock.size();
             pindex->pprev = vpblock.size() > 0 ? vpblock.back() : nullptr;
             pindex->nTime = nTime;
-            pindex->nVersion = nVersion;
+            block.nVersion.SetGenesisVersion(nVersion);
             pindex->BuildSkip();
             vpblock.push_back(pindex);
         }

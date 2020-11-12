@@ -27,7 +27,6 @@ BITCOIN_TEST_SUITE = \
 
 # test_bitcoin binary #
 BITCOIN_TESTS =\
-  test/mnbudget-test.cpp \
   test/arith_uint256_tests.cpp \
   test/scriptnum10.h \
   test/addrman_tests.cpp \
@@ -90,8 +89,7 @@ BITCOIN_TESTS =\
   test/txvalidationcache_tests.cpp \
   test/uint256_tests.cpp \
   test/util_tests.cpp \
-  test/validation_block_tests.cpp \
-  test/versionbits_tests.cpp
+  test/validation_block_tests.cpp
 
 if ENABLE_WALLET
 BITCOIN_TESTS += \

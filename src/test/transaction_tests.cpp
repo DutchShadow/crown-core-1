@@ -264,24 +264,6 @@ BOOST_AUTO_TEST_CASE(tx_invalid)
     }
 }
 
-            for (unsigned int i = 0; i < tx.vin.size() && fValid; i++)
-            {
-                if (!mapprevOutScriptPubKeys.count(tx.vin[i].prevout))
-                {
-                    BOOST_ERROR("Bad test: " << strTest);
-                    break;
-                }
-
-                unsigned int verify_flags = ParseScriptFlags(test[2].get_str());
-                fValid = VerifyScript(tx.vin[i].scriptSig, mapprevOutScriptPubKeys[tx.vin[i].prevout],
-                                      verify_flags, TransactionSignatureChecker(&tx, i), &err);
-            }
-            BOOST_CHECK_MESSAGE(!fValid, strTest);
-            BOOST_CHECK_MESSAGE(err != SCRIPT_ERR_OK, ScriptErrorString(err));
-        }
-    }
-}
-*/
 BOOST_AUTO_TEST_CASE(basic_transaction_tests)
 {
     // Random real transaction (e2769b09e784f32f62ef849763d4f45b98e07ba658647343b915ff832b110436)
