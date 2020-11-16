@@ -76,4 +76,6 @@ public:
     void ClearFulfilledRequest();
 };
 
+void ThreadCheckMasternode(CConnman& connman);
+
 #endif

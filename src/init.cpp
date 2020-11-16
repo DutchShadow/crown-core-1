@@ -50,6 +50,19 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <activemasternode.h>
+#include <activesystemnode.h>
+#include <dbmanager.h>
+#include <instantx.h>
+#include <masternode-budget.h>
+#include <masternode-payments.h>
+#include <masternodeman.h>
+#include <masternodeconfig.h>
+#include <systemnodeman.h>
+#include <systemnode-payments.h>
+#include <systemnodeconfig.h>
+#include <spork.h>
+
 #include "platform/platform-db.h"
 
 #ifndef WIN32
@@ -1239,6 +1252,53 @@ bool AppInitLockDataDirectory()
     return true;
 }
 
+static bool LoadData()
+{
+    std::string strDBName;
+    boost::filesystem::path pathDB = GetDataDir();
+
+    uiInterface.InitMessage(_("Loading masternode cache..."));
+    
+    if (!Load(mnodeman, "mncache.dat", "MasternodeCache")) {
+        return InitError(_("Failed to load masternode cache from") + "\n" + (pathDB / strDBName).string());
+    }
+
+    uiInterface.InitMessage(_("Loading systemnode cache..."));
+    if (!Load(snodeman, "sncache.dat", "SystemnodeCache")) {
+        return InitError(_("Failed to load systemnode cache from") + "\n" + (pathDB / strDBName).string());
+    }
+
+    uiInterface.InitMessage(_("Loading budget cache..."));
+    if (!Load(budget, "budget-v2.dat", "MasternodeBudget")) {
+        return InitError(_("Failed to load systemnode cache from") + "\n" + (pathDB / strDBName).string());
+    }
+
+    //flag our cached items so we send them to our peers
+    budget.ResetSync();
+    budget.ClearSeen();
+
+    uiInterface.InitMessage(_("Loading masternode payment cache..."));
+    if (!Load(masternodePayments, "mnpayments.dat", "MasternodePayments")) {
+        return InitError(_("Failed to load systemnode cache from") + "\n" + (pathDB / strDBName).string());
+    }
+
+    uiInterface.InitMessage(_("Loading systemnode payment cache..."));
+    if (!Load(systemnodePayments, "snpayments.dat", "SystemnodePayments")) {
+        return InitError(_("Failed to load systemnode cache from") + "\n" + (pathDB / strDBName).string());
+    }
+
+    return true;
+}
+
+static void DumpData()
+{
+    Dump(mnodeman, "mncache.dat", "MasternodeCache");
+    Dump(budget, "budget-v2.dat", "MasternodeBudget");
+    Dump(masternodePayments, "mnpayments.dat", "MasternodePayments");
+    Dump(snodeman, "sncache.dat", "SystemnodeCache");
+    Dump(systemnodePayments, "snpayments.dat", "SystemnodePayments");
+}
+
 bool AppInitMain()
 {
     const CChainParams& chainparams = Params();
@@ -1684,7 +1744,6 @@ bool AppInitMain()
     }
 
     threadGroup.create_thread(boost::bind(&ThreadImport, vImportFiles));
-    threadGroup.create_thread(boost::bind(&ThreadCheckLegacySigner));
 
     // Wait for genesis block to be processed
     {
@@ -1701,6 +1760,135 @@ bool AppInitMain()
     if (ShutdownRequested()) {
         return false;
     }
+
+    // ********************************************************* Step 10: setup Budgets
+
+    if (!LoadData())
+        return false;
+
+    fMasterNode = gArgs.GetBoolArg("-masternode", false);
+    fSystemNode = gArgs.GetBoolArg("-systemnode", false);
+
+    if (fMasterNode && fSystemNode) {
+        return InitError("Masternode and Systemnode cannot run together");
+    }
+
+    //! all mn/sn should be running txindex no exceptions..
+
+    if(fMasterNode) {
+        LogPrintf("IS MASTERNODE\n");
+        strMasterNodeAddr = gArgs.GetArg("-masternodeaddr", "");
+
+        LogPrintf(" addr %s\n", strMasterNodeAddr.c_str());
+
+        if(!strMasterNodeAddr.empty()){
+            CService addrTest = CService(strMasterNodeAddr);
+            if (!addrTest.IsValid()) {
+                return InitError("Invalid -masternodeaddr address: " + strMasterNodeAddr);
+            }
+        }
+
+        strMasterNodePrivKey = gArgs.GetArg("-masternodeprivkey", "");
+        if(!strMasterNodePrivKey.empty()){
+            std::string errorMessage;
+
+            CKey key;
+            CPubKey pubkey;
+
+            if(!legacySigner.SetKey(strMasterNodePrivKey, errorMessage, key, pubkey))
+            {
+                return InitError(_("Invalid masternodeprivkey. Please see documenation."));
+            }
+
+            activeMasternode.pubKeyMasternode = pubkey;
+
+        } else {
+            return InitError(_("You must specify a masternodeprivkey in the configuration. Please see documentation for help."));
+        }
+    }
+
+    if(fSystemNode) {
+        LogPrintf("IS SYSTEMNODE\n");
+        strSystemNodeAddr = gArgs.GetArg("-systemnodeaddr", "");
+
+        LogPrintf(" addr %s\n", strSystemNodeAddr.c_str());
+
+        if(!strSystemNodeAddr.empty()){
+            CService addrTest = CService(strSystemNodeAddr);
+            if (!addrTest.IsValid()) {
+                return InitError("Invalid -systemnodeaddr address: " + strSystemNodeAddr);
+            }
+        }
+
+        strSystemNodePrivKey = gArgs.GetArg("-systemnodeprivkey", "");
+        if(!strSystemNodePrivKey.empty()){
+            std::string errorMessage;
+
+            CKey key;
+            CPubKey pubkey;
+
+            if(!legacySigner.SetKey(strSystemNodePrivKey, errorMessage, key, pubkey))
+            {
+                return InitError(_("Invalid systemnodeprivkey. Please see documenation."));
+            }
+
+            activeSystemnode.pubKeySystemnode = pubkey;
+
+        } else {
+            return InitError(_("You must specify a systemnodeprivkey in the configuration. Please see documentation for help."));
+        }
+    }
+
+    const auto pwalletMain = GetMainWallet();
+
+    //get the mode of budget voting for this throne
+    strBudgetMode = gArgs.GetArg("-budgetvotemode", "auto");
+
+    if(gArgs.GetBoolArg("-mnconflock", true) && pwalletMain) {
+        LOCK(pwalletMain->cs_wallet);
+        LogPrintf("Locking Masternodes:\n");
+        uint256 mnTxHash;
+        for (CNodeEntry mne : masternodeConfig.getEntries()) {
+            LogPrintf("  %s %s\n", mne.getTxHash(), mne.getOutputIndex());
+            mnTxHash.SetHex(mne.getTxHash());
+            COutPoint outpoint = COutPoint(mnTxHash, boost::lexical_cast<unsigned int>(mne.getOutputIndex()));
+            pwalletMain->LockCoin(outpoint);
+        }
+    }
+
+    if(gArgs.GetBoolArg("-snconflock", true) && pwalletMain) {
+        LOCK(pwalletMain->cs_wallet);
+        LogPrintf("Locking Systemnodes:\n");
+        uint256 mnTxHash;
+        for (CNodeEntry sne : systemnodeConfig.getEntries()) {
+            LogPrintf("  %s %s\n", sne.getTxHash(), sne.getOutputIndex());
+            mnTxHash.SetHex(sne.getTxHash());
+            COutPoint outpoint = COutPoint(mnTxHash, boost::lexical_cast<unsigned int>(sne.getOutputIndex()));
+            pwalletMain->LockCoin(outpoint);
+        }
+    }
+
+    fEnableInstantX = gArgs.GetBoolArg("-enableinstantx", fEnableInstantX);
+    nInstantXDepth = gArgs.GetArg("-instantxdepth", nInstantXDepth);
+    nInstantXDepth = std::min(std::max(nInstantXDepth, 0), 60);
+
+    //lite mode disables all Masternode related functionality
+    fLiteMode = gArgs.GetBoolArg("-litemode", false);
+    if(fMasterNode && fLiteMode){
+        return InitError("You can not start a masternode in litemode");
+    }
+    if(fSystemNode && fLiteMode){
+        return InitError("You can not start a servicenode in litemode");
+    }
+
+    LogPrintf("fLiteMode %d\n", fLiteMode);
+    LogPrintf("nInstantXDepth %d\n", nInstantXDepth);
+    LogPrintf("Budget Mode %s\n", strBudgetMode.c_str());
+
+    legacySigner.InitCollateralAddress();
+
+    threadGroup.create_thread(boost::bind(&ThreadCheckLegacySigner));
+    threadGroup.create_thread(boost::bind(&ThreadCheckMasternode, boost::ref(*g_connman)));
 
     // ********************************************************* Step 12: start node
 

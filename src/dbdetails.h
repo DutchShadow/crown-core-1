@@ -43,7 +43,7 @@ namespace details
         }
 
         // de-serialize file header (network specific magic number) and ..
-        stream >> FLATDATA(pchMsgTmp);
+        stream >> MakeSpan(pchMsgTmp);
 
         // ... verify the network matches ours
         if (memcmp(pchMsgTmp, Params().MessageStart(), sizeof(pchMsgTmp)))
@@ -98,7 +98,7 @@ namespace details
         // serialize, checksum data up to that point, then append checksum
         CDataStream ssObj(SER_DISK, CLIENT_VERSION);
         ssObj << magicMessage; // specific magic message for this type of object
-        ssObj << FLATDATA(Params().MessageStart()); // network specific magic number
+        ssObj << MakeSpan(Params().MessageStart()); // network specific magic number
         ssObj << objToSave;
         uint256 hash = Hash(ssObj.begin(), ssObj.end());
         ssObj << hash;

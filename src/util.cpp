@@ -84,27 +84,28 @@
 
 #include <thread>
 
+//Crown only features
 bool fMasterNode = false;
 bool fSystemNode = false;
 std::string strMasterNodePrivKey = "";
-std::string strSystemNodePrivKey = "";
-
 std::string strMasterNodeAddr = "";
+std::string strSystemNodePrivKey = "";
 std::string strSystemNodeAddr = "";
-
+bool fLiteMode = false;
+bool fEnableInstantX = true;
 int nInstantXDepth = 5;
 
+/** Spork enforcement enabled time */
 int64_t enforceMasternodePaymentsTime = 4085657524;
 int64_t enforceSystemnodePaymentsTime = 4085657524;
+bool fSucessfullyLoaded = false;
+std::string strBudgetMode = "";
 
 // Application startup time (used for uptime calculation)
 const int64_t nStartupTime = GetTime();
 
 const char * const BITCOIN_CONF_FILENAME = "crown.conf";
 const char * const BITCOIN_PID_FILENAME = "crown.pid";
-
-std::string strBudgetMode = "";
-bool fLiteMode = "";
 
 ArgsManager gArgs;
 

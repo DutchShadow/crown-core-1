@@ -38,19 +38,16 @@
 //Crown only features
 extern bool fMasterNode;
 extern bool fSystemNode;
-extern std::string strMasterNodePrivKey;
-extern std::string strSystemNodePrivKey;
-//extern bool fEnableInstantX;
+extern bool fLiteMode;
+extern bool fEnableInstantX;
 extern int nInstantXDepth;
-extern int64_t enforceMasternodePaymentsTime;
-extern int64_t enforceSystemnodePaymentsTime;
 extern std::string strMasterNodeAddr;
 extern std::string strSystemNodeAddr;
-//extern std::string strSystemNodePrivKey;
-//extern int keysLoaded;
-//extern bool fSucessfullyLoaded;
+extern int64_t enforceMasternodePaymentsTime;
+extern int64_t enforceSystemnodePaymentsTime;
+extern std::string strMasterNodePrivKey;
+extern std::string strSystemNodePrivKey;
 extern std::string strBudgetMode;
-extern bool fLiteMode;
 
 //extern std::map<std::string, std::string> mapArgs;
 //extern std::map<std::string, std::vector<std::string> > mapMultiArgs;

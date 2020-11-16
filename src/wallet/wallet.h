@@ -194,6 +194,7 @@ struct CRecipient
 
 typedef std::map<std::string, std::string> mapValue_t;
 
+std::shared_ptr<CWallet> GetMainWallet();
 
 static inline void ReadOrderPos(int64_t& nOrderPos, mapValue_t& mapValue)
 {

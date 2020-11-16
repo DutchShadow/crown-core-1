@@ -245,7 +245,8 @@ BITCOIN_CORE_H = \
   zmq/zmqnotificationinterface.h \
   zmq/zmqpublishnotifier.h \
   zmq/zmqrpc.h \
-  nodeconfig.h
+  nodeconfig.h \
+  dbmanager.h
 
 
 obj/build.h: FORCE
@@ -265,6 +266,7 @@ libbitcoin_server_a_SOURCES = \
   chain.cpp \
   checkpoints.cpp \
   consensus/tx_verify.cpp \
+  dbdetails.cpp \
   httprpc.cpp \
   httpserver.cpp \
   index/base.cpp \

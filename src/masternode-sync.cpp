@@ -10,6 +10,7 @@
 #include "masternode.h"
 #include "masternodeman.h"
 #include "spork.h"
+#include "shutdown.h"
 #include "util.h"
 #include "addrman.h"
 #include "netmessagemaker.h"
@@ -409,3 +410,37 @@ void CMasternodeSync::Process()
         }
     }
 }
+
+void ThreadCheckMasternode(CConnman& connman)
+{
+    static bool fOneThread;
+    if(fOneThread) return;
+    fOneThread = true;
+
+    // Make this thread recognisable as the PrivateSend thread
+    RenameThread("dash-ps");
+
+    unsigned int nTick = 0;
+
+    while (true)
+    {
+        MilliSleep(1000);
+
+        // try to sync from all available nodes, one step at a time
+        masternodeSync.Process();
+
+        if(masternodeSync.IsBlockchainSynced() && !ShutdownRequested()) {
+
+            nTick++;
+
+            // make sure to check all masternodes first
+            mnodeman.Check();
+
+            if(nTick % 60 == 0) {
+                mnodeman.CheckAndRemove();
+                masternodePayments.CheckAndRemove();
+            }
+        }
+    }
+}
+
