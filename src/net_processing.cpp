@@ -1136,17 +1136,6 @@ void RelayInv(CInv &inv, const int minProtoVersion) {
     });
 }
 
-int GetIXConfirmations(uint256 nTXHash)
-{
-    int sigs = instantSend.GetSignaturesCount(nTXHash);
-
-    if(sigs >= INSTANTX_SIGNATURES_REQUIRED){
-        return nInstantXDepth;
-    }
-
-    return 0;
-}
-
 static void RelayAddress(const CAddress& addr, bool fReachable, CConnman* connman)
 {
     unsigned int nRelayNodes = fReachable ? 2 : 1; // limited relaying of addresses outside our network(s)

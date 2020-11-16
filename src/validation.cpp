@@ -1010,6 +1010,17 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
     return AcceptToMemoryPoolWithTime(chainparams, pool, state, tx, pfMissingInputs, GetTime(), plTxnReplaced, bypass_limits, nAbsurdFee, test_accept);
 }
 
+int GetIXConfirmations(uint256 nTXHash)
+{
+    int sigs = instantSend.GetSignaturesCount(nTXHash);
+
+    if(sigs >= INSTANTX_SIGNATURES_REQUIRED){
+        return nInstantXDepth;
+    }
+
+    return 0;
+}
+
 int GetTransactionAge(const uint256 &txid)
 {
     CTransactionRef tx;
@@ -1172,46 +1183,6 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 {
     return ReadBlockOrHeader(block, pindex, consensusParams);
 }
-
-//bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams)
-//{
-//    block.SetNull();
-//
-//    // Open history file to read
-//    CAutoFile filein(OpenBlockFile(pos, true), SER_DISK, CLIENT_VERSION);
-//    if (filein.IsNull())
-//        return error("ReadBlockFromDisk: OpenBlockFile failed for %s", pos.ToString());
-//
-//    // Read block
-//    try {
-//        filein >> block;
-//    }
-//    catch (const std::exception& e) {
-//        return error("%s: Deserialize or I/O error - %s at %s", __func__, e.what(), pos.ToString());
-//    }
-//
-//    // Check the header
-//    if (!CheckProofOfWork(block, consensusParams))
-//        return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
-//
-//    return true;
-//}
-//
-//bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams)
-//{
-//    CDiskBlockPos blockPos;
-//    {
-//        LOCK(cs_main);
-//        blockPos = pindex->GetBlockPos();
-//    }
-//
-//    if (!ReadBlockFromDisk(block, blockPos, consensusParams))
-//        return false;
-//    if (block.GetHash() != pindex->GetBlockHash())
-//        return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
-//                pindex->ToString(), pindex->GetBlockPos().ToString());
-//    return true;
-//}
 
 bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& message_start)
 {
@@ -2102,7 +2073,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     assert(pindex->pprev);
     CBlockIndex *pindexBIP34height = pindex->pprev->GetAncestor(chainparams.GetConsensus().BIP34Height);
     //Only continue to enforce if we're below BIP34 activation height or the block hash at that height doesn't correspond.
-    fEnforceBIP30 = fEnforceBIP30 && (!pindexBIP34height || !(pindexBIP34height->GetBlockHash() == chainparams.GetConsensus().BIP34Hash));
     fEnforceBIP30 = false;
 
     // TODO: Remove BIP30 checking from block height 1,983,702 on, once we have a
@@ -2207,7 +2177,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     // CROWN : MODIFIED TO CHECK MASTERNODE PAYMENTS, SYSTEMNODE PAYMENTS AND SUPERBLOCKS ///////////////////////////////////////
 
     std::string strError = "";
-    const int nHeight =  pindex->nHeight;
+    const int nHeight =  pindex->pprev->nHeight;
     CAmount blockReward = GetBlockValue(nHeight, nFees);
     CAmount blockCreated = block.vtx[0]->GetValueOut();
     if (block.IsProofOfStake())
@@ -2227,8 +2197,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
     // CROWN : FINISH //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // if (!control.Wait())
-    //     return state.DoS(100, error("%s: CheckQueue failed", __func__), REJECT_INVALID, "block-validation-failed");
+    if (!control.Wait())
+        return state.DoS(100, error("%s: CheckQueue failed", __func__), REJECT_INVALID, "block-validation-failed");
 
     int64_t nTime4 = GetTimeMicros(); nTimeVerify += nTime4 - nTime2;
     LogPrint(BCLog::BENCH, "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs (%.2fms/blk)]\n", nInputs - 1, MILLI * (nTime4 - nTime2), nInputs <= 1 ? 0 : MILLI * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * MICRO, nTimeVerify * MILLI / nBlocksTotal);
@@ -2404,21 +2374,8 @@ static void AppendWarning(std::string& res, const std::string& warn)
     res += warn;
 }
 
-int64_t nTime0 = 0;   //! benchmark variable
-int nBenchHeight = 0; //! benchmark store
-
 /** Check warning conditions and do some notifications on new chain tip set. */
 void static UpdateTip(const CBlockIndex *pindexNew, const CChainParams& chainParams) {
-
-    if (GetTimeMillis() - nTime0 > 5000) {
-        int newTime = (GetTimeMillis() - nTime0) / 1000;
-        int passedHeight = pindexNew->nHeight - nBenchHeight;
-        int blocksPerSec = passedHeight / newTime;
-        LogPrintf("averaging %d blocks per second\n", blocksPerSec);
-        nTime0 = GetTimeMillis();
-        nBenchHeight = pindexNew->nHeight;
-    }
-
     // New best block
     mempool.AddTransactionsUpdated(1);
 
@@ -3213,7 +3170,7 @@ static bool FindBlockPos(CDiskBlockPos &pos, unsigned int nAddSize, unsigned int
             if (CheckDiskSpace(nNewChunks * BLOCKFILE_CHUNK_SIZE - pos.nPos, true)) {
                 FILE *file = OpenBlockFile(pos);
                 if (file) {
-                    //LogPrintf("Pre-allocating up to position 0x%x in blk%05u.dat\n", nNewChunks * BLOCKFILE_CHUNK_SIZE, pos.nFile);
+                    LogPrintf("Pre-allocating up to position 0x%x in blk%05u.dat\n", nNewChunks * BLOCKFILE_CHUNK_SIZE, pos.nFile);
                     AllocateFileRange(file, pos.nPos, nNewChunks * BLOCKFILE_CHUNK_SIZE - pos.nPos);
                     fclose(file);
                 }
@@ -3246,7 +3203,7 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
         if (CheckDiskSpace(nNewChunks * UNDOFILE_CHUNK_SIZE - pos.nPos, true)) {
             FILE *file = OpenUndoFile(pos);
             if (file) {
-                //LogPrintf("Pre-allocating up to position 0x%x in rev%05u.dat\n", nNewChunks * UNDOFILE_CHUNK_SIZE, pos.nFile);
+                LogPrintf("Pre-allocating up to position 0x%x in rev%05u.dat\n", nNewChunks * UNDOFILE_CHUNK_SIZE, pos.nFile);
                 AllocateFileRange(file, pos.nPos, nNewChunks * UNDOFILE_CHUNK_SIZE - pos.nPos);
                 fclose(file);
             }
@@ -3260,9 +3217,9 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
-    // Check proof of work matches claimed amount
-    //if (fCheckPOW && !CheckProofOfWork(block, consensusParams))
-    //    return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
+//  // Check proof of work matches claimed amount
+//  if (fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
+//      return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
 
     return true;
 }
@@ -3284,9 +3241,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
         bool mutated;
         uint256 hashMerkleRoot2 = BlockMerkleRoot(block, &mutated);
         if (block.hashMerkleRoot != hashMerkleRoot2)
-        {
             return state.DoS(100, false, REJECT_INVALID, "bad-txnmrklroot", true, "hashMerkleRoot mismatch");
-        }
 
         // Check for merkle tree malleability (CVE-2012-2459): repeating sequences
         // of transactions in a block without affecting the merkle root of a block,
@@ -3309,14 +3264,18 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (block.vtx.empty() || !block.vtx[0]->IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "first tx is not coinbase");
     for (unsigned int i = 1; i < block.vtx.size(); i++)
-    {
         if (block.vtx[i]->IsCoinBase())
-        {
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
-        }
-        if (i > 2 && block.vtx[i]->IsCoinStake())
-            return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinstake");
+
+    // Proof of stake checks
+    if (block.IsProofOfStake()) {
+        if (block.vtx.empty() || !block.vtx[1]->IsCoinStake())
+            return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "second tx is not coinstake");
+        for (unsigned int i = 2; i < block.vtx.size(); i++)
+            if (block.vtx[i]->IsCoinStake())
+                return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "more than one coinstake");
     }
+
 
     // Check transactions
     for (const auto& tx : block.vtx)
@@ -3422,9 +3381,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     // Check proof of work
     const Consensus::Params& consensusParams = params.GetConsensus();
     if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams))
-    {
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
-    }
 
     // Check timestamp against prev
     if (block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
@@ -3733,11 +3690,8 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
 
     CValidationState state; // Only used to report errors, not invalidity - ignore it
     if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
-    {
         return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
-    }
 
-    LogPrintf("%s : ACCEPTED\n", __func__);
     return true;
 }
 
