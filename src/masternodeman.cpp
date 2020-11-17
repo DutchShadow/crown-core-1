@@ -8,11 +8,14 @@
 #include "systemnodeman.h"
 #include "activemasternode.h"
 #include "legacysigner.h"
+#include "sync.h"
 #include "util.h"
 #include "addrman.h"
 #include "spork.h"
+
 #include "net_processing.h"
 #include "netmessagemaker.h"
+
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 
@@ -344,7 +347,7 @@ CMasternode* CMasternodeMan::GetNextMasternodeInQueueForPayment(int nBlockHeight
     int nTenthNetwork = CountEnabled()/10;
     int nCountTenth = 0; 
     arith_uint256 nHigh = 0;
-    for (const auto& s : vecMasternodeLastPaid) {
+    for (auto& s : vecMasternodeLastPaid) {
         CMasternode* pmn = Find(s.second);
         if(!pmn) break;
 
@@ -520,7 +523,7 @@ void CMasternodeMan::ProcessMasternodeConnections()
     //we don't care about this for regtest
     if(Params().NetworkID() == CBaseChainParams::REGTEST) return;
 
-    LOCK(g_connman->cs_vNodes);
+    LOCK(cs_vNodes);
     for (const auto &pnode : g_connman->GetNodes()) {
         if(pnode->fMasternode){
             if(legacySigner.pSubmittedToMasternode != NULL && pnode->addr == legacySigner.pSubmittedToMasternode->addr) continue;
@@ -573,7 +576,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, const std::string& strCommand,
         mapSeenMasternodePing.insert(make_pair(mnp.GetHash(), mnp));
 
         int nDoS = 0;
-        //LOCK(cs_main);
+        LOCK(cs_main);
         if(mnp.CheckAndUpdate(nDoS)) return;
 
         if(nDoS > 0) {
