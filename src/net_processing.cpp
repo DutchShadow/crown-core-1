@@ -3200,17 +3200,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
 
     else {
 
-        bool found = false;
-        const std::vector<std::string> &allMessages = getAllNetMessageTypes();
-        for (const std::string msg : allMessages) {
-            //! this lets us catch mnp_new and mnb_new..
-            if (memcmp(msg.c_str(),strCommand.c_str(),3) == 0) {
-                found = true;
-                break;
-            }
-        }
+        // owing to the sheer data throughput of crown, this is probably faster..
 
-        if (found) {
+        {
             mnodeman.ProcessMessage(pfrom, strCommand, vRecv, connman);
             snodeman.ProcessMessage(pfrom, strCommand, vRecv, connman);
             budget.ProcessMessage(pfrom, strCommand, vRecv);
