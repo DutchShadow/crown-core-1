@@ -199,6 +199,9 @@ void Interrupt()
     }
 }
 
+//! forward declaration
+void DumpData();
+
 void Shutdown()
 {
     LogPrintf("%s: In progress...\n", __func__);
@@ -244,6 +247,7 @@ void Shutdown()
     peerLogic.reset();
     g_connman.reset();
     g_txindex.reset();
+    DumpData();
 
     if (g_is_mempool_loaded && gArgs.GetArg("-persistmempool", DEFAULT_PERSIST_MEMPOOL)) {
         DumpMempool();
@@ -1290,7 +1294,7 @@ static bool LoadData()
     return true;
 }
 
-static void DumpData()
+void DumpData()
 {
     Dump(mnodeman, "mncache.dat", "MasternodeCache");
     Dump(budget, "budget-v2.dat", "MasternodeBudget");
