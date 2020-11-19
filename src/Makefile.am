@@ -267,6 +267,7 @@ libbitcoin_server_a_SOURCES = \
   checkpoints.cpp \
   consensus/tx_verify.cpp \
   dbdetails.cpp \
+  dbdetails.h \
   httprpc.cpp \
   httpserver.cpp \
   index/base.cpp \
