@@ -1380,7 +1380,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << vote.get();
-                        g_connman->PushMessage(pfrom, msgMaker.Make("txlvote", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("txlvote", ss));
                         pushed = true;
                     }
                 }
@@ -1391,7 +1391,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << lockedTx.get();
-                        g_connman->PushMessage(pfrom, msgMaker.Make("ix", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("ix", ss));
                         pushed = true;
                     }
                 }
@@ -1400,7 +1400,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << mapSporks[inv.hash];
-                        g_connman->PushMessage(pfrom, msgMaker.Make("spork", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("spork", ss));
                         pushed = true;
                     }
                 }
@@ -1409,7 +1409,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << masternodePayments.mapMasternodePayeeVotes[inv.hash];
-                        g_connman->PushMessage(pfrom, msgMaker.Make("mnw", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("mnw", ss));
                         pushed = true;
                     }
                 }
@@ -1419,7 +1419,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << *item;
-                        g_connman->PushMessage(pfrom, msgMaker.Make("mvote", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("mvote", ss));
                         pushed = true;
                     }
                 }
@@ -1430,7 +1430,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << *item;
-                        g_connman->PushMessage(pfrom, msgMaker.Make("mprop", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("mprop", ss));
                         pushed = true;
                     }
                 }
@@ -1441,7 +1441,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << *item;
-                        g_connman->PushMessage(pfrom, msgMaker.Make("fbvote", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("fbvote", ss));
                         pushed = true;
                     }
                 }
@@ -1452,7 +1452,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << *item;
-                        g_connman->PushMessage(pfrom, msgMaker.Make("fbs", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("fbs", ss));
                         pushed = true;
                     }
                 }
@@ -1463,9 +1463,9 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         ss.reserve(1000);
                         ss << mnodeman.mapSeenMasternodeBroadcast[inv.hash];
                         if (pfrom->nVersion < MIN_MNW_PING_VERSION)
-                            g_connman->PushMessage(pfrom, msgMaker.Make("mnb", ss));
+                            connman->PushMessage(pfrom, msgMaker.Make("mnb", ss));
                         else
-                            g_connman->PushMessage(pfrom, msgMaker.Make("mnb_new", ss));
+                            connman->PushMessage(pfrom, msgMaker.Make("mnb_new", ss));
                         pushed = true;
                     }
                 }
@@ -1476,9 +1476,9 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         ss.reserve(1000);
                         ss << mnodeman.mapSeenMasternodePing[inv.hash];
                         if (pfrom->nVersion < MIN_MNW_PING_VERSION)
-                            g_connman->PushMessage(pfrom, msgMaker.Make("mnp", ss));
+                            connman->PushMessage(pfrom, msgMaker.Make("mnp", ss));
                         else
-                            g_connman->PushMessage(pfrom, msgMaker.Make("mnp_new", ss));
+                            connman->PushMessage(pfrom, msgMaker.Make("mnp_new", ss));
                         pushed = true;
                     }
                 }
@@ -1487,7 +1487,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << systemnodePayments.mapSystemnodePayeeVotes[inv.hash];
-                        g_connman->PushMessage(pfrom, msgMaker.Make("snw", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("snw", ss));
                         pushed = true;
                     }
                 }
@@ -1496,7 +1496,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << snodeman.mapSeenSystemnodeBroadcast[inv.hash];
-                        g_connman->PushMessage(pfrom, msgMaker.Make("snb", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("snb", ss));
                         pushed = true;
                     }
                 }
@@ -1506,7 +1506,7 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
                         ss << snodeman.mapSeenSystemnodePing[inv.hash];
-                        g_connman->PushMessage(pfrom, msgMaker.Make("snp", ss));
+                        connman->PushMessage(pfrom, msgMaker.Make("snp", ss));
                         pushed = true;
                     }
                 }
