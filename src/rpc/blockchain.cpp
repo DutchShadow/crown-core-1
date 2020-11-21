@@ -58,12 +58,18 @@ static CUpdatedBlock latestblock;
  */
 double GetDifficulty(const CBlockIndex* blockindex)
 {
-    if (blockindex == nullptr)
+    // Floating point number that is a multiple of the minimum difficulty,
+    // minimum difficulty = 1.0.
+    if (blockindex == NULL)
     {
-        return 1.0;
+        if (chainActive.Tip() == NULL)
+            return 1.0;
+        else
+            blockindex = chainActive.Tip();
     }
 
     int nShift = (blockindex->nBits >> 24) & 0xff;
+
     double dDiff =
         (double)0x0000ffff / (double)(blockindex->nBits & 0x00ffffff);
 
@@ -81,6 +87,7 @@ double GetDifficulty(const CBlockIndex* blockindex)
     return dDiff;
 }
 
+
 UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 {
     AssertLockHeld(cs_main);
@@ -92,9 +99,8 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
         confirmations = chainActive.Height() - blockindex->nHeight + 1;
     result.pushKV("confirmations", confirmations);
     result.pushKV("height", blockindex->nHeight);
-    // TODO fix
-    //result.pushKV("version", blockindex->nVersion);
-    //result.pushKV("versionHex", strprintf("%08x", blockindex->nVersion));
+    result.pushKV("version", blockindex->GetBlockHeader().nVersion.GetFullVersion());
+    result.pushKV("versionHex", strprintf("%08x", blockindex->GetBlockHeader().nVersion.GetFullVersion()));
     result.pushKV("merkleroot", blockindex->hashMerkleRoot.GetHex());
     result.pushKV("time", (int64_t)blockindex->nTime);
     result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
@@ -126,9 +132,11 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.pushKV("size", (int)::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION));
     result.pushKV("weight", (int)::GetBlockWeight(block));
     result.pushKV("height", blockindex->nHeight);
-    // TODO fix
-    //result.pushKV("version", block.nVersion);
-    //result.pushKV("versionHex", strprintf("%08x", block.nVersion));
+    result.pushKV("version", block.nVersion.GetFullVersion());
+    result.pushKV("versionHex", strprintf("%08x", block.nVersion.GetFullVersion()));
+    result.pushKV("proof_type", block.nNonce == 0 ? "PoS" : "PoW");
+    if (block.IsProofOfStake())
+        result.pushKV("stake_source", COutPoint(block.stakePointer.txid, block.stakePointer.nPos).ToString());
     result.pushKV("merkleroot", block.hashMerkleRoot.GetHex());
     UniValue txs(UniValue::VARR);
     for(const auto& tx : block.vtx)
