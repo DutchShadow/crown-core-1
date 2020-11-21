@@ -9,6 +9,7 @@
 #include <coins.h>
 #include <dbwrapper.h>
 #include <chain.h>
+#include <index/txindex.h>
 #include <primitives/block.h>
 
 #include <map>
@@ -24,7 +25,7 @@ class uint256;
 //! No need to periodic flush if at least this much space still available.
 static constexpr int MAX_BLOCK_COINSDB_USAGE = 10;
 //! -dbcache default (MiB)
-static const int64_t nDefaultDbCache = 450;
+static const int64_t nDefaultDbCache = 650;
 //! -dbbatchsize default (bytes)
 static const int64_t nDefaultDbBatchSize = 16 << 20;
 //! max. -dbcache (MiB)

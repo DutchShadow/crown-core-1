@@ -13,6 +13,7 @@
 #include <uint256.h>
 #include <util.h>
 #include <ui_interface.h>
+#include <init.h>
 
 #include <stdint.h>
 
@@ -234,6 +235,7 @@ bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockF
     return WriteBatch(batch, true);
 }
 
+
 bool CBlockTreeDB::WriteFlag(const std::string &name, bool fValue) {
     return Write(std::make_pair(DB_FLAG, name), fValue ? '1' : '0');
 }
@@ -255,6 +257,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
     // Load mapBlockIndex
     while (pcursor->Valid()) {
         boost::this_thread::interruption_point();
+        if (ShutdownRequested()) return false;
         std::pair<char, uint256> key;
         if (pcursor->GetKey(key) && key.first == DB_BLOCK_INDEX) {
             CDiskBlockIndex diskindex;
@@ -275,11 +278,6 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nTx            = diskindex.nTx;
                 pindexNew->fProofOfStake  = diskindex.fProofOfStake;
                 pindexNew->stakeSource    = diskindex.stakeSource;
-
-                if (pindexNew->fProofOfStake) {
-                    //COutPoint stakeSource(diskindex.stakeSource.first, diskindex.stakeSource.second);
-                    //mapUsedStakePointers.emplace(stakeSource.GetHash(), diskindex.GetBlockHash());
-                }
 
                 /* Bitcoin checks the PoW here.  We don't do this because
                    the CDiskBlockIndex does not contain the auxpow.
