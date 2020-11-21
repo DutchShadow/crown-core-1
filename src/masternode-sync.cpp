@@ -12,6 +12,7 @@
 #include "spork.h"
 #include "shutdown.h"
 #include "util.h"
+#include "ui_interface.h"
 #include "addrman.h"
 #include "netmessagemaker.h"
 
@@ -255,6 +256,11 @@ void CMasternodeSync::Process()
     //LogPrintf("CMasternodeSync::Process() - tick %d RequestedMasternodeAssets %d\n", tick, RequestedMasternodeAssets);
 
     if(RequestedMasternodeAssets == MASTERNODE_SYNC_INITIAL) GetNextAsset();
+
+    // Calculate "progress" for LOG reporting / GUI notification
+    double nSyncProgress = double(RequestedMasternodeAttempt + (RequestedMasternodeAssets - 1) * 8) / (8*4);
+    LogPrintf("CMasternodeSync::ProcessTick -- nTick %d nRequestedMasternodeAssets %d nRequestedMasternodeAttempt %d nSyncProgress %f\n", tick, RequestedMasternodeAssets, RequestedMasternodeAttempt, nSyncProgress);
+    uiInterface.NotifyAdditionalDataSyncProgressChanged(nSyncProgress);
 
     // sporks synced but blockchain is not, wait until we're almost at a recent block to continue
     if(Params().NetworkID() != CBaseChainParams::REGTEST &&
