@@ -426,6 +426,14 @@ void ThreadCheckMasternode(CConnman& connman)
     // Make this thread recognisable as the PrivateSend thread
     RenameThread("dash-ps");
 
+    // Don't enter the loop until we are out of IBD
+    while (true) {
+        MilliSleep(1000);
+        if (fReindex) continue;
+        if (!IsInitialBlockDownload()) break;
+        if (ShutdownRequested()) break;
+    }
+
     unsigned int nTick = 0;
 
     while (true)
@@ -441,6 +449,11 @@ void ThreadCheckMasternode(CConnman& connman)
 
             // make sure to check all masternodes first
             mnodeman.Check();
+
+            // check if we should activate or ping every few minutes,
+            // start right after sync is considered to be done
+            if (nTick % MASTERNODE_PING_SECONDS == 0)
+                activeMasternode.ManageStatus();
 
             if(nTick % 60 == 0) {
                 mnodeman.CheckAndRemove();
