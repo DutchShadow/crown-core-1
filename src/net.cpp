@@ -14,6 +14,7 @@
 #include <consensus/consensus.h>
 #include <crypto/common.h>
 #include <crypto/sha256.h>
+#include <limitedmap.h>
 #include <primitives/transaction.h>
 #include <netbase.h>
 #include <scheduler.h>
@@ -87,6 +88,9 @@ std::map<CNetAddr, LocalServiceInfo> mapLocalHost;
 static bool vfLimited[NET_MAX] = {};
 std::string strSubVersion;
 
+std::map<CInv, CDataStream> mapRelayDash;
+std::deque<std::pair<int64_t, CInv> > vRelayExpirationDash;
+CCriticalSection cs_mapRelayDash;
 limitedmap<uint256, int64_t> mapAlreadyAskedFor(MAX_INV_SZ);
 
 void CConnman::AddOneShot(const std::string& strDest)

@@ -27,6 +27,7 @@ class OptionsModel;
 class PlatformStyle;
 class RPCConsole;
 class SendCoinsRecipient;
+class MasternodeList;
 class UnitDisplayStatusBarControl;
 class WalletFrame;
 class WalletModel;
@@ -224,7 +225,10 @@ public Q_SLOTS:
 private:
     /** Set the proxy-enabled icon as shown in the UI. */
     void updateProxyIcon();
-
+    void enableSystemnodes();
+    void disableSystemnodes();
+    void enableMasternodes();
+    void disableMasternodes();
 private Q_SLOTS:
 #ifdef ENABLE_WALLET
     /** Switch to overview (home) page */
@@ -282,13 +286,6 @@ private Q_SLOTS:
     void toggleNetworkActive();
 
     void showModalOverlay();
-
-private:
-    void enableSystemnodes();
-    void disableSystemnodes();
-    void enableMasternodes();
-    void disableMasternodes();
-
 };
 
 class UnitDisplayStatusBarControl : public QLabel

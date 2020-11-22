@@ -140,8 +140,10 @@ void CMasternodeSync::GetNextAsset()
 {
     switch(RequestedMasternodeAssets)
     {
+        case(MASTERNODE_SYNC_FAILED):
+            throw std::runtime_error("Can't switch to next asset from failed, should use Reset() first!");
+            break;
         case(MASTERNODE_SYNC_INITIAL):
-        case(MASTERNODE_SYNC_FAILED): // should never be used here actually, use Reset() instead
             ClearFulfilledRequest();
             RequestedMasternodeAssets = MASTERNODE_SYNC_SPORKS;
             break;
@@ -157,6 +159,8 @@ void CMasternodeSync::GetNextAsset()
         case(MASTERNODE_SYNC_BUDGET):
             LogPrintf("CMasternodeSync::GetNextAsset - Sync has finished\n");
             RequestedMasternodeAssets = MASTERNODE_SYNC_FINISHED;
+
+            uiInterface.NotifyAdditionalDataSyncProgressChanged(1);
             break;
     }
     RequestedMasternodeAttempt = 0;
@@ -217,9 +221,6 @@ void CMasternodeSync::ProcessMessage(CNode* pfrom, const std::string& strCommand
 
 void CMasternodeSync::ClearFulfilledRequest()
 {
-    TRY_LOCK(g_connman->cs_vNodes, lockRecv);
-    if(!lockRecv) return;
-
     for (const auto &pnode : g_connman->GetNodes())
     {
         pnode->ClearFulfilledRequest("getspork");

@@ -28,6 +28,8 @@
 #include <util.h>
 #include <validation.h>
 #include <warnings.h>
+#include <systemnodeman.h>
+#include <masternodeman.h>
 
 #if defined(HAVE_CONFIG_H)
 #include <config/crown-config.h>
@@ -165,6 +167,16 @@ class NodeImpl : public Node
         LOCK(::cs_main);
         return ::chainActive.Height();
     }
+    MasternodeCountInfo getNumMasternodes() override
+    {
+        MasternodeCountInfo mnCount(mnodeman.size(), mnodeman.CountEnabled(PROTOCOL_VERSION), mnodeman.CountEnabled());
+        return mnCount;
+    }
+    SystemnodeCountInfo getNumSystemnodes() override
+    {
+        SystemnodeCountInfo snCount(snodeman.size(), snodeman.CountEnabled(PROTOCOL_VERSION), snodeman.CountEnabled());
+        return snCount;
+    }
     int64_t getLastBlockTime() override
     {
         LOCK(::cs_main);
@@ -282,6 +294,10 @@ class NodeImpl : public Node
                 fn(initial_download, block->nHeight, block->GetBlockTime(),
                     GuessVerificationProgress(Params().TxData(), block));
             }));
+    }
+    std::unique_ptr<Handler> handleNotifyAdditionalDataSyncProgressChanged(NotifyAdditionalDataSyncProressChangedFn fn)
+    {
+        return MakeHandler(::uiInterface.NotifyAdditionalDataSyncProgressChanged.connect(fn));
     }
 };
 

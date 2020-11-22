@@ -20,6 +20,10 @@
 #include <netbase.h>
 #include <txmempool.h>
 #include <ui_interface.h>
+#include <masternodeman.h>
+#include <masternode-sync.h>
+#include <systemnodeman.h>
+#include <systemnode-sync.h>
 #include <util.h>
 #include <warnings.h>
 
@@ -31,10 +35,17 @@
 static int64_t nLastHeaderTipUpdateNotification = 0;
 static int64_t nLastBlockTipUpdateNotification = 0;
 
+static void NotifyAdditionalDataSyncProgressChanged(ClientModel *clientmodel, double nSyncProgress)
+{
+    QMetaObject::invokeMethod(clientmodel, "additionalDataSyncProgressChanged", Qt::QueuedConnection,
+                              Q_ARG(double, nSyncProgress));
+}
+
 ClientModel::ClientModel(interfaces::Node& node, OptionsModel *_optionsModel, QObject *parent) :
     QObject(parent),
     m_node(node),
     optionsModel(_optionsModel),
+    cachedMasternodeCountString(""),
     peerTableModel(0),
     banTableModel(0),
     pollTimer(0)
@@ -46,6 +57,16 @@ ClientModel::ClientModel(interfaces::Node& node, OptionsModel *_optionsModel, QO
     pollTimer = new QTimer(this);
     connect(pollTimer, SIGNAL(timeout()), this, SLOT(updateTimer()));
     pollTimer->start(MODEL_UPDATE_DELAY);
+
+    pollMnTimer = new QTimer(this);
+    connect(pollMnTimer, SIGNAL(timeout()), this, SLOT(updateMnTimer()));
+    // no need to update as frequent as data for balances/txes/blocks
+    pollMnTimer->start(MODEL_UPDATE_DELAY * 4);
+
+    pollSnTimer = new QTimer(this);
+    connect(pollSnTimer, SIGNAL(timeout()), this, SLOT(updateSnTimer()));
+    // no need to update as frequent as data for balances/txes/blocks
+    pollSnTimer->start(MODEL_UPDATE_DELAY * 4);
 
     subscribeToCoreSignals();
 }
@@ -67,6 +88,24 @@ int ClientModel::getNumConnections(unsigned int flags) const
         connections = CConnman::CONNECTIONS_ALL;
 
     return m_node.getNodeCount(connections);
+}
+
+QString ClientModel::getMasternodeCountString() const
+{
+    return tr("Total: %1 (Enabled: %2)").arg(QString::number((int)mnodeman.size()))
+            .arg(QString::number((int)mnodeman.CountEnabled()));
+}
+
+QString ClientModel::getSystemnodeCountString() const
+{
+    return tr("Total: %1 (Enabled: %2)").arg(QString::number((int)snodeman.size()))
+            .arg(QString::number((int)snodeman.CountEnabled()));
+}
+
+int ClientModel::getNumBlocks() const
+{
+    LOCK(cs_main);
+    return chainActive.Height();
 }
 
 int ClientModel::getHeaderTipHeight() const
@@ -103,6 +142,42 @@ void ClientModel::updateTimer()
     // the following calls will acquire the required lock
     Q_EMIT mempoolSizeChanged(m_node.getMempoolSize(), m_node.getMempoolDynamicUsage());
     Q_EMIT bytesChanged(m_node.getTotalBytesRecv(), m_node.getTotalBytesSent());
+}
+
+void ClientModel::updateMnTimer()
+{
+    // Get required lock upfront. This avoids the GUI from getting stuck on
+    // periodical polls if the core is holding the locks for a longer time -
+    // for example, during a wallet rescan.
+    TRY_LOCK(cs_main, lockMain);
+    if(!lockMain)
+        return;
+    QString newMasternodeCountString = getMasternodeCountString();
+
+    if (cachedMasternodeCountString != newMasternodeCountString)
+    {
+        cachedMasternodeCountString = newMasternodeCountString;
+
+        Q_EMIT strMasternodesChanged(cachedMasternodeCountString);
+    }
+}
+
+void ClientModel::updateSnTimer()
+{
+    // Get required lock upfront. This avoids the GUI from getting stuck on
+    // periodical polls if the core is holding the locks for a longer time -
+    // for example, during a wallet rescan.
+    TRY_LOCK(cs_main, lockMain);
+    if(!lockMain)
+        return;
+    QString newSystemnodeCountString = getSystemnodeCountString();
+
+    if (cachedSystemnodeCountString != newSystemnodeCountString)
+    {
+        cachedSystemnodeCountString = newSystemnodeCountString;
+
+        Q_EMIT strSystemnodesChanged(cachedSystemnodeCountString);
+    }
 }
 
 void ClientModel::updateNumConnections(int numConnections)
@@ -165,7 +240,6 @@ QString ClientModel::formatSubVersion() const
 bool ClientModel::isReleaseVersion() const
 {
     return false;
-    //return CLIENT_VERSION_IS_RELEASE;
 }
 
 QString ClientModel::formatClientStartupTime() const
@@ -267,6 +341,7 @@ void ClientModel::unsubscribeFromCoreSignals()
     m_handler_banned_list_changed->disconnect();
     m_handler_notify_block_tip->disconnect();
     m_handler_notify_header_tip->disconnect();
+    m_handler_notify_progress_changed->disconnect();
 }
 
 bool ClientModel::getProxyInfo(std::string& ip_port) const

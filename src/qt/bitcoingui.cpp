@@ -34,6 +34,8 @@
 #include <ui_interface.h>
 #include <util.h>
 #include <masternode-sync.h>
+#include <systemnode-sync.h>
+#include <qt/systemnodelist.h>
 #include <qt/masternodelist.h>
 
 #include <iostream>
@@ -584,6 +586,12 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     receiveCoinsAction->setEnabled(enabled);
     receiveCoinsMenuAction->setEnabled(enabled);
     historyAction->setEnabled(enabled);
+    if (masternodeAction != NULL) {
+        masternodeAction->setEnabled(enabled);
+    }
+    if (systemnodeAction != NULL) {
+        systemnodeAction->setEnabled(enabled);
+    }
     encryptWalletAction->setEnabled(enabled);
     backupWalletAction->setEnabled(enabled);
     changePassphraseAction->setEnabled(enabled);
@@ -853,22 +861,80 @@ void BitcoinGUI::setNumBlocks(int count, const QDateTime& blockDate, double nVer
     tooltip = tr("Processed %n block(s) of transaction history.", "", count);
 
     // Set icon state: spinning if catching up, tick otherwise
-    if(secs < 90*60)
+    if(masternodeSync.IsBlockchainSynced() && systemnodeSync.IsBlockchainSynced())
     {
+        QString strSyncStatusMN;
+        QString strSyncStatusSN;
         tooltip = tr("Up to date") + QString(".<br>") + tooltip;
-        labelBlocksIcon->setPixmap(platformStyle->SingleColorIcon(":/icons/synced").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+
+        if(masternodeSync.IsSynced() && systemnodeSync.IsSynced()) {
+            progressBarLabel->setVisible(false);
+            progressBar->setVisible(false);
+            labelBlocksIcon->setPixmap(QIcon(":/icons/synced").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+        } else {
+
+            int nAttemptMN;
+            int nAttemptSN;
+            int progress = 0;
+
+            labelBlocksIcon->setPixmap(QIcon(QString(
+                ":/movies/spinner-%1").arg(spinnerFrame, 3, 10, QChar('0')))
+                .pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+            spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES;
 
 #ifdef ENABLE_WALLET
         if(walletFrame)
-        {
             walletFrame->showOutOfSyncWarning(false);
-            modalOverlay->showHide(true, true);
-        }
 #endif // ENABLE_WALLET
+
+            nAttemptMN = masternodeSync.RequestedMasternodeAttempt < MASTERNODE_SYNC_THRESHOLD ?
+                         masternodeSync.RequestedMasternodeAttempt + 1 : MASTERNODE_SYNC_THRESHOLD;
+            nAttemptSN = systemnodeSync.RequestedSystemnodeAttempt < SYSTEMNODE_SYNC_THRESHOLD ?
+                         systemnodeSync.RequestedSystemnodeAttempt + 1 : SYSTEMNODE_SYNC_THRESHOLD;
+            progress = nAttemptMN + (masternodeSync.RequestedMasternodeAssets - 1) * MASTERNODE_SYNC_THRESHOLD +
+                       nAttemptSN + (systemnodeSync.RequestedSystemnodeAssets - 1) * SYSTEMNODE_SYNC_THRESHOLD;
+            progressBar->setMaximum(4 * MASTERNODE_SYNC_THRESHOLD + 3 * SYSTEMNODE_SYNC_THRESHOLD);
+            progressBar->setFormat(tr("Synchronizing additional data: %p%"));
+            progressBar->setValue(progress);
+        }
+
+        strSyncStatusMN = QString(masternodeSync.GetSyncStatus().c_str());
+        strSyncStatusSN = QString(systemnodeSync.GetSyncStatus().c_str());
+
+        // SN and MN synchronisation is done simultaneously so
+        // progressBarLabel text switches between SN and MN statuses
+        static bool showMasternodeStatus = true;
+        progressBarLabel->setText(showMasternodeStatus ? strSyncStatusMN : strSyncStatusSN);
+        showMasternodeStatus = !showMasternodeStatus;
+
+        tooltip = strSyncStatusMN + QString("<br>") + strSyncStatusSN + QString("<br>") + tooltip;
     }
-    if(!masternodeSync.IsBlockchainSynced())
+    else
     {
-        QString timeBehindText = GUIUtil::formatNiceTimeOffset(secs);
+        // Represent time from last generated block in human readable text
+        QString timeBehindText;
+        const int HOUR_IN_SECONDS = 60*60;
+        const int DAY_IN_SECONDS = 24*60*60;
+        const int WEEK_IN_SECONDS = 7*24*60*60;
+        const int YEAR_IN_SECONDS = 31556952; // Average length of year in Gregorian calendar
+        if(secs < 2*DAY_IN_SECONDS)
+        {
+            timeBehindText = tr("%n hour(s)","",secs/HOUR_IN_SECONDS);
+        }
+        else if(secs < 2*WEEK_IN_SECONDS)
+        {
+            timeBehindText = tr("%n day(s)","",secs/DAY_IN_SECONDS);
+        }
+        else if(secs < YEAR_IN_SECONDS)
+        {
+            timeBehindText = tr("%n week(s)","",secs/WEEK_IN_SECONDS);
+        }
+        else
+        {
+            int years = secs / YEAR_IN_SECONDS;
+            int remainder = secs % YEAR_IN_SECONDS;
+            timeBehindText = tr("%1 and %2").arg(tr("%n year(s)", "", years)).arg(tr("%n week(s)","", remainder/WEEK_IN_SECONDS));
+        }
 
         progressBarLabel->setVisible(true);
         progressBar->setFormat(tr("%1 behind").arg(timeBehindText));
@@ -888,10 +954,7 @@ void BitcoinGUI::setNumBlocks(int count, const QDateTime& blockDate, double nVer
 
 #ifdef ENABLE_WALLET
         if(walletFrame)
-        {
             walletFrame->showOutOfSyncWarning(true);
-            modalOverlay->showHide();
-        }
 #endif // ENABLE_WALLET
 
         tooltip += QString("<br>");
@@ -1090,6 +1153,68 @@ void BitcoinGUI::incomingTransaction(const QString& date, int unit, const CAmoun
              msg, CClientUIInterface::MSG_INFORMATION);
 }
 #endif // ENABLE_WALLET
+
+void BitcoinGUI::enableSystemnodes()
+{
+    if (systemnodeAction == NULL)
+    {
+        systemnodeAction = new QAction(QIcon(":/icons/systemnode"), tr("&Systemnodes"), this);
+        systemnodeAction->setStatusTip(tr("Browse systemnodes"));
+        systemnodeAction->setToolTip(systemnodeAction->statusTip());
+        systemnodeAction->setCheckable(true);
+#ifdef Q_OS_MAC
+        systemnodeAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_6));
+#else
+        systemnodeAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
+#endif
+        tabGroup->addAction(systemnodeAction);
+        connect(systemnodeAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+        connect(systemnodeAction, SIGNAL(triggered()), this, SLOT(gotoSystemnodePage()));
+    }
+    toolbar->addAction(systemnodeAction);
+}
+
+void BitcoinGUI::disableSystemnodes()
+{
+    toolbar->removeAction(systemnodeAction);
+    gotoOverviewPage();
+}
+
+void BitcoinGUI::enableMasternodes()
+{
+    if (masternodeAction == NULL)
+    {
+        masternodeAction = new QAction(QIcon(":/icons/masternode"), tr("&Masternodes"), this);
+        masternodeAction->setStatusTip(tr("Browse masternodes"));
+        masternodeAction->setToolTip(masternodeAction->statusTip());
+        masternodeAction->setCheckable(true);
+#ifdef Q_OS_MAC
+        masternodeAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_6));
+#else
+        masternodeAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
+#endif
+        tabGroup->addAction(masternodeAction);
+        connect(masternodeAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+        connect(masternodeAction, SIGNAL(triggered()), this, SLOT(gotoMasternodePage()));
+    }
+    toolbar->addAction(masternodeAction);
+}
+
+void BitcoinGUI::disableMasternodes()
+{
+    toolbar->removeAction(masternodeAction);
+    gotoOverviewPage();
+}
+
+void BitcoinGUI::guiEnableSystemnodesChanged(bool enabled)
+{
+    enabled ? enableSystemnodes() : disableSystemnodes();
+}
+
+void BitcoinGUI::guiEnableMasternodesChanged(bool enabled)
+{
+    enabled ? enableMasternodes() : disableMasternodes();
+}
 
 void BitcoinGUI::dragEnterEvent(QDragEnterEvent *event)
 {
@@ -1317,68 +1442,6 @@ void BitcoinGUI::unsubscribeFromCoreSignals()
 void BitcoinGUI::toggleNetworkActive()
 {
     m_node.setNetworkActive(!m_node.getNetworkActive());
-}
-
-void BitcoinGUI::enableSystemnodes()
-{
-    if (systemnodeAction == NULL)
-    {
-        systemnodeAction = new QAction(QIcon(":/icons/systemnode"), tr("&Systemnodes"), this);
-        systemnodeAction->setStatusTip(tr("Browse systemnodes"));
-        systemnodeAction->setToolTip(systemnodeAction->statusTip());
-        systemnodeAction->setCheckable(true);
-#ifdef Q_OS_MAC
-        systemnodeAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_6));
-#else
-        systemnodeAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
-#endif
-        tabGroup->addAction(systemnodeAction);
-        connect(systemnodeAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
-        connect(systemnodeAction, SIGNAL(triggered()), this, SLOT(gotoSystemnodePage()));
-    }
-    toolbar->addAction(systemnodeAction);
-}
-
-void BitcoinGUI::disableSystemnodes()
-{
-    toolbar->removeAction(systemnodeAction);
-    gotoOverviewPage();
-}
-
-void BitcoinGUI::enableMasternodes()
-{
-    if (masternodeAction == NULL)
-    {
-        masternodeAction = new QAction(QIcon(":/icons/masternode"), tr("&Masternodes"), this);
-        masternodeAction->setStatusTip(tr("Browse masternodes"));
-        masternodeAction->setToolTip(masternodeAction->statusTip());
-        masternodeAction->setCheckable(true);
-#ifdef Q_OS_MAC
-        masternodeAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_6));
-#else
-        masternodeAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
-#endif
-        tabGroup->addAction(masternodeAction);
-        connect(masternodeAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
-        connect(masternodeAction, SIGNAL(triggered()), this, SLOT(gotoMasternodePage()));
-    }
-    toolbar->addAction(masternodeAction);
-}
-
-void BitcoinGUI::disableMasternodes()
-{
-    toolbar->removeAction(masternodeAction);
-    gotoOverviewPage();
-}
-
-void BitcoinGUI::guiEnableSystemnodesChanged(bool enabled)
-{
-    enabled ? enableSystemnodes() : disableSystemnodes();
-}
-
-void BitcoinGUI::guiEnableMasternodesChanged(bool enabled)
-{
-    enabled ? enableMasternodes() : disableMasternodes();
 }
 
 UnitDisplayStatusBarControl::UnitDisplayStatusBarControl(const PlatformStyle *platformStyle) :
