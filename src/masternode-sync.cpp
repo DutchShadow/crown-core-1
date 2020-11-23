@@ -424,7 +424,7 @@ void ThreadCheckMasternode(CConnman& connman)
     fOneThread = true;
 
     // Make this thread recognisable as the PrivateSend thread
-    RenameThread("dash-ps");
+    RenameThread("crown-privsend");
 
     // Don't enter the loop until we are out of IBD
     while (true) {
