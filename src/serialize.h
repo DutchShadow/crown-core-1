@@ -219,7 +219,8 @@ template<typename Stream> inline void Unserialize(Stream& s, uint16_t& a) { a = 
 template<typename Stream> inline void Unserialize(Stream& s, int32_t& a ) { a = ser_readdata32(s); }
 template<typename Stream> inline void Unserialize(Stream& s, uint32_t& a) { a = ser_readdata32(s); }
 template<typename Stream> inline void Unserialize(Stream& s, int64_t& a ) { a = ser_readdata64(s); }
-template<typename Stream> inline void Unserialize(Stream& s, uint64_t& a) { a = ser_readdata64(s); }
+template<typename Stream> inline void Unserialize(Stream& s, unsigned long& a) { a = ser_readdata64(s); }
+template<typename Stream> inline void Unserialize(Stream& s, unsigned long long& a) { a = ser_readdata64(s); }
 template<typename Stream> inline void Unserialize(Stream& s, float& a   ) { a = ser_uint32_to_float(ser_readdata32(s)); }
 template<typename Stream> inline void Unserialize(Stream& s, double& a  ) { a = ser_uint64_to_double(ser_readdata64(s)); }
 template<typename Stream, int N> inline void Unserialize(Stream& s, char (&a)[N]) { s.read(a, N); }
