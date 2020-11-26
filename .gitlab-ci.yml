@@ -73,15 +73,15 @@ cache:
     OUTDIR: "Crown-${RELEASE_VERSION}-Linux32"
     PACKAGES: "g++-multilib bc"
 
-.job_template: &raspberrypi_definition
-  tags:
-    - raspi
-  variables:
-    CROWN_CONFIG: "--enable-glibc-back-compat"
-    HOST: "arm-linux-gnueabihf"
-    GOAL: "install"
-    OUTDIR: "Crown-${RELEASE_VERSION}-RaspberryPi"
-    PACKAGES: "g++-arm-linux-gnueabihf"
+#.job_template: &raspberrypi_definition
+#  tags:
+#    - raspi
+#  variables:
+#    CROWN_CONFIG: "--enable-glibc-back-compat"
+#    HOST: "arm-linux-gnueabihf"
+#    GOAL: "install"
+#    OUTDIR: "Crown-${RELEASE_VERSION}-RaspberryPi"
+#    PACKAGES: "g++-arm-linux-gnueabihf"
 
 .job_template: &osx_definition
   tags:
@@ -171,15 +171,15 @@ Linux64:
 #  <<: *job_definition
 #  <<: *release_definition
 
-#Osx:
-#  <<: *osx_definition
-#  <<: *job_definition
-#  <<: *release_definition
+Osx:
+  <<: *osx_definition
+  <<: *job_definition
+  <<: *release_definition
 
-#Osx-dmg:
-#  <<: *osx_dmg_definition
-#  <<: *job_definition
-#  <<: *dmg_release_definition
+Osx-dmg:
+  <<: *osx_dmg_definition
+  <<: *job_definition
+  <<: *dmg_release_definition
 
 # Job definitions for temporary builds (snapshots)
 Win64-snapshot:
@@ -202,10 +202,10 @@ Linux32-snapshot:
   <<: *job_definition 
   <<: *snapshot_definition 
 
-RaspberryPi-snapshot:
-  <<: *raspberrypi_definition
-  <<: *job_definition
-  <<: *snapshot_definition 
+#RaspberryPi-snapshot:
+#  <<: *raspberrypi_definition
+#  <<: *job_definition
+#  <<: *snapshot_definition 
 
 Osx-snapshot:
   <<: *osx_definition
