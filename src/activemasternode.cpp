@@ -78,13 +78,13 @@ void CActiveMasternode::ManageStatus()
         }
 
         if(Params().NetworkID() == CBaseChainParams::MAIN) {
-            if(service.GetPort() != 9340) {
-                notCapableReason = strprintf("Invalid port: %u - only 9340 is supported on mainnet.", service.GetPort());
+            if(service.GetPort() != Params().GetDefaultPort()) {
+                notCapableReason = strprintf("Invalid port: %u - only %u is supported on mainnet.", service.GetPort(), Params().GetDefaultPort());
                 LogPrintf("CActiveMasternode::ManageStatus() - not capable: %s\n", notCapableReason);
                 return;
             }
-        } else if(service.GetPort() == 9340) {
-            notCapableReason = strprintf("Invalid port: %u - 9340 is only supported on mainnet.", service.GetPort());
+        } else if(service.GetPort() == Params().GetDefaultPort()) {
+            notCapableReason = strprintf("Invalid port: %u - %u is only supported on mainnet.", service.GetPort(), Params().GetDefaultPort());
             LogPrintf("CActiveMasternode::ManageStatus() - not capable: %s\n", notCapableReason);
             return;
         }
@@ -112,10 +112,9 @@ void CActiveMasternode::ManageStatus()
 
         if(pwallet->GetMasternodeVinAndKeys(vin, pubKeyCollateralAddress, keyCollateralAddress)) {
 
-            int inputAge = GetUTXOConfirmations(vin.prevout);
-            if(inputAge < MASTERNODE_MIN_CONFIRMATIONS){
+            if(GetUTXOConfirmations(vin.prevout) < MASTERNODE_MIN_CONFIRMATIONS){
                 status = ACTIVE_MASTERNODE_INPUT_TOO_NEW;
-                notCapableReason = strprintf("%s - %d confirmations", GetStatus(), inputAge);
+                notCapableReason = strprintf("%s - %d confirmations", GetStatus(), GetUTXOConfirmations(vin.prevout));
                 LogPrintf("CActiveMasternode::ManageStatus() - %s\n", notCapableReason);
                 return;
             }
@@ -167,8 +166,7 @@ void CActiveMasternode::ManageStatus()
     }
 }
 
-std::string CActiveMasternode::GetStatus() const
-{
+std::string CActiveMasternode::GetStatus() const {
     switch (status) {
     case ACTIVE_MASTERNODE_INITIAL: return "Node just started, not yet activated";
     case ACTIVE_MASTERNODE_SYNC_IN_PROCESS: return "Sync in progress. Must wait until sync is complete to start Masternode";
