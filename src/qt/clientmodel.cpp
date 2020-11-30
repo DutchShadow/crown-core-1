@@ -341,7 +341,6 @@ void ClientModel::unsubscribeFromCoreSignals()
     m_handler_banned_list_changed->disconnect();
     m_handler_notify_block_tip->disconnect();
     m_handler_notify_header_tip->disconnect();
-    m_handler_notify_progress_changed->disconnect();
 }
 
 bool ClientModel::getProxyInfo(std::string& ip_port) const
