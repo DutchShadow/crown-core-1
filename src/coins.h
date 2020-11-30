@@ -29,21 +29,23 @@
 class Coin
 {
 public:
-    //! whether the containing transaction was a coinbase
-    bool fCoinBase;
-
-    //! whether the containing transaction was a coinstake
-    bool fCoinStake;
-
     //! unspent transaction output
     CTxOut out;
 
+    //! whether containing transaction was a coinbase
+    unsigned int fCoinBase : 1;
+
     //! at which height this containing transaction was included in the active block chain
-    uint32_t nHeight;
+    uint32_t nHeight : 31;
+
+    // peercoin: whether transaction is a coinstake
+    bool fCoinStake;
 
     //! construct a Coin from a CTxOut and height/coinbase information.
-    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn, bool fCoinStakeIn) : fCoinBase(fCoinBaseIn), fCoinStake(fCoinStakeIn), out(std::move(outIn)), nHeight(nHeightIn) {}
-    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn, bool fCoinStakeIn) : fCoinBase(fCoinBaseIn), fCoinStake(fCoinStakeIn), out(outIn), nHeight(nHeightIn) {}
+    Coin(CTxOut&& outIn, int nHeightIn, bool fCoinBaseIn, bool fCoinStakeIn) :
+        out(std::move(outIn)), fCoinBase(fCoinBaseIn), nHeight(nHeightIn), fCoinStake(fCoinStakeIn) {}
+    Coin(const CTxOut& outIn, int nHeightIn, bool fCoinBaseIn, bool fCoinStakeIn) :
+        out(outIn), fCoinBase(fCoinBaseIn), nHeight(nHeightIn), fCoinStake(fCoinStakeIn) {}
 
     void Clear() {
         out.SetNull();
@@ -53,7 +55,7 @@ public:
     }
 
     //! empty constructor
-    Coin() : fCoinBase(false), fCoinStake(false), nHeight(0) { }
+    Coin() : fCoinBase(false), nHeight(0), fCoinStake(false) { }
 
     bool IsCoinBase() const {
         return fCoinBase;
@@ -66,19 +68,25 @@ public:
     template<typename Stream>
     void Serialize(Stream &s) const {
         assert(!IsSpent());
-        uint32_t code = nHeight * 4 + (fCoinBase ? 2 : 0) + (fCoinStake ? 1 : 0);
+        uint32_t code = nHeight * uint32_t{2} + fCoinBase;
         ::Serialize(s, VARINT(code));
         ::Serialize(s, CTxOutCompressor(REF(out)));
+        // peercoin flags
+        unsigned int nFlag = fCoinStake? 1 : 0;
+        ::Serialize(s, VARINT(nFlag));
     }
 
     template<typename Stream>
     void Unserialize(Stream &s) {
         uint32_t code = 0;
         ::Unserialize(s, VARINT(code));
-        nHeight = code >> 2;
-        fCoinBase = code & 2;
-        fCoinStake = code & 1;
+        nHeight = code >> 1;
+        fCoinBase = code & 1;
         ::Unserialize(s, REF(CTxOutCompressor(out)));
+        // peercoin flags
+        unsigned int nFlag = 0;
+        ::Unserialize(s, VARINT(nFlag));
+        fCoinStake = nFlag & 1;
     }
 
     bool IsSpent() const {
@@ -104,7 +112,7 @@ public:
      * unordered_map will behave unpredictably if the custom hasher returns a
      * uint64_t, resulting in failures when syncing the chain (#4634).
      */
-    size_t operator()(const COutPoint& id) const {
+    size_t operator()(const COutPoint& id) const noexcept {
         return SipHashUint256Extra(k0, k1, id.hash, id.n);
     }
 };
