@@ -57,6 +57,25 @@
         <file alias="masternode">res/icons/masternode.png</file>
         <file alias="systemnode">res/icons/systemnode.png</file>
     </qresource>
+    <qresource prefix="/css">
+        <file alias="crown">res/css/crown.css</file>
+        <file alias="down_arrow">res/css/down_arrow.png</file>
+        <file alias="upArrow_small">res/css/upArrow_small.png</file>
+        <file alias="downArrow_small">res/css/downArrow_small.png</file>
+        <file alias="logo">res/css/logo.png</file>
+    </qresource>
+    <qresource prefix="/images">
+        <file alias="crown_logo_horizontal">res/images/crown_logo_horizontal.png</file>
+        <file alias="drkblue_downArrow">res/images/drkblue_downArrow.png</file>
+        <file alias="drkblue_downArrow_small">res/images/drkblue_downArrow_small.png</file>
+        <file alias="drkblue_upArrow_small">res/images/drkblue_upArrow_small.png</file>
+        <file alias="drkblue_leftArrow_small">res/images/drkblue_leftArrow_small.png</file>
+        <file alias="drkblue_rightArrow_small">res/images/drkblue_rightArrow_small.png</file>
+        <file alias="drkblue_qtreeview_selected">res/images/drkblue_qtreeview_selected.png</file>
+        <file alias="drkblue_walletFrame_bg">res/images/drkblue_walletFrame_bg.png</file>
+        <file alias="drkblue_walletFrame">res/images/drkblue_walletFrame.png</file>
+        <file alias="splash">res/images/splash.png</file>
+    </qresource>
     <qresource prefix="/movies">
         <file alias="spinner-000">res/movies/spinner-000.png</file>
         <file alias="spinner-001">res/movies/spinner-001.png</file>
