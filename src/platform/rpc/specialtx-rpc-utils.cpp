@@ -81,7 +81,7 @@ namespace Platform
     {
         LOCK(cs_main);
         CValidationState state;
-        if (!CheckSpecialTx(tx, NULL, state))
+        if (!CheckNftTx(tx, NULL, state))
             throw std::runtime_error(FormatStateMessage(state));
 
         CDataStream ds(SER_NETWORK, PROTOCOL_VERSION);

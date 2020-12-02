@@ -20,7 +20,7 @@ namespace Platform
         AssertLockHeld(cs_main);
 
         NfTokenProtocolRegTx nftProtoRegTx;
-        if (!GetTxPayload(tx, nftProtoRegTx))
+        if (!GetNftTxPayload(tx, nftProtoRegTx))
             return state.DoS(100, false, REJECT_INVALID, "bad-tx-payload");
 
         const NfTokenProtocol & nftProto = nftProtoRegTx.GetNftProto();
@@ -65,7 +65,7 @@ namespace Platform
     bool NfTokenProtocolRegTx::ProcessTx(const CTransaction & tx, const CBlockIndex * pindex, CValidationState & state)
     {
         NfTokenProtocolRegTx nftProtoRegTx;
-        bool result = GetTxPayload(tx, nftProtoRegTx);
+        bool result = GetNftTxPayload(tx, nftProtoRegTx);
         // should have been checked already
         assert(result);
 
@@ -80,7 +80,7 @@ namespace Platform
     bool NfTokenProtocolRegTx::UndoTx(const CTransaction & tx, const CBlockIndex * pindex)
     {
         NfTokenProtocolRegTx nftProtoRegTx;
-        bool result = GetTxPayload(tx, nftProtoRegTx);
+        bool result = GetNftTxPayload(tx, nftProtoRegTx);
         // should have been checked already
         assert(result);
 

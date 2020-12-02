@@ -2762,13 +2762,17 @@ bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nC
         coinControl.Select(txin.prevout);
     }
 
+    int extraPayloadSize = 0;
+    if (tx.nVersion >= 3 && tx.nType != TRANSACTION_NORMAL)
+        extraPayloadSize = (int)tx.extraPayload.size();
+
     // Acquire the locks to prevent races to the new locked unspents between the
     // CreateTransaction call and LockCoin calls (when lockUnspents is true).
     LOCK2(cs_main, cs_wallet);
 
     CReserveKey reservekey(this);
     CTransactionRef tx_new;
-    if (!CreateTransaction(vecSend, tx_new, reservekey, nFeeRet, nChangePosInOut, strFailReason, coinControl, false)) {
+    if (!CreateTransaction(vecSend, tx_new, reservekey, nFeeRet, nChangePosInOut, strFailReason, coinControl, false, ALL_COINS, extraPayloadSize)) {
         return false;
     }
 
@@ -3092,6 +3096,11 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CTransac
                 if (nBytes < 0) {
                     strFailReason = _("Signing transaction failed");
                     return false;
+                }
+
+                if (extraPayloadSize != 0) {
+                    // account for extra payload in fee calculation
+                    nBytes += GetSizeOfCompactSize(extraPayloadSize) + extraPayloadSize;
                 }
 
                 nFeeNeeded = GetMinimumFee(*this, nBytes, coin_control, ::mempool, ::feeEstimator, &feeCalc);

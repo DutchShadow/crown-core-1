@@ -1,123 +1,132 @@
-// Copyright (c) 2017 The Dash Core developers
+// Copyright (c) 2018-2019 The Dash Core developers
+// Copyright (c) 2014-2020 Crown Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "primitives/transaction.h"
-#include "primitives/block.h"
-#include "hash.h"
-#include "clientversion.h"
+#include <clientversion.h>
+#include <hash.h>
+#include <platform/governance.h>
+#include <platform/governance-vote.h>
+#include <platform/nf-token/nf-token-protocol-reg-tx.h>
+#include <platform/nf-token/nf-token-reg-tx.h>
+#include <platform/nf-token/nf-tokens-manager.h>
+#include <platform/nf-token/nft-protocols-manager.h>
+#include <platform/specialtx.h>
+#include <primitives/block.h>
+#include <primitives/transaction.h>
 
-#include "specialtx.h"
-#include "governance-vote.h"
-#include "nf-token/nf-token-reg-tx.h" // TODO: refactoring - handlers registration in the tx impl. Special tx itself shouldn't know about handlers
-#include "nf-token/nf-token-protocol-reg-tx.h"
-#include "nf-token/nf-tokens-manager.h"
-#include "nf-token/nft-protocols-manager.h"
-
-#include "governance.h"
-
-namespace Platform
+bool CheckNftTx(const CTransaction& tx, const CBlockIndex* pindexLast, CValidationState& state)
 {
-    bool CheckSpecialTx(const CTransaction& tx, const CBlockIndex* pindexLast, CValidationState& state)
-    {
-        if (tx.nVersion < 3 || tx.nType == TRANSACTION_NORMAL)
-            return true;
+    if (tx.nVersion != TX_NFT_VERSION || tx.nType == TRANSACTION_NORMAL) {
+        return true;
+    }
 
+    try {
         switch (tx.nType) {
             case TRANSACTION_GOVERNANCE_VOTE:
-                return CheckVoteTx(tx, pindexLast, state);
-
+                return Platform::CheckVoteTx(tx, pindexLast, state);
             case TRANSACTION_NF_TOKEN_REGISTER:
                 return Platform::NfTokenRegTx::CheckTx(tx, pindexLast, state);
-
             case TRANSACTION_NF_TOKEN_PROTOCOL_REGISTER:
                 return Platform::NfTokenProtocolRegTx::CheckTx(tx, pindexLast, state);
         }
+    } catch (const std::exception& e) {
+        LogPrintf("%s -- failed: %s\n", __func__, e.what());
+    }
 
+    return true;
+}
+
+bool ProcessNftTx(const CTransaction& tx, const CBlockIndex* pindex, CValidationState& state)
+{
+    if (tx.nVersion != TX_NFT_VERSION || tx.nType == TRANSACTION_NORMAL) {
         return true;
     }
 
-    bool ProcessSpecialTx(bool justCheck, const CTransaction &tx, const CBlockIndex *pindex, CValidationState &state)
-    {
-        if (tx.nVersion < 3 || tx.nType == TRANSACTION_NORMAL)
+    switch (tx.nType) {
+        case TRANSACTION_GOVERNANCE_VOTE:
+            return Platform::ProcessVoteTx(tx, pindex, state);
+        case TRANSACTION_NF_TOKEN_REGISTER:
+            return Platform::NfTokenRegTx::ProcessTx(tx, pindex, state);
+        case TRANSACTION_NF_TOKEN_PROTOCOL_REGISTER:
+            return Platform::NfTokenProtocolRegTx::ProcessTx(tx, pindex, state);
+    }
+
+    return true;
+}
+
+bool UndoNftTx(const CTransaction& tx, const CBlockIndex* pindex)
+{
+    if (tx.nVersion != TX_NFT_VERSION || tx.nType == TRANSACTION_NORMAL) {
+        return true;
+    }
+
+    switch (tx.nType) {
+        case TRANSACTION_GOVERNANCE_VOTE:
             return true;
+        case TRANSACTION_NF_TOKEN_REGISTER:
+            return Platform::NfTokenRegTx::UndoTx(tx, pindex);
+        case TRANSACTION_NF_TOKEN_PROTOCOL_REGISTER:
+            return Platform::NfTokenProtocolRegTx::UndoTx(tx, pindex);
+    }
 
-        if (justCheck)
-            return true;
+    return false;
+}
 
-        switch (tx.nType)
-        {
-            case TRANSACTION_GOVERNANCE_VOTE:
-                return ProcessVoteTx(tx, pindex, state);
-
-            case TRANSACTION_NF_TOKEN_REGISTER:
-                return Platform::NfTokenRegTx::ProcessTx(tx, pindex, state);
-
-            case TRANSACTION_NF_TOKEN_PROTOCOL_REGISTER:
-                return Platform::NfTokenProtocolRegTx::ProcessTx(tx, pindex, state);
+bool ProcessNftTxsInBlock(const CBlock& block, const CBlockIndex* pindex, CValidationState& state)
+{
+    int64_t nTimeLoop = 0;
+    try {
+        int64_t nTime1 = GetTimeMicros();
+        for (int i = 0; i < (int)block.vtx.size(); i++) {
+            const CTransaction& tx = *block.vtx[i];
+            if (!CheckNftTx(tx, pindex->pprev, state)) {
+                return false;
+            }
+            if (!ProcessNftTx(tx, pindex, state)) {
+                return false;
+            }
         }
-
-        return true;
+        int64_t nTime2 = GetTimeMicros(); nTimeLoop += nTime2 - nTime1;
+        LogPrint(BCLog::BENCH, "        - ProcessNftTxsInBlock: %.2fms [%.2fs]\n", 0.001 * (nTime2 - nTime1), nTimeLoop * 0.000001);
+    } catch (const std::exception& e) {
+        LogPrintf("%s -- failed: %s\n", __func__, e.what());
     }
 
-    bool UndoSpecialTx(const CTransaction &tx, const CBlockIndex *pindex)
-    {
-        if (tx.nVersion < 3 || tx.nType == TRANSACTION_NORMAL)
-            return true;
+    return true;
+}
 
-        switch (tx.nType)
-        {
-            case TRANSACTION_GOVERNANCE_VOTE:
-                return true; // handled in batches per block
-
-            case TRANSACTION_NF_TOKEN_REGISTER:
-                return Platform::NfTokenRegTx::UndoTx(tx, pindex);
-
-            case TRANSACTION_NF_TOKEN_PROTOCOL_REGISTER:
-                return Platform::NfTokenProtocolRegTx::UndoTx(tx, pindex);
+bool UndoNftTxsInBlock(const CBlock& block, const CBlockIndex* pindex)
+{
+    int64_t nTimeLoop = 0;
+    try {
+        int64_t nTime1 = GetTimeMicros();
+        for (int i = (int)block.vtx.size() - 1; i >= 0; --i) {
+            const CTransaction& tx = *block.vtx[i];
+            if (!UndoNftTx(tx, pindex)) {
+                return false;
+            }
         }
-
-        return false;
+        int64_t nTime2 = GetTimeMicros(); nTimeLoop += nTime2 - nTime1;
+        LogPrint(BCLog::BENCH, "        - UndoNftTxsInBlock: %.2fms [%.2fs]\n", 0.001 * (nTime2 - nTime1), nTimeLoop * 0.000001);
+    } catch (const std::exception& e) {
+        return error(strprintf("%s -- failed: %s\n", __func__, e.what()).c_str());
     }
 
-    bool ProcessSpecialTxsInBlock(bool justCheck, const CBlock &block, const CBlockIndex *pindex, CValidationState &state)
-    {
-        for (int i = 0; i < (int) block.vtx.size(); i++) {
-            // TODO fix
-            //const CTransaction &tx = block.vtx[i];
-            //if (!CheckSpecialTx(tx, pindex, state))
-            //    return false;
-            //if (!ProcessSpecialTx(justCheck, tx, pindex, state))
-            //    return false;
-        }
+    return true;
+}
 
-        return true;
-    }
+void UpdateNftTxsBlockTip(const CBlockIndex* pindex)
+{
+    Platform::NfTokensManager::Instance().UpdateBlockTip(pindex);
+    Platform::NftProtocolsManager::Instance().UpdateBlockTip(pindex);
+}
 
-    bool UndoSpecialTxsInBlock(const CBlock &block, const CBlockIndex *pindex)
-    {
-        for (int i = (int) block.vtx.size() - 1; i >= 0; --i) {
-            // TODO fix
-            //const CTransaction &tx = block.vtx[i];
-            //if (!UndoSpecialTx(tx, pindex))
-            //    return false;
-        }
-        return true;
+uint256 CalcNftTxInputsHash(const CTransaction& tx)
+{
+    CHashWriter hw(CLIENT_VERSION, SER_GETHASH);
+    for (const auto& in : tx.vin) {
+        hw << in.prevout;
     }
-
-    void UpdateSpecialTxsBlockTip(const CBlockIndex* pindex)
-    {
-        NfTokensManager::Instance().UpdateBlockTip(pindex);
-        NftProtocolsManager::Instance().UpdateBlockTip(pindex);
-    }
-
-    uint256 CalcTxInputsHash(const CTransaction& tx)
-    {
-        CHashWriter hw(CLIENT_VERSION, SER_GETHASH);
-        for (const auto& in : tx.vin)
-        {
-            hw << in.prevout;
-        }
-        return hw.GetHash();
-    }
+    return hw.GetHash();
 }

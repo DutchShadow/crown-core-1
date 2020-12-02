@@ -59,7 +59,7 @@ namespace Platform
     NfTokenProtocolRegTx NftProtoTxMemPoolHandler::GetNftProtoRegTx(const CTransaction & tx)
     {
         NfTokenProtocolRegTx nftProtoRegTx;
-        bool result = GetTxPayload(tx, nftProtoRegTx);
+        bool result = GetNftTxPayload(tx, nftProtoRegTx);
         // should have been checked already
         assert(result);
         return nftProtoRegTx;

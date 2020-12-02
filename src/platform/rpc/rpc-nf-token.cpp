@@ -118,7 +118,7 @@ namespace Platform
         }
 
         SignSpecialTxPayload(tx, nfTokenRegTx, signerKey);
-        SetTxPayload(tx, nfTokenRegTx);
+        SetNftTxPayload(tx, nfTokenRegTx);
 
         std::string result = SignAndSendSpecialTx(tx);
         return result;

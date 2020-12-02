@@ -46,6 +46,9 @@
 #include <future>
 #include <sstream>
 
+#include <evo/specialtx.h>
+#include <platform/specialtx.h>
+
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
 
@@ -235,6 +238,8 @@ size_t nCoinCacheUsage = 5000 * 300;
 uint64_t nPruneTarget = 0;
 int64_t nMaxTipAge = DEFAULT_MAX_TIP_AGE;
 bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
+
+std::atomic<bool> fDIP0003ActiveAtTip{false};
 
 uint256 hashAssumeValid;
 arith_uint256 nMinimumChainWork;
@@ -573,6 +578,9 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
 
     if (!CheckTransaction(tx, state))
         return false; // state filled in by CheckTransaction
+
+    if (!ContextualCheckTransaction(tx, state, chainparams.GetConsensus(), chainActive.Tip()))
+        return error("%s: ContextualCheckTransaction: %s, %s", __func__, hash.ToString(), FormatStateMessage(state));
 
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase() || tx.IsCoinStake())
@@ -1709,6 +1717,18 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
         return DISCONNECT_FAILED;
     }
 
+    ///////////////////////////////////////////////
+
+    if (!UndoNftTxsInBlock(block, pindex)) {
+        return DISCONNECT_FAILED;
+    }
+
+    if (!UndoEvoTxsInBlock(block, pindex)) {
+        return DISCONNECT_FAILED;
+    }
+
+    ///////////////////////////////////////////////
+
     // undo transactions in reverse order
     for (int i = block.vtx.size() - 1; i >= 0; i--) {
         const CTransaction &tx = *(block.vtx[i]);
@@ -1746,6 +1766,10 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
             }
             // At this point, all of txundo.vprevout should have been moved out.
         }
+    }
+
+    if (pindex->pprev && pindex->pprev->pprev && pindex->nHeight < Params().GetConsensus().DIP0003Height) {
+        fDIP0003ActiveAtTip = false;
     }
 
     // move best block pointer to prevout block
@@ -2098,6 +2122,12 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     // Get the script flags for this block
     unsigned int flags = GetBlockScriptFlags(pindex, chainparams.GetConsensus());
 
+    if (!fJustCheck && pindex->nHeight >= Params().GetConsensus().DIP0003Height) {
+        if (!fDIP0003ActiveAtTip)
+            LogPrintf("ConnectBlock -- DIP0003 got activated at height %d\n", pindex->nHeight);
+        fDIP0003ActiveAtTip = true;
+    }
+
     int64_t nTime2 = GetTimeMicros(); nTimeForks += nTime2 - nTime1;
     LogPrint(BCLog::BENCH, "    - Fork checks: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime2 - nTime1), nTimeForks * MICRO, nTimeForks * MILLI / nBlocksTotal);
 
@@ -2173,6 +2203,13 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
+    // CROWN : SPECIALTX HANDLERS ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (!ProcessNftTxsInBlock(block, pindex, state))
+        return false;
+
+    if (!ProcessEvoTxsInBlock(block, pindex, state))
+        return false;
 
     // CROWN : MODIFIED TO CHECK MASTERNODE PAYMENTS, SYSTEMNODE PAYMENTS AND SUPERBLOCKS ///////////////////////////////////////
 
@@ -3406,10 +3443,15 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
                               ? pindexPrev->GetMedianTimePast()
                               : block.GetBlockTime();
 
+    bool fDIP0003Active_context = nHeight >= consensusParams.DIP0003Height;
+
     // Check that all transactions are finalized
     for (const auto& tx : block.vtx) {
         if (!IsFinalTx(*tx, nHeight, nLockTimeCutoff)) {
             return state.DoS(10, false, REJECT_INVALID, "bad-txns-nonfinal", false, "non-final transaction");
+        }
+        if (!ContextualCheckTransaction(*tx, state, consensusParams, pindexPrev)) {
+            return false;
         }
     }
 

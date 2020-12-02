@@ -20,7 +20,7 @@ namespace Platform
         AssertLockHeld(cs_main);
 
         NfTokenRegTx nfTokenRegTx;
-        if (!GetTxPayload(tx, nfTokenRegTx))
+        if (!GetNftTxPayload(tx, nfTokenRegTx))
             return state.DoS(100, false, REJECT_INVALID, "bad-tx-payload");
 
         const NfToken & nfToken = nfTokenRegTx.GetNfToken();
@@ -95,7 +95,7 @@ namespace Platform
     bool NfTokenRegTx::ProcessTx(const CTransaction &tx, const CBlockIndex *pindex, CValidationState &state)
     {
         NfTokenRegTx nfTokenRegTx;
-        bool result = GetTxPayload(tx, nfTokenRegTx);
+        bool result = GetNftTxPayload(tx, nfTokenRegTx);
         // should have been checked already
         assert(result);
 
@@ -109,7 +109,7 @@ namespace Platform
     bool NfTokenRegTx::UndoTx(const CTransaction& tx, const CBlockIndex * pindex)
     {
         NfTokenRegTx nfTokenRegTx;
-        bool result = GetTxPayload(tx, nfTokenRegTx);
+        bool result = GetNftTxPayload(tx, nfTokenRegTx);
         // should have been checked already
         assert(result);
 

@@ -36,7 +36,7 @@ namespace Platform
             FundSpecialTx(tx, voteTx);
             voteTx.keyId = keyMasternode.GetPubKey().GetID();
             SignSpecialTxPayload(tx, voteTx, keyMasternode);
-            SetTxPayload(tx, voteTx);
+            SetNftTxPayload(tx, voteTx);
 
             std::string result = SignAndSendSpecialTx(tx);
 

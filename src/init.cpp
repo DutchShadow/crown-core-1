@@ -1633,6 +1633,11 @@ bool AppInitMain()
                     }
                 }
 
+                // Needs to be called after chain is initialized
+                if (chainActive.Tip() && chainActive.Tip()->pprev) {
+                    fDIP0003ActiveAtTip = chainActive.Tip()->nHeight >= Params().GetConsensus().DIP0003Height;
+                }
+
                 if (!is_coinsview_empty) {
                     uiInterface.InitMessage(_("Verifying blocks..."));
                     if (fHavePruned && gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS) > MIN_BLOCKS_TO_KEEP) {

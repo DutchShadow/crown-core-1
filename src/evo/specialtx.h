@@ -1,0 +1,56 @@
+// Copyright (c) 2014-2020 Crown Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef DASH_SPECIALTX_H
+#define DASH_SPECIALTX_H
+
+#include <primitives/block.h>
+#include <primitives/transaction.h>
+#include <streams.h>
+#include <version.h>
+
+class CBlock;
+class CBlockIndex;
+class CTransaction;
+class CValidationState;
+
+bool CheckEvoTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValidationState& state);
+bool ProcessEvoTxsInBlock(const CBlock& block, const CBlockIndex* pindex, CValidationState& state, bool fCheckCbTxMerkleRoots = true);
+bool UndoEvoTxsInBlock(const CBlock& block, const CBlockIndex* pindex);
+
+template <typename T>
+inline bool GetTxPayload(const std::vector<unsigned char>& payload, T& obj)
+{
+    CDataStream ds(payload, SER_NETWORK, PROTOCOL_VERSION);
+    try {
+        ds >> obj;
+    } catch (std::exception& e) {
+        return false;
+    }
+    return ds.empty();
+}
+
+template <typename T>
+inline bool GetTxPayload(const CMutableTransaction& tx, T& obj)
+{
+    return GetTxPayload(tx.extraPayload, obj);
+}
+
+template <typename T>
+inline bool GetTxPayload(const CTransaction& tx, T& obj)
+{
+    return GetTxPayload(tx.extraPayload, obj);
+}
+
+template <typename T>
+void SetTxPayload(CMutableTransaction& tx, const T& payload)
+{
+    CDataStream ds(SER_NETWORK, PROTOCOL_VERSION);
+    ds << payload;
+    tx.extraPayload.assign(ds.begin(), ds.end());
+}
+
+uint256 CalcTxInputsHash(const CTransaction& tx);
+
+#endif //DASH_SPECIALTX_H

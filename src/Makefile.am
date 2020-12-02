@@ -118,6 +118,7 @@ BITCOIN_CORE_H = \
   legacysigner.h \
   core_memusage.h \
   cuckoocache.h \
+  evo/specialtx.h \
   fs.h \
   httprpc.h \
   httpserver.h \
@@ -266,6 +267,7 @@ libbitcoin_server_a_SOURCES = \
   chain.cpp \
   checkpoints.cpp \
   consensus/tx_verify.cpp \
+  evo/specialtx.cpp \
   dbdetails.cpp \
   dbdetails.h \
   httprpc.cpp \

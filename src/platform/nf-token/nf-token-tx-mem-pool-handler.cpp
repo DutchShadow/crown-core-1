@@ -59,7 +59,7 @@ namespace Platform
     NfTokenRegTx NfTokenTxMemPoolHandler::GetNfTokenRegTx(const CTransaction & tx)
     {
         NfTokenRegTx nfTokenRegTx;
-        bool result = GetTxPayload(tx, nfTokenRegTx);
+        bool result = GetNftTxPayload(tx, nfTokenRegTx);
         // should have been checked already
         assert(result);
         return nfTokenRegTx;

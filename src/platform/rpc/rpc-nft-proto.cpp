@@ -96,7 +96,7 @@ namespace Platform
 
         FundSpecialTx(tx, nftProtoRegTx);
         SignSpecialTxPayload(tx, nftProtoRegTx, ownerKey);
-        SetTxPayload(tx, nftProtoRegTx);
+        SetNftTxPayload(tx, nftProtoRegTx);
 
         std::string result = SignAndSendSpecialTx(tx);
         return result;

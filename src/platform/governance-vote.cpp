@@ -17,7 +17,7 @@ namespace Platform
         AssertLockHeld(cs_main);
 
         VoteTx vtx;
-        if (!GetTxPayload(tx, vtx))
+        if (!GetNftTxPayload(tx, vtx))
             return state.DoS(100, false, REJECT_INVALID, "bad-tx-payload");
 
         if (!CheckInputsHashAndSig(tx, vtx, vtx.keyId, state))
@@ -31,7 +31,7 @@ namespace Platform
         try
         {
             VoteTx vtx;
-            GetTxPayload(tx, vtx);
+            GetNftTxPayload(tx, vtx);
 
             CMasternode* pmn = mnodeman.Find(vtx.voterId);
             if(pmn == nullptr)

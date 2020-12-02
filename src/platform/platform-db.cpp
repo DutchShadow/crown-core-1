@@ -294,7 +294,7 @@ namespace Platform
             assert(txBlockHash == nftDiskIndex.BlockHash());
 
             NfTokenRegTx nftRegTx;
-            bool res = GetTxPayload(*tx, nftRegTx);
+            bool res = GetNftTxPayload(*tx, nftRegTx);
             assert(res);
 
             std::shared_ptr<NfToken> nfTokenPtr(new NfToken(nftRegTx.GetNfToken()));
@@ -329,7 +329,7 @@ namespace Platform
 
             // TODO fix
             NfTokenProtocolRegTx protoRegTx;
-            //bool res = GetTxPayload(*tx, protoRegTx);
+            //bool res = GetNftTxPayload(*tx, protoRegTx);
             //assert(res);
 
             std::shared_ptr<NfTokenProtocol> nftProtoPtr(new NfTokenProtocol(protoRegTx.GetNftProto()));
