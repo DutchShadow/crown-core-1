@@ -77,6 +77,8 @@ namespace GUIUtil
      */
     QList<QModelIndex> getEntryData(QAbstractItemView *view, int column);
 
+    QString loadStyleSheet();
+
     void setClipboard(const QString& str);
 
     /** Get save filename, mimics QFileDialog::getSaveFileName, except that it appends a default suffix

@@ -76,6 +76,7 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const PlatformStyle *_platformSty
     m_node(node),
     platformStyle(_platformStyle)
 {
+    this->setStyleSheet(GUIUtil::loadStyleSheet());
     QSettings settings;
     if (!restoreGeometry(settings.value("MainWindowGeometry").toByteArray())) {
         // Restore failed (perhaps missing setting), center the window
@@ -108,7 +109,6 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const PlatformStyle *_platformSty
     {
         /** Create wallet frame and make it the central widget */
         walletFrame = new WalletFrame(_platformStyle, this);
-        setCentralWidget(walletFrame);
     } else
 #endif // ENABLE_WALLET
     {
@@ -230,7 +230,7 @@ void BitcoinGUI::createActions()
 {
     tabGroup = new QActionGroup(this);
 
-    overviewAction = new QAction(platformStyle->SingleColorIcon(":/icons/overview"), tr("&Overview"), this);
+    overviewAction = new QAction(platformStyle->SingleColorIcon(":/icons/overview"), tr("&Dashboard"), this);
     overviewAction->setStatusTip(tr("Show general overview of wallet"));
     overviewAction->setToolTip(overviewAction->statusTip());
     overviewAction->setCheckable(true);
@@ -291,7 +291,13 @@ void BitcoinGUI::createActions()
     aboutAction->setStatusTip(tr("Show information about %1").arg(tr(PACKAGE_NAME)));
     aboutAction->setMenuRole(QAction::AboutRole);
     aboutAction->setEnabled(false);
-    aboutQtAction = new QAction(platformStyle->TextColorIcon(":/icons/about_qt"), tr("About &Qt"), this);
+    #if QT_VERSION < 0x050000
+    aboutQtAction = new QAction(QIcon(":/trolltech/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
+#else
+    aboutQtAction = new QAction(QIcon(":/qt-project.org/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
+#endif
+
+    //aboutQtAction = new QAction(platformStyle->TextColorIcon(":/icons/about_qt"), tr("About &Qt"), this);
     aboutQtAction->setStatusTip(tr("Show information about Qt"));
     aboutQtAction->setMenuRole(QAction::AboutQtRole);
     optionsAction = new QAction(platformStyle->TextColorIcon(":/icons/options"), tr("&Options..."), this);
@@ -323,10 +329,11 @@ void BitcoinGUI::createActions()
     usedReceivingAddressesAction = new QAction(platformStyle->TextColorIcon(":/icons/address-book"), tr("&Receiving addresses..."), this);
     usedReceivingAddressesAction->setStatusTip(tr("Show the list of used receiving addresses and labels"));
 
-    openAction = new QAction(platformStyle->TextColorIcon(":/icons/open"), tr("Open &URI..."), this);
+    openAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_FileIcon), tr("Open &URI..."), this);
+
     openAction->setStatusTip(tr("Open a bitcoin: URI or payment request"));
 
-    showHelpMessageAction = new QAction(platformStyle->TextColorIcon(":/icons/info"), tr("&Command-line options"), this);
+    showHelpMessageAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Command-line options"), this);
     showHelpMessageAction->setMenuRole(QAction::NoRole);
     showHelpMessageAction->setStatusTip(tr("Show the %1 help message to get a list with possible Bitcoin command-line options").arg(tr(PACKAGE_NAME)));
 
@@ -414,7 +421,19 @@ void BitcoinGUI::createToolBars()
         addToolBar(Qt::LeftToolBarArea, toolbar);
         toolbar->setMovable(false);
 
+        QLabel *labelLogo = new QLabel(toolbar);
+        labelLogo->setFixedWidth(200);
+        labelLogo->setFixedHeight(110);
+        labelLogo->setPixmap(QPixmap(":icons/logo"));
+        labelLogo->setObjectName("labelLogo");
+
+        QWidget* spacer1 = new QWidget();
+        spacer1->setFixedWidth(20);
+        spacer1->setObjectName("spacer1");
+        spacer1->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+
         toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        toolbar->addWidget(labelLogo);
         toolbar->addAction(overviewAction);
         toolbar->addAction(sendCoinsAction);
         toolbar->addAction(receiveCoinsAction);
@@ -426,6 +445,16 @@ void BitcoinGUI::createToolBars()
         {
             lay->itemAt(i)->setAlignment(Qt::AlignLeft);
         }
+
+        QWidget *containerWidget = new QWidget();
+        QBoxLayout *layout = new QBoxLayout(QBoxLayout::LeftToRight, containerWidget);
+        layout->addWidget(toolbar);
+        layout->addWidget(spacer1);
+        layout->addWidget(walletFrame);
+        layout->setSpacing(0);
+        layout->setContentsMargins(0,0,0,0);
+        containerWidget->setLayout(layout);
+        setCentralWidget(containerWidget);
 
 #ifdef ENABLE_WALLET
         QWidget *spacer = new QWidget();
