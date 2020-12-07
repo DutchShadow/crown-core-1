@@ -377,6 +377,7 @@ BITCOIN_QT_WALLET_CPP = \
   qt/privatekeywidget.cpp \
   qt/createsystemnodedialog.h \
   qt/createmasternodedialog.h \
+  qt/startmissingdialog.cpp \
   qt/datetablewidgetitem.cpp \
   qt/createnodedialog.cpp 
 

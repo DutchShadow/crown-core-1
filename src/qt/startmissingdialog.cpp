@@ -1,5 +1,5 @@
 #include "startmissingdialog.h"
-#include "ui_startmissingdialog.h"
+#include <qt/forms/ui_startmissingdialog.h>
 #include <QPushButton>
 
 StartMissingDialog::StartMissingDialog(QWidget *parent) :
