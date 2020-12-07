@@ -112,7 +112,7 @@ void setupAddressWidget(QValidatedLineEdit *widget, QWidget *parent)
     widget->setFont(fixedPitchFont());
     // We don't want translators to use own addresses in translations
     // and this is the only place, where this address is supplied.
-    widget->setPlaceholderText(QObject::tr("Enter a Bitcoin address (e.g. %1)").arg(
+    widget->setPlaceholderText(QObject::tr("Enter a Crown address (e.g. %1)").arg(
         QString::fromStdString(DummyAddress(Params()))));
     widget->setValidator(new BitcoinAddressEntryValidator(parent));
     widget->setCheckValidator(new BitcoinAddressCheckValidator(parent));
@@ -773,6 +773,23 @@ bool SetStartOnSystemStartup(bool fAutoStart) { return false; }
 
 #endif
 
+// Open CSS when configured
+QString loadStyleSheet()
+{
+    QString styleSheet;
+    QSettings settings;
+    QString cssName;
+
+    cssName = QString(":css/crown");
+
+    QFile qFile(cssName);
+    if (qFile.open(QFile::ReadOnly)) {
+        styleSheet = QLatin1String(qFile.readAll());
+    }
+
+    return styleSheet;
+}
+
 void setClipboard(const QString& str)
 {
     QApplication::clipboard()->setText(str, QClipboard::Clipboard);
@@ -936,6 +953,30 @@ bool ItemDelegate::eventFilter(QObject *object, QEvent *event)
         }
     }
     return QItemDelegate::eventFilter(object, event);
+}
+
+/**
+ * Class constructor.
+ * @param[int64_t] numValue   The Number to convert to a QString for display
+ */
+QTableWidgetNumberItem::QTableWidgetNumberItem(const int64_t numValue) : QTableWidgetItem(), m_value(numValue)
+{
+    this->setText(QString::number(numValue));
+}
+
+/**
+ * Comparator overload to ensure that the QStrings internally set as numbers are compared as numbers and not strings.
+ * @param[QTableWidgetItem] item      Right hand side of the less than operator
+ */
+bool QTableWidgetNumberItem::operator<(QTableWidgetItem const& item) const
+{
+    QTableWidgetNumberItem const* rhs = dynamic_cast<QTableWidgetNumberItem const*>(&item);
+
+    if (!rhs) {
+        return QTableWidgetItem::operator<(item);
+    }
+
+    return m_value < rhs->m_value;
 }
 
 } // namespace GUIUtil

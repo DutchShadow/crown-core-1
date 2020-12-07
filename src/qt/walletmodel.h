@@ -15,6 +15,7 @@
 
 #include <interfaces/wallet.h>
 #include <support/allocators/secure.h>
+#include <wallet/wallet.h>
 
 #include <map>
 #include <vector>
@@ -59,6 +60,7 @@ public:
     // Todo: This is a hack, should be replaced with a cleaner solution!
     QString address;
     QString label;
+    AvailableCoinsType inputType;
     CAmount amount;
     // If from a payment request, this is used for storing the memo
     QString message;
