@@ -201,6 +201,9 @@ template<typename Stream> inline void Serialize(Stream& s, uint16_t a) { ser_wri
 template<typename Stream> inline void Serialize(Stream& s, int32_t a ) { ser_writedata32(s, a); }
 template<typename Stream> inline void Serialize(Stream& s, uint32_t a) { ser_writedata32(s, a); }
 template<typename Stream> inline void Serialize(Stream& s, int64_t a ) { ser_writedata64(s, a); }
+#if defined(MAC_OSX)
+template<typename Stream> inline void Serialize(Stream& s, unsigned long a) { ser_writedata64(s, a); }
+#endif
 template<typename Stream> inline void Serialize(Stream& s, uint64_t a) { ser_writedata64(s, a); }
 template<typename Stream> inline void Serialize(Stream& s, float a   ) { ser_writedata32(s, ser_float_to_uint32(a)); }
 template<typename Stream> inline void Serialize(Stream& s, double a  ) { ser_writedata64(s, ser_double_to_uint64(a)); }
@@ -219,6 +222,9 @@ template<typename Stream> inline void Unserialize(Stream& s, uint16_t& a) { a = 
 template<typename Stream> inline void Unserialize(Stream& s, int32_t& a ) { a = ser_readdata32(s); }
 template<typename Stream> inline void Unserialize(Stream& s, uint32_t& a) { a = ser_readdata32(s); }
 template<typename Stream> inline void Unserialize(Stream& s, int64_t& a ) { a = ser_readdata64(s); }
+#if defined(MAC_OSX)
+template<typename Stream> inline void Unserialize(Stream& s, unsigned long& a) { a = ser_readdata64(s); }
+#endif
 template<typename Stream> inline void Unserialize(Stream& s, uint64_t& a) { a = ser_readdata64(s); }
 template<typename Stream> inline void Unserialize(Stream& s, float& a   ) { a = ser_uint32_to_float(ser_readdata32(s)); }
 template<typename Stream> inline void Unserialize(Stream& s, double& a  ) { a = ser_uint64_to_double(ser_readdata64(s)); }
