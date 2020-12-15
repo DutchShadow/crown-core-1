@@ -4,7 +4,7 @@
 #include <primitives/block.h>
 #include <chain.h>
 #include <pubkey.h>
-#include <wallet.h>
+#include <wallet/wallet.h>
 #include <util.h>
 #include <arith_uint256.h>
 
@@ -18,9 +18,8 @@ bool CheckBlockSignature(const CBlock& block, const CPubKey& pubkeyMasternode)
 // Check kernel hash target and coinstake signature
 bool CheckProofOfStake(const CBlock& block, const CBlockIndex* prevBlock, const COutPoint& outpointStakePointer, uint256& hashProofOfStake)
 {
-    const CTransaction tx = block.vtx[1];
-    if (!tx.IsCoinStake())
-        return error("CheckProofOfStake() : called on non-coinstake %s", tx.GetHash().ToString().c_str());
+    if (!block.vtx[1]->IsCoinStake())
+        return error("CheckProofOfStake() : called on non-coinstake %s", block.vtx[1]->GetHash().ToString().c_str());
 
     // Get the stake modifier
     auto pindexModifier = prevBlock->GetAncestor(prevBlock->nHeight - Params().KernelModifierOffset());

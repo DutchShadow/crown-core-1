@@ -78,6 +78,9 @@ class CScript;
 class CTxMemPool;
 class CBlockPolicyEstimator;
 class CWalletTx;
+class CMasternode;
+class CSystemnode;
+class StakePointer;
 struct FeeCalculation;
 enum class FeeEstimateMode;
 
@@ -737,6 +740,7 @@ private:
     void MarkInputsDirty(const CTransactionRef& tx);
 
     void SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator>);
+    uint256 GenerateStakeModifier(const CBlockIndex* prewardBlockIndex) const;
 
     /* Used by TransactionAddedToMemorypool/BlockConnected/Disconnected/ScanForWalletTransactions.
      * Should be called with pindexBlock and posInBlock if this is for a transaction that is included in a block. */
@@ -1007,6 +1011,11 @@ public:
      */
     bool CreateTransaction(const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CReserveKey& reservekey, CAmount& nFeeRet, int& nChangePosInOut, std::string& strFailReason, const CCoinControl& coin_control, bool sign = true, AvailableCoinsType coin_type=ALL_COINS, int extraPayloadSize = 0);
     bool CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm, std::string fromAccount, CReserveKey& reservekey, CConnman* connman, CValidationState& state);
+
+    bool GetActiveMasternode(CMasternode *&activeStakingNode);
+    bool GetActiveSystemnode(CSystemnode *&activeStakingNode);
+    bool CreateCoinStake(const int nHeight, const uint32_t& nBits, const uint32_t& nTime, CMutableTransaction& txCoinStake, uint32_t& nTxNewTime, StakePointer& stakePointer);
+    bool GetRecentStakePointers(std::vector<StakePointer>& vStakePointers);
 
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& entries);
     bool AddAccountingEntry(const CAccountingEntry&);

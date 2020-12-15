@@ -15,6 +15,8 @@
 #include "consensus/validation.h"
 #include "key_io.h"
 #include "net_processing.h"
+#include "mn-pos/blockwitness.h"
+#include "mn-pos/prooftracker.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -895,8 +897,7 @@ bool CMasternodePing::CheckAndUpdate(int& nDos, bool fRequireEnabled, bool fChec
             if (this->nVersion > 1) {
                 for (const uint256& hashBlock : vPrevBlockHash) {
                     LogPrint(BCLog::NET, "masternode", "%s: Adding witness for block %s from mn %s\n", __func__, hashBlock.GetHex(), vin.ToString());
-                    // TODO fix
-                    //g_proofTracker->AddWitness(BlockWitness(pmn->vin, hashBlock));
+                    g_proofTracker.AddWitness(BlockWitness(pmn->vin, hashBlock));
                 }
             }
 

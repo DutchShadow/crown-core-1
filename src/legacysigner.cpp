@@ -24,6 +24,8 @@ using namespace boost;
 
 // A helper object for signing messages from Masternodes
 CLegacySigner legacySigner;
+int nLastStakeAttempt = 0;
+std::map<PointerHash, uint256> mapUsedStakePointers;
 
 // Keep track of the active Masternode
 CActiveMasternode activeMasternode;

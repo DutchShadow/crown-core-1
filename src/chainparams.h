@@ -151,8 +151,8 @@ public:
     // int32_t PoSChainId () const { return nPoSChainId; }
     int PoSStartHeight() const { return nBlockPoSStart; }
     // int ValidStakePointerDuration() const { return nStakePointerValidityPeriod; }
-    // int MaxReorganizationDepth() const { return nMaxReorgDepth; }
-    // int KernelModifierOffset() const { return nKernelModifierOffset; }
+    int MaxReorganizationDepth() const { return nMaxReorgDepth; }
+    int KernelModifierOffset() const { return nKernelModifierOffset; }
     int ChainStallDuration() const { return nChainStallDuration; }
     // /* Return start height of auxpow and the retarget interval change.  */
     // virtual int AuxpowStartHeight() const = 0;
@@ -186,8 +186,8 @@ protected:
     // int32_t nPoSChainId;
     int nBlockPoSStart;
     int nStakePointerValidityPeriod;
-    // int nMaxReorgDepth;
-    // int nKernelModifierOffset;
+    int nMaxReorgDepth;
+    int nKernelModifierOffset;
     int nChainStallDuration;
 };
 

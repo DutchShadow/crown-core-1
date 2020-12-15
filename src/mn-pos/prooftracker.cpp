@@ -4,6 +4,8 @@
 #define REQUIRED_WITNESS_SIGS 6
 #define STAKE_REPACKAGE_THRESHOLD 3
 
+ProofTracker g_proofTracker;
+
 void ProofTracker::AddNewStake(const STAKEHASH& hashStake, const BLOCKHASH& hashBlock, int nHeight)
 {
     if (!m_mapStakes.count(hashStake))

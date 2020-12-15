@@ -1,3 +1,6 @@
+#ifndef CROWN_CORE_PROOF_TRACKER_H
+#define CROWN_CORE_PROOF_TRACKER_H
+
 #include <map>
 #include <set>
 
@@ -6,6 +9,9 @@ class uint256;
 
 typedef uint256 BLOCKHASH;
 typedef uint256 STAKEHASH;
+
+class ProofTracker;
+extern ProofTracker g_proofTracker;
 
 class ProofTracker
 {
@@ -22,3 +28,5 @@ public:
     int GetWitnessCount(const BLOCKHASH& hashBlock) const;
     void EraseBeforeHeight(int nHeight);
 };
+
+#endif // CROWN_CORE_PROOF_TRACKER_H

@@ -31,6 +31,10 @@ class CActiveMasternode;
 extern CLegacySigner legacySigner;
 extern std::string strMasterNodePrivKey;
 extern CActiveMasternode activeMasternode;
+extern int nLastStakeAttempt;
+
+typedef uint256 PointerHash;
+extern std::map<PointerHash, uint256> mapUsedStakePointers; //pointer hash matched to blockhash that it is in
 
 /** Helper object for signing and checking signatures
  */

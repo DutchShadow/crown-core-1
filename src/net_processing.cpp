@@ -35,6 +35,8 @@
 #include <systemnode-payments.h>
 #include <instantx.h>
 #include <spork.h>
+#include <mn-pos/prooftracker.h>
+#include <mn-pos/blockwitness.h>
 
 #include <memory>
 
@@ -1826,6 +1828,31 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     uint256 hash;
                     vRecv >> hash;
                     ss << ": hash " << hash.ToString();
+
+                    //if this is a suspicious block rejection, and we have proof, send it
+                    if (strReason == "block-suspicious") {
+                      LOCK(cs_main);
+                      if (g_proofTracker.HasSufficientProof(hash)) {
+                        auto setWitness = g_proofTracker.GetWitnesses(hash);
+                        //collect pings from witnesses
+                        std::vector<CMasternodePing> vPingsToSend;
+                        for (auto witness : setWitness) {
+                          CMasternode* pmn = mnodeman.Find(witness.m_vin);
+                          if (!pmn)
+                            continue;
+                          const auto& ping = pmn->lastPing;
+                          if (ping.nVersion > 1) {
+                            if (std::find(ping.vPrevBlockHash.begin(), ping.vPrevBlockHash.end(), hash) != ping.vPrevBlockHash.end()) {
+                              //Found proof in masternode ping
+                              vPingsToSend.emplace_back(ping);
+                            }
+                          }
+                        }
+
+                        // Send pings back to peer
+                        connman->PushMessage(pfrom, CNetMsgMaker(INIT_PROTO_VERSION).Make("blockproof", hash, vPingsToSend));
+                      }
+                    }
                 }
                 LogPrint(BCLog::NET, "Reject %s\n", SanitizeString(ss.str()));
             } catch (const std::ios_base::failure&) {
