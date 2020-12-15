@@ -38,6 +38,7 @@ class CChainParams;
 class CCoinsViewDB;
 class CInv;
 class CConnman;
+class ProofTracker;
 class CScriptCheck;
 class CBlockPolicyEstimator;
 class CTxMemPool;
@@ -176,6 +177,10 @@ extern uint256 hashAssumeValid;
 
 /** Minimum work we will assume exists on some valid chain. */
 extern arith_uint256 nMinimumChainWork;
+
+typedef uint256 PointerHash;
+extern std::map<PointerHash, uint256> mapUsedStakePointers; //pointer hash matched to blockhash that it is in
+extern ProofTracker* g_proofTracker;
 
 /** Best header we've seen so far (used for getheaders queries' starting points). */
 extern CBlockIndex *pindexBestHeader;

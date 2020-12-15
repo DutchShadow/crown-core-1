@@ -139,6 +139,12 @@ BITCOIN_CORE_H = \
   memusage.h \
   merkleblock.h \
   miner.h \
+  mn-pos/blockwitness.h \
+  mn-pos/kernel.h \
+  mn-pos/prooftracker.h \
+  mn-pos/stakeminer.h \
+  mn-pos/stakepointer.h \
+  mn-pos/stakevalidation.h \
   net.h \
   net_processing.h \
   netaddress.h \
@@ -276,6 +282,11 @@ libbitcoin_server_a_SOURCES = \
   dbwrapper.cpp \
   merkleblock.cpp \
   miner.cpp \
+  mn-pos/kernel.cpp \
+  mn-pos/prooftracker.cpp \
+  mn-pos/stakeminer.cpp \
+  mn-pos/stakepointer.cpp \
+  mn-pos/stakevalidation.cpp \
   net.cpp \
   net_processing.cpp \
   noui.cpp \

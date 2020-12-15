@@ -17,6 +17,7 @@
 #include <cuckoocache.h>
 #include <hash.h>
 #include <index/txindex.h>
+#include <key_io.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>
@@ -42,6 +43,13 @@
 #include <warnings.h>
 #include <txdb.h>
 #include <instantx.h>
+
+#include <masternode-budget.h>
+
+#include <mn-pos/blockwitness.h>
+#include <mn-pos/prooftracker.h>
+#include <mn-pos/stakevalidation.h>
+#include <mn-pos/stakepointer.h>
 
 #include <future>
 #include <sstream>
@@ -216,6 +224,8 @@ private:
 
 CCriticalSection cs_main;
 
+std::map<PointerHash, uint256> mapUsedStakePointers;
+ProofTracker* g_proofTracker = new ProofTracker();
 BlockMap& mapBlockIndex = g_chainstate.mapBlockIndex;
 CChain& chainActive = g_chainstate.chainActive;
 CBlockIndex *pindexBestHeader = nullptr;
@@ -1748,6 +1758,12 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
         }
     }
 
+    // Undo stake pointer
+    if (pindex->IsProofOfStake()) {
+        COutPoint stakeSource(pindex->stakeSource.first, pindex->stakeSource.second);
+        mapUsedStakePointers.erase(stakeSource.GetHash());
+    }
+
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
 
@@ -1911,7 +1927,141 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
     return flags;
 }
 
+bool IsStakePointerUsed(const CBlockIndex* pindexStake, const COutPoint& outpointFrom)
+{
+    auto hashPointer = outpointFrom.GetHash();
+    if (!mapUsedStakePointers.count(hashPointer))
+        return false;
 
+    // Marked as already used, but could potentially be a reorg, so check if they are in the same chain
+    auto hashBlockOfPointer = mapUsedStakePointers.at(hashPointer);
+    if (!mapBlockIndex.count(hashBlockOfPointer))
+        return false;
+
+    auto pindexUsedPointer = mapBlockIndex.at(hashBlockOfPointer);
+
+    // This check is only applicable if the used pointer is deeper in the chain (else it is likely just reindex or other check)
+    if (pindexStake->nHeight < pindexUsedPointer->nHeight)
+        return false;
+
+    // if it is the same block, then it is not a duplicate
+    if (pindexStake->GetBlockHash() == pindexUsedPointer->GetBlockHash())
+        return false;
+
+    //Check the ancestor of the block we are checking. If this chain's block at the height of the prev stake pointer has the same hash,
+    //then this is the same chain and therefore need to reject the new block
+    auto pindexCheck = pindexStake->GetAncestor(pindexUsedPointer->nHeight);
+    if (pindexCheck && pindexCheck->GetBlockHash() == pindexUsedPointer->GetBlockHash()) {
+        error("%s: StakePointer (txid=%s, nPos=%u) has already been used in block %s",
+              __func__, outpointFrom.hash.GetHex(), outpointFrom.n, pindexCheck->GetBlockHash().GetHex());
+        return true;
+    }
+
+    // This stakepointer has not been used
+    return false;
+}
+
+bool CheckBlockProofPointer(const CBlockIndex* pindex, const CBlock& block, CPubKey& pubkeyMasternode, COutPoint& outpointStakePointer, CTransaction& txPayment)
+{
+    //First make sure that the stake pointer points to a block that is in the blockchain
+    StakePointer stakePointer = block.stakePointer;
+    if (!mapBlockIndex.count(stakePointer.hashBlock))
+        return error("%s: Unknown block hash %s", __func__, stakePointer.hashBlock.GetHex());
+    CBlockIndex* pindexFrom = mapBlockIndex.at(stakePointer.hashBlock);
+    if (!chainActive.Contains(pindexFrom))
+        return error("%s: Block %s is not in the block chain", __func__, stakePointer.hashBlock.GetHex());
+
+    //Reject any stakepointers that are not within the acceptable period that we consider valid for staking
+    if (pindexFrom->nHeight < pindex->nHeight - Params().ValidStakePointerDuration())
+        return error("%s: Stake pointer from height %d is more than %d blocks deep, violating valid stake pointer duration",
+                __func__, pindexFrom->nHeight, Params().ValidStakePointerDuration());
+
+    //Reject any stakepointers that are too recent
+    if (pindexFrom->nHeight > pindex->nHeight - Params().MaxReorganizationDepth())
+        return error("%s: Stake pointer from height %d is too recent", __func__, pindexFrom->nHeight);
+
+    //No stakepointers from budgetblocks
+    if (GetAdjustedTime() - block.GetBlockTime() < 24*60*60 && budget.IsBudgetPaymentBlock(pindexFrom->nHeight))
+        return error("%s: Stake pointers cannot be from budget blocks", __func__);
+
+    //Ensure that this stake pointer is not already used by another block in the chain
+    COutPoint stakeSource(stakePointer.txid, stakePointer.nPos);
+    if (IsStakePointerUsed(pindex, stakeSource))
+        return error("%s: stake pointer already used", __func__);
+
+    CBlock blockFrom;
+    if (!ReadBlockFromDisk(blockFrom, pindexFrom, Params().GetConsensus()))
+        return error("%s: Failed to read block from disk", __func__);
+
+    //Check the actual transaction the stake pointer is claiming paid the masternode
+    bool found = false;
+    for (const auto& tx : blockFrom.vtx) {
+        if (tx->GetHash() == stakePointer.txid) {
+            if (tx->vout.size() <= stakePointer.nPos)
+                return error("%s: vout too small", __func__);
+
+            CTxDestination dest;
+            if (!ExtractDestination(tx->vout[stakePointer.nPos].scriptPubKey, dest))
+                return error("%s: failed to get destination from scriptPubKey", __func__);
+
+            // The block can either be signed by the collateral key, or the masternode key if it has a sig with it verifying sign over
+            CTxDestination addressProof(stakePointer.pubKeyProofOfStake.GetID());
+            CTxDestination addressReward(dest);
+            CTxDestination addressCollateralCheck(stakePointer.pubKeyCollateral.GetID());
+
+            if (addressCollateralCheck != addressReward)
+                return error("%s: Wrong pubkeys: Pubkey Collateral in proof pointer = %s, pubkey in reward payment = %s", __func__, EncodeDestination(addressCollateralCheck), EncodeDestination(addressReward));
+
+            pubkeyMasternode = stakePointer.pubKeyCollateral;
+
+            if (addressProof != addressReward) {
+                //Check if the key was signed over to another privkey
+                if (!stakePointer.VerifyCollateralSignOver())
+                    return error("%s: Collateral signover is not validated!", __func__);
+
+                pubkeyMasternode = stakePointer.pubKeyProofOfStake;
+            }
+
+            outpointStakePointer = COutPoint(stakePointer.txid, stakePointer.nPos);
+            txPayment = *tx;
+            found = true;
+            break;
+        }
+    }
+
+    return found;
+}
+
+bool IsMasternodeOrSystemnodeReward(const CTransaction& tx, const COutPoint& outpoint)
+{
+    return outpoint.n == MN_PMT_SLOT || outpoint.n == SN_PMT_SLOT;
+}
+
+bool CheckStake(const CBlockIndex* pindex, const CBlock& block, uint256& hashProofOfStake)
+{
+    AssertLockHeld(cs_main);
+    //Coinbase has to be 0 value
+    if (block.vtx[0]->vout[0].nValue > 0)
+        return error("%s: Coinbase output 0 must have 0 value", __func__);
+
+    CPubKey pubkeyMasternode;
+    COutPoint outpointStakePointer;
+    CTransaction txPayment;
+    if (!CheckBlockProofPointer(pindex, block, pubkeyMasternode, outpointStakePointer, txPayment))
+        return error("%s: Invalid block proof pointer", __func__);
+
+    // Check the transaction the stakepointer is from
+    if (!IsMasternodeOrSystemnodeReward(txPayment, outpointStakePointer))
+        return error("%s: block's stake pointer points to an invalid payment", __func__);
+
+    // Validate the block's signature to prevent malleation
+    if (!CheckBlockSignature(block, pubkeyMasternode))
+        return error("%s: Invalid signature", __func__);
+
+    //cs_main is locked and mapblockindex checks for hashblock in CheckBlockProofPointer. Fine to access directly.
+    CBlockIndex* pindexFrom = mapBlockIndex.at(block.stakePointer.hashBlock);
+    return CheckProofOfStake(block, pindexFrom, outpointStakePointer, hashProofOfStake);
+}
 
 static int64_t nTimeCheck = 0;
 static int64_t nTimeForks = 0;
@@ -1954,6 +2104,21 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             return AbortNode(state, "Corrupt block found indicating potential hardware failure; shutting down");
         }
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
+    }
+
+    // Proof of Stake validation
+    if (pindex->nHeight >= Params().PoSStartHeight()) {
+        if (block.IsProofOfWork())
+            return state.DoS(100, error("%s: Proof of Work block submitted after PoW end", __func__), REJECT_INVALID,
+                    "pow-end");
+
+        uint256 hashProofOfStake;
+        if (!CheckStake(pindex, block, hashProofOfStake))
+            return state.DoS(100, error("%s: Block has invalid proof of stake", __func__), REJECT_INVALID, "pos-invalid");
+
+    } else if (block.IsProofOfStake()) {
+        return state.DoS(100, error("%s: Proof of Stake block submitted before PoW end", __func__), REJECT_INVALID,
+                         "pos-early");
     }
 
     // verify that the view's current state corresponds to the previous block
@@ -3634,6 +3799,23 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
             setDirtyBlockIndex.insert(pindex);
         }
         return error("%s: %s", __func__, FormatStateMessage(state));
+    }
+
+    if (pindex->nHeight > Params().PoSStartHeight()) {
+        uint256 hashProofOfStake;
+        if (!CheckStake(pindex, block, hashProofOfStake))
+            return error("%s: Proof of stake check failed", __func__);
+
+        // Check if this proof hash has been used to package other blocks
+        if (g_proofTracker->IsSuspicious(hashProofOfStake, pindex->GetBlockHash(), pindex->nHeight)) {
+            //Stake has been packaged into many different blocks. At this point we wait until enough masternodes have approved
+            //this block as on the main chain
+            return state.Suspicious(strprintf("%s: hashProofOfStake has appeared in too many blocks, waiting for masternode approval for "
+                         "block %s", __func__, pindex->GetBlockHash().GetHex()));
+        }
+
+        // Remove any stale witnesses
+        g_proofTracker->EraseBeforeHeight(pindex->nHeight - Params().MaxReorganizationDepth());
     }
 
     // Header is valid/has work, merkle tree and segwit merkle tree are good...RELAY NOW

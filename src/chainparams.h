@@ -91,6 +91,8 @@ public:
     void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
     std::string LegacySignerDummyAddress() const { return strLegacySignerDummyAddress; }
     int ValidStakePointerDuration() const { return nStakePointerValidityPeriod; }
+    int MaxReorganizationDepth() const { return nMaxReorgDepth; }
+    int KernelModifierOffset() const { return nKernelModifierOffset; }
 
     // TODO old values
     // const uint256& HashGenesisBlock() const { return hashGenesisBlock; }
@@ -186,8 +188,8 @@ protected:
     // int32_t nPoSChainId;
     int nBlockPoSStart;
     int nStakePointerValidityPeriod;
-    // int nMaxReorgDepth;
-    // int nKernelModifierOffset;
+    int nMaxReorgDepth;
+    int nKernelModifierOffset;
     int nChainStallDuration;
 };
 
