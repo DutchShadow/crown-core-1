@@ -150,7 +150,7 @@ public:
     // CBaseChainParams::Network NetworkID() const { return networkID; }
     // /* Return the auxpow chain ID.  */
     inline int32_t AuxpowChainId () const { return nAuxpowChainId; }
-    // int32_t PoSChainId () const { return nPoSChainId; }
+    int32_t PoSChainId () const { return nPoSChainId; }
     int PoSStartHeight() const { return nBlockPoSStart; }
     // int ValidStakePointerDuration() const { return nStakePointerValidityPeriod; }
     // int MaxReorganizationDepth() const { return nMaxReorgDepth; }
@@ -185,7 +185,7 @@ protected:
     std::string strDevfundAddress;
     int64_t nStartMasternodePayments{0};
     int32_t nAuxpowChainId;
-    // int32_t nPoSChainId;
+    int32_t nPoSChainId;
     int nBlockPoSStart;
     int nStakePointerValidityPeriod;
     int nMaxReorgDepth;

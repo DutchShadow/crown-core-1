@@ -120,6 +120,10 @@ public:
         nBlockPoSStart = 2330000;
         nPruneAfterHeight = 100000;
         nAuxpowChainId = 20;
+        nPoSChainId = 22;
+        nStakePointerValidityPeriod = 4320; //Stake pointers are valid to stake with for the next 3 day worth of blocks
+        nMaxReorgDepth = 100;
+        nKernelModifierOffset = 100; //Number blocks before the stake pointer is the kernel modifier from
         nChainStallDuration = 60*60;
 
         genesis = CreateGenesisBlock(1412760826, 1612467894, 0x1d00ffff, 1, 10 * COIN);
