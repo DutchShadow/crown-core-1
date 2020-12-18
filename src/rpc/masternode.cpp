@@ -793,3 +793,20 @@ UniValue masternodebroadcast(const JSONRPCRequest& request)
 
     return UniValue();
 }
+
+static const CRPCCommand commands[] =
+{ //  category              name                      actor (function)         argNames
+  //  --------------------- ------------------------  -----------------------  ----------
+    { "crown",               "masternode",             &masternode,             {} },
+    { "crown",               "masternodelist",         &masternodelist,         {} },
+    { "crown",               "masternodebroadcast",    &masternodebroadcast,    {} },
+    { "crown",               "node",                   &node,                   {} },
+    { "crown",               "getstakepointers",       &getstakepointers,       {} },
+    { "crown",               "getpoolinfo",            &getpoolinfo,            {} },
+};
+
+void RegisterMasternodeRPCCommands(CRPCTable &t)
+{
+    for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)
+        t.appendCommand(commands[vcidx].name, &commands[vcidx]);
+}
