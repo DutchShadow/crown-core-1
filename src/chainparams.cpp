@@ -208,7 +208,7 @@ public:
 
         /* disable fallback fee on mainnet */
         m_fallback_fee_enabled = false;
-        strLegacySignerDummyAddress = "18WTcWvwrNnfqeQAn6th9QQ2EpnXMq5Th8";
+        strLegacySignerDummyAddress = "CRWYvSdKeBxUYMvUZpLqauobVoHS7ULYm1LJ";
     }
 
     bool StrictChainId() const
@@ -318,7 +318,7 @@ public:
         //nPoolMaxTransactions = 2;
         //strSporkKey = "04EA9AF53E4F12CE41F78B666EBDBE96C966ABDD8832979228BD3299E13089F117936EF97B7B9D4644B8B9D2BC7A30029BD7FDDCAC36E40AAC0E03891E493CF197";
         strDevfundAddress = "mr59c3aniaN3qHXej5L8UBsssRZbiUUMnz";
-        strLegacySignerDummyAddress = "mr59c3aniaN3qHXej5L8UBsssRZbiUUMnz";
+        strLegacySignerDummyAddress = "tCRWL8imXWw7SPAU5T275G1j1xQmaK4WgTWoQ";
         nStartMasternodePayments = 1420837558; //Fri, 09 Jan 2015 21:05:58 GMT
 
         nStakePointerValidityPeriod = 3000;

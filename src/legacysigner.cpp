@@ -10,6 +10,7 @@
 #include "script/sign.h"
 #include "instantx.h"
 #include "ui_interface.h"
+#include "key_io.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -28,15 +29,13 @@ CLegacySigner legacySigner;
 // Keep track of the active Masternode
 CActiveMasternode activeMasternode;
 
-bool CLegacySigner::SetCollateralAddress(std::string strAddress){
-    // TODO fix
-    //CBitcoinAddress address;
-    //if (!address.SetString(strAddress))
-    //{
-    //    LogPrintf("CLegacySigner::SetCollateralAddress - Invalid collateral address\n");
-    //    return false;
-    //}
-    //collateralPubKey = GetScriptForDestination(address.Get());
+bool CLegacySigner::SetCollateralAddress(std::string strAddress) {
+    CTxDestination dest = DecodeDestination(strAddress);
+    if (!IsValidDestination(dest)) {
+        LogPrintf("CLegacySigner::SetCollateralAddress - Invalid collateral address\n");
+        return false;
+    }
+    collateralPubKey = GetScriptForDestination(dest);
     return true;
 }
 
@@ -44,33 +43,27 @@ bool CLegacySigner::IsVinAssociatedWithPubkey(CTxIn& vin, CPubKey& pubkey, int v
     CScript payee2;
     payee2 = GetScriptForDestination(pubkey.GetID());
 
-    CTransaction txVin;
+    CTransactionRef txVin;
     uint256 hash;
-    // TODO fix
-    //if(GetTransaction(vin.prevout.hash, txVin, hash, true)){
-    //    BOOST_FOREACH(CTxOut out, txVin.vout){
-    //        if(out.nValue == value*COIN){
-    //            if(out.scriptPubKey == payee2) return true;
-    //        }
-    //    }
-    //}
+    if (GetTransaction(vin.prevout.hash, txVin, Params().GetConsensus(), hash, true)) {
+        for (auto out : txVin->vout) {
+            if (out.nValue == value * COIN) {
+                if (out.scriptPubKey == payee2)
+                return true;
+            }
+        }
+    }
 
     return true;
 }
 
 bool CLegacySigner::SetKey(std::string strSecret, std::string& errorMessage, CKey& key, CPubKey& pubkey){
-    // TODO fix
-    //CBitcoinSecret vchSecret;
-    //bool fGood = vchSecret.SetString(strSecret);
-
-    //if (!fGood) {
-    //    errorMessage = _("Invalid private key.");
-    //    return false;
-    //}
-
-    //key = vchSecret.GetKey();
-    //pubkey = key.GetPubKey();
-
+    key = DecodeSecret(strSecret);
+    if (!key.IsValid()) {
+        errorMessage = _("Invalid private key.");
+        return false;
+    }
+    pubkey = key.GetPubKey();
     return true;
 }
 
