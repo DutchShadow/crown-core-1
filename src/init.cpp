@@ -1190,13 +1190,12 @@ bool AppInitParameterInteraction()
                 return InitError("Version bits parameters malformed, expecting deployment:start:end");
             }
             int64_t nStartTime, nTimeout;
-            // TODO fix
-            //if (!ParseInt64(vDeploymentParams[1], &nStartTime)) {
-            //    return InitError(strprintf("Invalid nStartTime (%s)", vDeploymentParams[1]));
-            //}
-            //if (!ParseInt64(vDeploymentParams[2], &nTimeout)) {
-            //    return InitError(strprintf("Invalid nTimeout (%s)", vDeploymentParams[2]));
-            //}
+            if (!ParseInt64(vDeploymentParams[1], &nStartTime)) {
+                return InitError(strprintf("Invalid nStartTime (%s)", vDeploymentParams[1]));
+            }
+            if (!ParseInt64(vDeploymentParams[2], &nTimeout)) {
+                return InitError(strprintf("Invalid nTimeout (%s)", vDeploymentParams[2]));
+            }
             bool found = false;
             for (int j=0; j<(int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; ++j)
             {

@@ -62,7 +62,7 @@ CLevelDBWrapper::CLevelDBWrapper(const boost::filesystem::path& path, size_t nCa
             HandleError(result);
         }
         // TODO fix
-        //TryCreateDirectory(path);
+        TryCreateDirectories(path);
         LogPrintf("Opening LevelDB in %s\n", path.string());
     }
     leveldb::Status status = leveldb::DB::Open(options, path.string(), &pdb);

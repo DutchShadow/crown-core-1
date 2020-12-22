@@ -39,9 +39,8 @@ void InstantSend::ProcessMessage(CNode* pfrom, const std::string& strCommand, CD
     {
         //LogPrintf("ProcessMessageInstantX::ix\n");
         CDataStream vMsg(vRecv);
-        CTransaction tx;
-        // TODO fix
-        //vRecv >> tx;
+        CMutableTransaction tx;
+        UnserializeTransaction(tx, vRecv);
 
         CInv inv(MSG_TXLOCK_REQUEST, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
@@ -66,8 +65,7 @@ void InstantSend::ProcessMessage(CNode* pfrom, const std::string& strCommand, CD
         bool fAccepted = false;
         {
             LOCK(cs_main);
-            // TODO fix
-            //fAccepted = AcceptToMemoryPool(mempool, state, tx, true, &fMissingInputs);
+            fAccepted = AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), &fMissingInputs, nullptr, true, 0);
         }
         if (fAccepted)
         {
@@ -121,8 +119,7 @@ void InstantSend::ProcessMessage(CNode* pfrom, const std::string& strCommand, CD
     else if (strCommand == "txlvote") //InstantX Lock Consensus Votes
     {
         CConsensusVote ctx;
-        // TODO fix
-        //vRecv >> ctx;
+        vRecv >> ctx;
 
         CInv inv(MSG_TXLOCK_VOTE, ctx.GetHash());
         pfrom->AddInventoryKnown(inv);
@@ -193,16 +190,15 @@ bool InstantSend::IsIxTxValid(const CTransaction& txCollateral) const
         nValueOut += o.nValue;
 
     for (const auto& i : txCollateral.vin) {
-        CTransaction tx2;
+        CTransactionRef tx2;
         uint256 hash;
-        // TODO fix
-        //if(GetTransaction(i.prevout.hash, tx2, hash, true)){
-        //    if(tx2.vout.size() > i.prevout.n) {
-        //        nValueIn += tx2.vout[i.prevout.n].nValue;
-        //    }
-        //} else{
-        //    missingTx = true;
-        //}
+        if (GetTransaction(i.prevout.hash, tx2, Params().GetConsensus(), hash, true)) {
+            if (tx2->vout.size() > i.prevout.n) {
+                nValueIn += tx2->vout[i.prevout.n].nValue;
+            }
+        } else{
+            missingTx = true;
+        }
     }
 
     if(nValueOut > GetSporkValue(SPORK_5_MAX_VALUE)*COIN){
@@ -351,7 +347,7 @@ bool InstantSend::ProcessConsensusVote(CNode* pnode, const CConsensusVote& ctx)
 
 #ifdef ENABLE_WALLET
         // TODO fix
-        //if(GetWallets()[0]){
+        //if(GetWallets()[0]) {
         //    //when we get back signatures, we'll count them as requests. Otherwise the client will think it didn't propagate.
         //    if(GetWallets()[0]->mapRequestCount.count(ctx.txHash))
         //        GetWallets()[0]->mapRequestCount[ctx.txHash]++;
@@ -369,10 +365,9 @@ bool InstantSend::ProcessConsensusVote(CNode* pnode, const CConsensusVote& ctx)
 
 #ifdef ENABLE_WALLET
                 if(GetWallets()[0]){
-                    // TODO fix
-                    //if(GetWallets()[0]->UpdatedTransaction((*i).second.txHash)){
-                    //    m_completeTxLocks++;
-                    //}
+                    if (GetWallets()[0]->UpdatedTransaction((*i).second.txHash)) {
+                        m_completeTxLocks++;
+                    }
                 }
 #endif
 

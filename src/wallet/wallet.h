@@ -1099,6 +1099,8 @@ public:
 
     bool DelAddressBook(const CTxDestination& address);
 
+    bool UpdatedTransaction(const uint256 &hashTx);
+
     const std::string& GetLabelName(const CScript& scriptPubKey) const;
 
     void GetScriptForMining(std::shared_ptr<CReserveScript> &script);

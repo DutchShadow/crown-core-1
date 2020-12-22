@@ -83,12 +83,11 @@ namespace Platform
     bool ProcessSpecialTxsInBlock(bool justCheck, const CBlock &block, const CBlockIndex *pindex, CValidationState &state)
     {
         for (int i = 0; i < (int) block.vtx.size(); i++) {
-            // TODO fix
-            //const CTransaction &tx = block.vtx[i];
-            //if (!CheckSpecialTx(tx, pindex, state))
-            //    return false;
-            //if (!ProcessSpecialTx(justCheck, tx, pindex, state))
-            //    return false;
+            const CTransactionRef &tx = block.vtx[i];
+            if (!CheckSpecialTx(*tx, pindex, state))
+                return false;
+            if (!ProcessSpecialTx(justCheck, *tx, pindex, state))
+                return false;
         }
 
         return true;
@@ -97,10 +96,9 @@ namespace Platform
     bool UndoSpecialTxsInBlock(const CBlock &block, const CBlockIndex *pindex)
     {
         for (int i = (int) block.vtx.size() - 1; i >= 0; --i) {
-            // TODO fix
-            //const CTransaction &tx = block.vtx[i];
-            //if (!UndoSpecialTx(tx, pindex))
-            //    return false;
+            const CTransactionRef &tx = block.vtx[i];
+            if (!UndoSpecialTx(*tx, pindex))
+                return false;
         }
         return true;
     }

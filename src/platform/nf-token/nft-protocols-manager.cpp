@@ -5,6 +5,7 @@
 #include "util.h"
 #include "nft-protocols-manager.h"
 #include "platform/platform-db.h"
+#include "validation.h"
 
 namespace Platform
 {
@@ -12,12 +13,11 @@ namespace Platform
 
     NftProtocolsManager::NftProtocolsManager()
     {
-        // TODO fix
-        //if (chainActive.Tip() != nullptr)
-        //{
-        //    m_tipHeight = chainActive.Tip()->nHeight;
-        //    m_tipBlockHash = chainActive.Tip()->GetBlockHash();
-        //}
+        if (chainActive.Tip() != nullptr)
+        {
+            m_tipHeight = chainActive.Tip()->nHeight;
+            m_tipBlockHash = chainActive.Tip()->GetBlockHash();
+        }
 
         PlatformDb::Instance().ReadTotalProtocolCount(m_totalProtocolsCount);
 

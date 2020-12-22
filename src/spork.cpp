@@ -86,9 +86,8 @@ bool IsSporkActive(int nSporkID)
     } else {
         if(nSporkID == SPORK_2_INSTANTX) r = SPORK_2_INSTANTX_DEFAULT;
         if(nSporkID == SPORK_3_INSTANTX_BLOCK_FILTERING) r = SPORK_3_INSTANTX_BLOCK_FILTERING_DEFAULT;
-        // TODO fix
-        //if(nSporkID == SPORK_4_ENABLE_MASTERNODE_PAYMENTS)
-        //    r = Params().StartMasternodePayments() > 0 ? Params().StartMasternodePayments() : SPORK_4_ENABLE_MASTERNODE_PAYMENTS_DEFAULT;
+        if(nSporkID == SPORK_4_ENABLE_MASTERNODE_PAYMENTS)
+            r = Params().StartMasternodePayments() > 0 ? Params().StartMasternodePayments() : SPORK_4_ENABLE_MASTERNODE_PAYMENTS_DEFAULT;
         if(nSporkID == SPORK_5_MAX_VALUE) r = SPORK_5_MAX_VALUE_DEFAULT;
         if(nSporkID == SPORK_7_MASTERNODE_SCANNING) r = SPORK_7_MASTERNODE_SCANNING_DEFAULT;
         if(nSporkID == SPORK_8_MASTERNODE_PAYMENT_ENFORCEMENT) r = SPORK_8_MASTERNODE_PAYMENT_ENFORCEMENT_DEFAULT;
@@ -200,13 +199,12 @@ bool CSporkManager::CheckSignature(CSporkMessage& spork)
 {
     //note: need to investigate why this is failing
     std::string strMessage = boost::lexical_cast<std::string>(spork.nSporkID) + boost::lexical_cast<std::string>(spork.nValue) + boost::lexical_cast<std::string>(spork.nTimeSigned);
-    // TODO fix
-    //CPubKey pubkey(ParseHex(Params().SporkKey()));
+    CPubKey pubkey(ParseHex(Params().SporkKey()));
 
-    //std::string errorMessage = "";
-    //if(!legacySigner.VerifyMessage(pubkey, spork.vchSig, strMessage, errorMessage)){
-    //    return false;
-    //}
+    std::string errorMessage = "";
+    if(!legacySigner.VerifyMessage(pubkey, spork.vchSig, strMessage, errorMessage)){
+        return false;
+    }
 
     return true;
 }

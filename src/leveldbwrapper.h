@@ -40,15 +40,13 @@ public:
     void Write(const K& key, const V& value)
     {
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
-        // TODO fix
-        //ssKey.reserve(ssKey.GetSerializeSize(key));
-        //ssKey << key;
+        ssKey.reserve(GetSerializeSize(key, SER_DISK, CLIENT_VERSION));
+        ssKey << key;
         leveldb::Slice slKey(&ssKey[0], ssKey.size());
 
         CDataStream ssValue(SER_DISK, CLIENT_VERSION);
-        // TODO fix
-        //ssValue.reserve(ssValue.GetSerializeSize(value));
-        //ssValue << value;
+        ssValue.reserve(GetSerializeSize(value, SER_DISK, CLIENT_VERSION));
+        ssValue << value;
         leveldb::Slice slValue(&ssValue[0], ssValue.size());
 
         batch.Put(slKey, slValue);
@@ -58,9 +56,8 @@ public:
     void Erase(const K& key)
     {
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
-        // TODO fix
-        //ssKey.reserve(ssKey.GetSerializeSize(key));
-        //ssKey << key;
+        ssKey.reserve(GetSerializeSize(key, SER_DISK, CLIENT_VERSION));
+        ssKey << key;
         leveldb::Slice slKey(&ssKey[0], ssKey.size());
 
         batch.Delete(slKey);
@@ -99,8 +96,7 @@ public:
     bool Read(const K& key, V& value) const // throw(leveldb_error)
     {
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
-        // TODO fix
-        //ssKey.reserve(ssKey.GetSerializeSize(key));
+        ssKey.reserve(GetSerializeSize(key, SER_DISK, CLIENT_VERSION));
         ssKey << key;
         leveldb::Slice slKey(&ssKey[0], ssKey.size());
 
@@ -133,8 +129,7 @@ public:
     bool Exists(const K& key) const // throw(leveldb_error)
     {
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
-        // TODO fix
-        //ssKey.reserve(ssKey.GetSerializeSize(key));
+        ssKey.reserve(GetSerializeSize(key, SER_DISK, CLIENT_VERSION));
         ssKey << key;
         leveldb::Slice slKey(&ssKey[0], ssKey.size());
 
@@ -200,8 +195,7 @@ private:
             return key < b2->key;
         }
         virtual void Erase(CLevelDBBatch &batch) {
-            // TODO fix
-            //batch.Erase(key);
+            batch.Erase(key);
         }
         K key;
     };

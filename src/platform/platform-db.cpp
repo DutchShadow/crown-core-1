@@ -140,8 +140,7 @@ namespace Platform
 
             try
             {
-                // TODO fix
-                //streamValue >> protoDiskIndex;
+                streamValue >> protoDiskIndex;
             }
             catch (const std::exception & ex)
             {
@@ -180,8 +179,7 @@ namespace Platform
             try
             {
                 streamKey >> key;
-		// TODO fix
-                //streamValue >> protoSupply;
+                streamValue >> protoSupply;
             }
             catch (const std::exception & ex)
             {
@@ -327,10 +325,9 @@ namespace Platform
             }
             assert(txBlockHash == protoDiskIndex.BlockHash());
 
-            // TODO fix
             NfTokenProtocolRegTx protoRegTx;
-            //bool res = GetTxPayload(*tx, protoRegTx);
-            //assert(res);
+            bool res = GetTxPayload(*tx, protoRegTx);
+            assert(res);
 
             std::shared_ptr<NfTokenProtocol> nftProtoPtr(new NfTokenProtocol(protoRegTx.GetNftProto()));
             return {blockIndexIt->second, protoDiskIndex.RegTxHash(), nftProtoPtr};

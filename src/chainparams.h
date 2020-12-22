@@ -143,10 +143,10 @@ public:
     // const std::vector<CAddress>& FixedSeeds() const { return vFixedSeeds; }
     // virtual const Checkpoints::CCheckpointData& Checkpoints() const = 0;
     // int PoolMaxTransactions() const { return nPoolMaxTransactions; }
-    // std::string SporkKey() const { return strSporkKey; }
+    std::string SporkKey() const { return strSporkKey; }
     // std::string LegacySignerDummyAddress() const { return strLegacySignerDummyAddress; }
     // std::string DevfundAddress() const { return strDevfundAddress; }
-    // int64_t StartMasternodePayments() const { return nStartMasternodePayments; }
+    int64_t StartMasternodePayments() const { return nStartMasternodePayments; }
     // CBaseChainParams::Network NetworkID() const { return networkID; }
     // /* Return the auxpow chain ID.  */
     inline int32_t AuxpowChainId () const { return nAuxpowChainId; }
@@ -182,6 +182,7 @@ protected:
     ChainTxData chainTxData;
     bool m_fallback_fee_enabled;
     std::string strLegacySignerDummyAddress;
+    std::string strSporkKey;
     std::string strDevfundAddress;
     int64_t nStartMasternodePayments{0};
     int32_t nAuxpowChainId;
