@@ -1791,7 +1791,7 @@ bool AppInitMain()
         LogPrintf(" addr %s\n", strMasterNodeAddr.c_str());
 
         if(!strMasterNodeAddr.empty()){
-            CService addrTest = CService(strMasterNodeAddr);
+            CService addrTest = CService(LookupNumeric(strMasterNodeAddr.c_str()));
             if (!addrTest.IsValid()) {
                 return InitError("Invalid -masternodeaddr address: " + strMasterNodeAddr);
             }
@@ -1823,7 +1823,7 @@ bool AppInitMain()
         LogPrintf(" addr %s\n", strSystemNodeAddr.c_str());
 
         if(!strSystemNodeAddr.empty()){
-            CService addrTest = CService(strSystemNodeAddr);
+            CService addrTest = CService(LookupNumeric(strSystemNodeAddr.c_str()));
             if (!addrTest.IsValid()) {
                 return InitError("Invalid -systemnodeaddr address: " + strSystemNodeAddr);
             }

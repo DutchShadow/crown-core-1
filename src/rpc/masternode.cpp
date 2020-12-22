@@ -113,7 +113,7 @@ UniValue masternode(const JSONRPCRequest& request)
             throw runtime_error("Masternode address required\n");
         }
 
-        CService addr = CService(strAddress);
+        CService addr = CService(LookupNumeric(strAddress.c_str()));
 
         CNode *pnode = g_connman->ConnectNode((CAddress)addr, NULL, false, false);
         if(pnode){

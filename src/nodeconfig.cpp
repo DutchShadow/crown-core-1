@@ -7,6 +7,7 @@
 #include "nodeconfig.h"
 #include "util.h"
 #include "ui_interface.h"
+#include "netbase.h"
 #include <base58.h>
 
 void CNodeConfig::add(std::string alias, std::string ip, std::string privKey, std::string txHash, std::string outputIndex) {
@@ -57,14 +58,14 @@ bool CNodeConfig::read(std::string& strErr) {
         }
 
         if(Params().NetworkID() == CBaseChainParams::MAIN) {
-            if(CService(ip).GetPort() != 9340) {
+            if(CService(LookupNumeric(ip.c_str())).GetPort() != 9340) {
                 strErr = _("Invalid port detected in ") + getFileName() + "\n" +
                         strprintf(_("Line: %d"), linenumber) + "\n\"" + line + "\"" + "\n" +
                         _("(must be 9340 for mainnet)");
                 streamConfig.close();
                 return false;
             }
-        } else if(CService(ip).GetPort() == 9340) {
+        } else if(CService(LookupNumeric(ip.c_str())).GetPort() == 9340) {
             strErr = _("Invalid port detected in ") + getFileName() + "\n" +
                     strprintf(_("Line: %d"), linenumber) + "\n\"" + line + "\"" + "\n" +
                     _("(9340 could be used only on mainnet)");

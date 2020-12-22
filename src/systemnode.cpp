@@ -715,7 +715,7 @@ bool CSystemnodeBroadcast::Create(std::string strService, std::string strKeySyst
         return false;
     }
 
-    CService service = CService(strService);
+    CService service = CService(LookupNumeric(strService.c_str()));
     if(Params().NetworkID() == CBaseChainParams::MAIN) {
         if(service.GetPort() != 9340) {
             strErrorMessage = strprintf("Invalid port %u for systemnode %s - only 9340 is supported on mainnet.", service.GetPort(), strService);
@@ -729,7 +729,7 @@ bool CSystemnodeBroadcast::Create(std::string strService, std::string strKeySyst
     }
 
     bool fSignOver = true;
-    return Create(txin, CService(strService), keyCollateralAddress, pubKeyCollateralAddress, keySystemnodeNew, pubKeySystemnodeNew, fSignOver, strErrorMessage, snb);
+    return Create(txin, CService(LookupNumeric(strService.c_str())), keyCollateralAddress, pubKeyCollateralAddress, keySystemnodeNew, pubKeySystemnodeNew, fSignOver, strErrorMessage, snb);
 }
 
 bool CSystemnodeBroadcast::Create(CTxIn txin, CService service, CKey keyCollateralAddress, CPubKey pubKeyCollateralAddress, CKey keySystemnodeNew, CPubKey pubKeySystemnodeNew, bool fSignOver, std::string &strErrorMessage, CSystemnodeBroadcast &snb) {

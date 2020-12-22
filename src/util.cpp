@@ -837,20 +837,17 @@ fs::path GetConfigFile(const std::string& confPath)
 
 fs::path GetMasternodeConfigFile()
 {
-    // TODO fix
-    fs::path pathConfigFile;//(GetArg("-mnconf", "masternode.conf"));
-    //if (!pathConfigFile.is_complete()) pathConfigFile = GetDataDir() / pathConfigFile;
+    boost::filesystem::path pathConfigFile(gArgs.GetArg("-mnconf", "masternode.conf"));
+    if (!pathConfigFile.is_complete()) pathConfigFile = GetDataDir() / pathConfigFile;
     return pathConfigFile;
 }
 
 fs::path GetSystemnodeConfigFile()
 {
-    // TODO fix
-    fs::path pathConfigFile;//(GetArg("-mnconf", "systemnode.conf"));
-    //if (!pathConfigFile.is_complete()) pathConfigFile = GetDataDir() / pathConfigFile;
+    boost::filesystem::path pathConfigFile(gArgs.GetArg("-snconf", "systemnode.conf"));
+    if (!pathConfigFile.is_complete()) pathConfigFile = GetDataDir() / pathConfigFile;
     return pathConfigFile;
 }
-
 
 static std::string TrimString(const std::string& str, const std::string& pattern)
 {

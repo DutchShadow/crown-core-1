@@ -74,7 +74,7 @@ void CActiveMasternode::ManageStatus()
                 return;
             }
         } else {
-            service = CService(strMasterNodeAddr);
+            service = CService(LookupNumeric(strMasterNodeAddr.c_str()));
         }
 
         if(Params().NetworkID() == CBaseChainParams::MAIN) {

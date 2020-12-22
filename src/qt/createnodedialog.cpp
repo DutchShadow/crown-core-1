@@ -110,7 +110,7 @@ bool CreateNodeDialog::CheckIP()
     }
     // Validate ip address
     // This is only for validation so port doesn't matter
-    if (!(CService(ip.toStdString() + ":9340").IsIPv4() && CService(ip.toStdString()).IsRoutable())) {
+    if (!(CService(LookupNumeric((ip.toStdString() + ":9340").c_str())).IsIPv4() && CService(LookupNumeric(ip.toStdString().c_str())).IsRoutable())) {
         ui->ipEdit->setValid(false);
         QMessageBox::warning(this, windowTitle(), tr("Invalid IP Address. IPV4 ONLY"), QMessageBox::Ok, QMessageBox::Ok);
         return false;

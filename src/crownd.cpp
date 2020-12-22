@@ -20,6 +20,8 @@
 #include <httprpc.h>
 #include <utilstrencodings.h>
 #include <walletinitinterface.h>
+#include "masternodeconfig.h"
+#include "systemnodeconfig.h"
 
 #include <stdio.h>
 
@@ -103,6 +105,19 @@ static bool AppInit(int argc, char* argv[])
             SelectParams(gArgs.GetChainName());
         } catch (const std::exception& e) {
             fprintf(stderr, "Error: %s\n", e.what());
+            return false;
+        }
+
+        // parse masternode.conf
+        std::string strErr;
+        if(!masternodeConfig.read(strErr)) {
+            fprintf(stderr,"Error reading masternode configuration file: %s\n", strErr.c_str());
+            return false;
+        }
+
+        // parse systemnode.conf
+        if (!systemnodeConfig.read(strErr)) {
+            fprintf(stderr, "Error reading systemnode configuration file: %s\n", strErr.c_str());
             return false;
         }
 
