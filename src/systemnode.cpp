@@ -306,10 +306,10 @@ void CSystemnode::Check(bool forceCheck)
             TRY_LOCK(cs_main, lockMain);
             if(!lockMain) return;
 
-            if(!AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, NULL, true, 0)) {
-                activeState = SYSTEMNODE_VIN_SPENT;
-                return;
-            }
+            //if(!AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, NULL, true, 0)) {
+            //    activeState = SYSTEMNODE_VIN_SPENT;
+            //    return;
+            //}
         }
     }
     activeState = SYSTEMNODE_ENABLED; // OK
@@ -561,11 +561,11 @@ bool CSystemnodeBroadcast::CheckInputsAndAdd(int& nDoS) const
             return false;
         }
 
-        if(!AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, NULL, true, 0)) {
-            //set nDos
-            state.IsInvalid(nDoS);
-            return false;
-        }
+        //if(!AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, NULL, true, 0)) {
+        //    //set nDos
+        //    state.IsInvalid(nDoS);
+        //    return false;
+        //}
     }
 
 //  LogPrint(BCLog::NET, "snb - Accepted systemnode entry\n");

@@ -214,10 +214,10 @@ void CMasternode::Check(bool forceCheck)
             TRY_LOCK(cs_main, lockMain);
             if(!lockMain) return;
 
-            if(!AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, NULL, true, 0)){
-                activeState = MASTERNODE_VIN_SPENT;
-                return;
-            }
+            //if(!AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, NULL, true, 0)){
+            //    activeState = MASTERNODE_VIN_SPENT;
+            //    return;
+            //}
         }
     }
 
@@ -635,11 +635,11 @@ bool CMasternodeBroadcast::CheckInputsAndAdd(int& nDoS) const
             return false;
         }
 
-        if(!AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, NULL, true, 0)) {
-            //set nDos
-            state.IsInvalid(nDoS);
-            return false;
-        }
+        //if(!AcceptToMemoryPool(mempool, state, MakeTransactionRef(tx), NULL, NULL, true, 0)) {
+        //    //set nDos
+        //    state.IsInvalid(nDoS);
+        //    return false;
+        //}
     }
 
 //  LogPrint(BCLog::NET, "masternode", "mnb - Accepted Masternode entry\n");
