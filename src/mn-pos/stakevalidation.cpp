@@ -51,9 +51,9 @@ bool CheckProofOfStake(const CBlock& block, const CBlockIndex* prevBlock, const 
     if (fNegative || bnTarget == 0 || fOverflow)
         return error("CheckProofOfStake() : nBits below minimum stake");
 
-    LogPrintf("%s : %s\n", __func__, kernel.ToString());
-
     hashProofOfStake = kernel.GetStakeHash();
+
+    LogPrintf("%s : %s (hashProof %s)\n", __func__, kernel.ToString(), hashProofOfStake.ToString());
 
     return kernel.IsValidProof(ArithToUint256(bnTarget));
 }

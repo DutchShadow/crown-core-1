@@ -2112,14 +2112,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         if (block.IsProofOfWork())
             return state.DoS(100, error("%s: Proof of Work block submitted after PoW end", __func__), REJECT_INVALID,
                     "pow-end");
-
-        uint256 hashProofOfStake = uint256();
-        bool validStake = CheckStake(pindex, block, hashProofOfStake);
-        if (!validStake)
-            return state.DoS(100, error("%s: Block has invalid proof of stake", __func__), REJECT_INVALID, "pos-invalid");
-        else
-            LogPrintf(" - block hashProof %s\n", hashProofOfStake.ToString().c_str());
-
     } else if (block.IsProofOfStake()) {
         return state.DoS(100, error("%s: Proof of Stake block submitted before PoW end", __func__), REJECT_INVALID,
                          "pos-early");
