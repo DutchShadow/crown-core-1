@@ -314,6 +314,7 @@ public:
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
         fMineBlocksOnDemand = false;
+        nKernelModifierOffset = 100; //Number blocks before the stake pointer is the kernel modifier from
         //fTestnetToBeDeprecatedFieldRPC = true;
 
         //nPoolMaxTransactions = 2;
