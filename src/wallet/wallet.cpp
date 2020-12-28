@@ -2325,8 +2325,8 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
             if (coinControl && coinControl->HasSelected() && !coinControl->fAllowOtherInputs && !coinControl->IsSelected(COutPoint(entry.first, i)))
                 continue;
 
-            if (IsLockedCoin(entry.first, i))
-                continue;
+            //if (IsLockedCoin(entry.first, i))
+            //    continue;
 
             if (IsSpent(wtxid, i))
                 continue;
@@ -2554,7 +2554,7 @@ bool CWallet::GetMasternodeVinAndKeys(CTxIn& vinRet, CPubKey& pubKeyRet, CKey& k
 
     // Find possible candidates
     std::vector<COutput> vPossibleCoins;
-    AvailableCoins(vPossibleCoins, true, NULL, ONLY_10000);
+    AvailableCoins(vPossibleCoins, true, NULL, MASTERNODE_COLLATERAL * COIN, MASTERNODE_COLLATERAL * COIN);
     if(vPossibleCoins.empty()) {
         LogPrintf("CWallet::GetMasternodeVinAndKeys - Could not locate any valid masternode vin\n");
         return false;
@@ -2583,7 +2583,7 @@ bool CWallet::GetSystemnodeVinAndKeys(CTxIn& vinRet, CPubKey& pubKeyRet, CKey& k
 
     // Find possible candidates
     std::vector<COutput> vPossibleCoins;
-    AvailableCoins(vPossibleCoins, true, NULL, ONLY_500);
+    AvailableCoins(vPossibleCoins, true, NULL, SYSTEMNODE_COLLATERAL * COIN, SYSTEMNODE_COLLATERAL * COIN);
     if(vPossibleCoins.empty()) {
         LogPrintf("CWallet::GetSystemnodeVinAndKeys - Could not locate any valid servicenode vin\n");
         return false;
@@ -2616,22 +2616,17 @@ bool CWallet::GetVinAndKeysFromOutput(COutput out, CTxIn& vinRet, CPubKey& pubKe
     vinRet = CTxIn(out.tx->GetHash(),out.i);
     pubScript = out.tx->tx->vout[out.i].scriptPubKey; // the inputs PubKey
 
-    CTxDestination address1;
-    ExtractDestination(pubScript, address1);
-    //CBitcoinAddress address2(address1);
+    CTxDestination dest;
+    ExtractDestination(pubScript, dest);
 
-    //CKeyID keyID;
-    //if (!address2.GetKeyID(keyID)) {
-    //    LogPrintf("CWallet::GetVinAndKeysFromOutput - Address does not refer to a key\n");
-    //    return false;
-    //}
+    CKeyID keyID = GetKeyForDestination(*this, dest);
 
-    //if (!GetKey(keyID, keyRet)) {
-    //    LogPrintf ("CWallet::GetVinAndKeysFromOutput - Private key for address is not known\n");
-    //    return false;
-    //}
+    if (!GetKey(keyID, keyRet)) {
+        LogPrintf ("CWallet::GetVinAndKeysFromOutput - Private key for address is not known\n");
+        return false;
+    }
 
-    //pubKeyRet = keyRet.GetPubKey();
+    pubKeyRet = keyRet.GetPubKey();
     return true;
 }
 

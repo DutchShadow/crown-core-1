@@ -265,7 +265,7 @@ UniValue systemnode(const JSONRPCRequest& request)
     if (strCommand == "outputs"){
         // Find possible candidates
         std::vector<COutput> vPossibleCoins;
-        GetWallets()[0]->AvailableCoins(vPossibleCoins, true, NULL, ONLY_500);
+        GetWallets()[0]->AvailableCoins(vPossibleCoins, true, NULL, SYSTEMNODE_COLLATERAL * COIN, SYSTEMNODE_COLLATERAL * COIN);
 
         UniValue obj(UniValue::VOBJ);
         for (auto& out : vPossibleCoins)
@@ -756,10 +756,10 @@ UniValue systemnodebroadcast(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "crown",               "masternode",             &systemnode,             {} },
-    { "crown",               "masternodelist",         &systemnodelist,         {} },
-    { "crown",               "masternodebroadcast",    &systemnodebroadcast,    {} },
-    { "crown",               "getpoolinfo",            &sngetpoolinfo,          {} },
+    { "crown",               "systemnode",             &systemnode,             {} },
+    { "crown",               "systemnodelist",         &systemnodelist,         {} },
+    { "crown",               "systemnodebroadcast",    &systemnodebroadcast,    {} },
+    { "crown",               "sngetpoolinfo",          &sngetpoolinfo,          {} },
 };
 
 void RegisterSystemnodeRPCCommands(CRPCTable &t)

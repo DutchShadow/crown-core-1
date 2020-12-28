@@ -341,7 +341,7 @@ UniValue masternode(const JSONRPCRequest& request)
     if (strCommand == "outputs"){
         // Find possible candidates
         std::vector<COutput> vPossibleCoins;
-        GetWallets()[0]->AvailableCoins(vPossibleCoins, true, NULL, ONLY_10000);
+        GetWallets()[0]->AvailableCoins(vPossibleCoins, true, NULL, MASTERNODE_COLLATERAL * COIN, MASTERNODE_COLLATERAL * COIN);
 
         UniValue obj(UniValue::VOBJ);
         BOOST_FOREACH(COutput& out, vPossibleCoins)
