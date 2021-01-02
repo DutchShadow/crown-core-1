@@ -146,77 +146,77 @@ cache:
     - tags
 
 # Job definitions for releases
-Win64:
-  <<: *win64_definition 
-  <<: *job_definition 
-  <<: *release_definition 
+#Win64:
+#  <<: *win64_definition 
+#  <<: *job_definition 
+#  <<: *release_definition 
   
-Win32:
-  <<: *win32_definition 
-  <<: *job_definition
-  <<: *release_definition 
-
-Linux64:
-  <<: *linux64_definition 
-  <<: *job_definition
-  <<: *release_definition 
-
-Linux32:
-  <<: *linux32_definition 
-  <<: *job_definition 
-  <<: *release_definition 
+#Win32:
+#  <<: *win32_definition 
+#  <<: *job_definition
+#  <<: *release_definition 
+#
+#Linux64:
+#  <<: *linux64_definition 
+#  <<: *job_definition
+#  <<: *release_definition 
+#
+#Linux32:
+#  <<: *linux32_definition 
+#  <<: *job_definition 
+#  <<: *release_definition 
 
 RaspberryPi:
   <<: *raspberrypi_definition
   <<: *job_definition
   <<: *release_definition 
 
-Osx:
-  <<: *osx_definition
-  <<: *job_definition 
-  <<: *release_definition
+#Osx:
+#  <<: *osx_definition
+#  <<: *job_definition 
+#  <<: *release_definition
+#
+#Osx-dmg:
+#  <<: *osx_dmg_definition
+#  <<: *job_definition 
+#  <<: *dmg_release_definition
+#
+## Job definitions for temporary builds (snapshots)
+#Win64-snapshot:
+#  <<: *win64_definition 
+#  <<: *job_definition 
+#  <<: *snapshot_definition 
+#  
+#Win32-snapshot:
+#  <<: *win32_definition 
+#  <<: *job_definition
+#  <<: *snapshot_definition 
+#
+#Linux64-snapshot:
+#  <<: *linux64_definition 
+#  <<: *job_definition
+#  <<: *snapshot_definition 
+#
+#Linux32-snapshot:
+#  <<: *linux32_definition 
+#  <<: *job_definition 
+#  <<: *snapshot_definition 
 
-Osx-dmg:
-  <<: *osx_dmg_definition
-  <<: *job_definition 
-  <<: *dmg_release_definition
-
-# Job definitions for temporary builds (snapshots)
-Win64-snapshot:
-  <<: *win64_definition 
-  <<: *job_definition 
-  <<: *snapshot_definition 
-  
-Win32-snapshot:
-  <<: *win32_definition 
-  <<: *job_definition
-  <<: *snapshot_definition 
-
-Linux64-snapshot:
-  <<: *linux64_definition 
-  <<: *job_definition
-  <<: *snapshot_definition 
-
-Linux32-snapshot:
-  <<: *linux32_definition 
-  <<: *job_definition 
-  <<: *snapshot_definition 
-
-RaspberryPi-snapshot:
+#RaspberryPi-snapshot:
   <<: *raspberrypi_definition
   <<: *job_definition
   <<: *snapshot_definition 
 
-Osx-snapshot:
-  <<: *osx_definition
-  <<: *job_definition 
-  <<: *snapshot_definition 
-
-Osx-dmg-snapshot:
-  <<: *osx_dmg_definition
-  <<: *job_definition 
-  <<: *dmg_snapshot_definition
-
+#Osx-snapshot:
+#  <<: *osx_definition
+#  <<: *job_definition 
+#  <<: *snapshot_definition 
+#
+#Osx-dmg-snapshot:
+#  <<: *osx_dmg_definition
+#  <<: *job_definition 
+#  <<: *dmg_snapshot_definition
+#
 # Trigger the docker build and delivery
 trigger_docker_build:
   stage: deploy
