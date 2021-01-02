@@ -125,9 +125,9 @@ cache:
     paths:
     - $OUTDIR
     expire_in: 2 weeks
-  except:
-    - master
-    - tags
+#  except:
+#    - master
+#    - tags
 
 .job_template: &dmg_release_definition
   artifacts:
