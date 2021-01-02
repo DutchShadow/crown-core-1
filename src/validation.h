@@ -181,6 +181,7 @@ extern arith_uint256 nMinimumChainWork;
 typedef uint256 PointerHash;
 extern std::map<PointerHash, uint256> mapUsedStakePointers; //pointer hash matched to blockhash that it is in
 extern ProofTracker* g_proofTracker;
+extern int nLastStakeAttempt;
 
 /** Best header we've seen so far (used for getheaders queries' starting points). */
 extern CBlockIndex *pindexBestHeader;

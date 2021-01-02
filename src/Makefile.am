@@ -370,6 +370,7 @@ libbitcoin_wallet_a_SOURCES = \
   systemnode.cpp \
   activesystemnode.cpp \
   systemnodeconfig.cpp \
+  mn-pos/stakeminer.cpp \
   nodeconfig.cpp \
   interfaces/wallet.cpp \
   wallet/coincontrol.cpp \

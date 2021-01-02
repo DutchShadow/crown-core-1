@@ -226,6 +226,7 @@ CCriticalSection cs_main;
 
 std::map<PointerHash, uint256> mapUsedStakePointers;
 ProofTracker* g_proofTracker = new ProofTracker();
+int nLastStakeAttempt = 0;
 BlockMap& mapBlockIndex = g_chainstate.mapBlockIndex;
 CChain& chainActive = g_chainstate.chainActive;
 CBlockIndex *pindexBestHeader = nullptr;
